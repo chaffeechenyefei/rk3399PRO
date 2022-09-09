@@ -30,7 +30,8 @@ using namespace ucloud;
                   Main Function
 -------------------------------------------*/
 int main(int argc, char **argv)
-{
+{   
+    Clocker Tk;
     printf("test_rk execution\n");
     string baseModelPath = argv[1];
     string imagePath = argv[2];
@@ -65,12 +66,21 @@ int main(int argc, char **argv)
     }
 
     printf("infer\n");
-    VecObjBBox bboxes;
-    ret = ptrHandle->run(tvInp, bboxes);
-    if(ret!=RET_CODE::SUCCESS){
-        printf("err in ptrHandle->run(tvInp, bboxes) \n");
-        return -2;
+    auto avg_time = 0.f;
+    for(int i = 0; i < 10; i++){
+        VecObjBBox bboxes;
+        Tk.start();
+        ret = ptrHandle->run(tvInp, bboxes);
+        auto tm_cost = Tk.end("ptrHandle->run");
+        avg_time += tm_cost;
+        if(ret!=RET_CODE::SUCCESS){
+            if(imgBuf) free(imgBuf);
+            printf("err in ptrHandle->run(tvInp, bboxes) \n");
+            return -2;
+        }
     }
+    printf("avg exec ptrHandle->run time = %f\n", avg_time/10);
+
 
     if(imgBuf) free(imgBuf);
     return 0;

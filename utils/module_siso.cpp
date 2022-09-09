@@ -39,6 +39,7 @@ RET_CODE NaiveModel::init(std::map<ucloud::InitParam, std::string> &modelpath){
 }
 
 RET_CODE NaiveModel::run(TvaiImage& tvimage, VecObjBBox &bboxes){
+    // return run_mem(tvimage, bboxes);
     LOGI << "-> NaiveModel::run";
     RET_CODE ret = RET_CODE::SUCCESS;
 
@@ -46,12 +47,30 @@ RET_CODE NaiveModel::run(TvaiImage& tvimage, VecObjBBox &bboxes){
     std::vector<unsigned char*> input_datas;
     std::vector<float*> output_datas;
 
+#ifdef TIMING    
+    m_Tk.start();
+#endif
     ret = preprocess(tvimage, input_datas);
-    
+#ifdef TIMING    
+    m_Tk.end("preprocess");
+#endif    
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
     ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
+#ifdef TIMING    
+    m_Tk.end("general_infer_uint8_nhwc_to_float");
+#endif    
     if(ret!=RET_CODE::SUCCESS) return ret;
 
+#ifdef TIMING    
+    m_Tk.start();
+#endif
     ret = postprocess(output_datas);
+#ifdef TIMING    
+    m_Tk.end("postprocess");
+#endif    
     if(ret!=RET_CODE::SUCCESS) return ret;
 
     for(auto &&t: output_datas){
@@ -66,7 +85,7 @@ RET_CODE NaiveModel::run(TvaiImage& tvimage, VecObjBBox &bboxes){
 }
 
 ucloud::RET_CODE NaiveModel::run_mem(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes){
-    LOGI << "-> NaiveModel::run";
+    LOGI << "-> NaiveModel::run_mem";
     RET_CODE ret = RET_CODE::SUCCESS;
 
     if(tvimage.format != TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
@@ -79,12 +98,30 @@ ucloud::RET_CODE NaiveModel::run_mem(ucloud::TvaiImage& tvimage, ucloud::VecObjB
         output_datas.push_back( (float*)(tmp->ptr) );
         used_MemNodes.push_back(tmp);
     }
+#ifdef TIMING    
+    m_Tk.start();
+#endif
     ret = preprocess(tvimage, input_datas);
+#ifdef TIMING    
+    m_Tk.end("preprocess");
+#endif    
     
-    ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
+#ifdef TIMING    
+    m_Tk.start();
+#endif    
+    ret = m_net->general_infer_uint8_nhwc_to_float_mem(input_datas, output_datas);
+#ifdef TIMING    
+    m_Tk.end("general_infer_uint8_nhwc_to_float_mem");
+#endif    
     if(ret!=RET_CODE::SUCCESS) return ret;
 
+#ifdef TIMING    
+    m_Tk.start();
+#endif  
     ret = postprocess(output_datas);
+#ifdef TIMING    
+    m_Tk.end("postprocess");
+#endif      
     if(ret!=RET_CODE::SUCCESS) return ret;
 
     for(auto &&t: used_MemNodes){
@@ -93,7 +130,7 @@ ucloud::RET_CODE NaiveModel::run_mem(ucloud::TvaiImage& tvimage, ucloud::VecObjB
     for(auto &&t: input_datas){
         free(t);
     }
-    LOGI << "<- NaiveModel::run";
+    LOGI << "<- NaiveModel::run_mem";
     return RET_CODE::SUCCESS;
 }
 

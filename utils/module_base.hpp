@@ -48,7 +48,7 @@ public:
         std::vector<unsigned char*> &input_datas, 
         std::vector<float*> &output_datas);//设置virtual, 兼容其他方式的rknn处理
     /**
-     * general_infer_uint8_nhwc_to_float_mem
+     * general_infer_uint8_nhwc_to_float_mem [tested]
      * DESC: 输出数据的指针内存由外部预先开辟
      * PARAM:
      *  input_datas: NHWC, UINT8

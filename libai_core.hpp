@@ -237,6 +237,8 @@ typedef std::vector<VecObjBBox> BatchBBoxIN;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 // 方法,工厂类,枚举类型
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//算法功能的枚举
 typedef enum _AlgoAPIName{
     FACE_DETECTOR       = 0,//人脸检测
     FACE_EXTRACTOR      = 1,//人脸特征提取
@@ -295,7 +297,7 @@ typedef enum _APIParam{
     VALID_REGION       = 4, //有效检测区域设定
 }APIParam;
 
-//接口基类, 接口函数
+//算法对外暴露的接口形式
 class UCLOUD_API_PUBLIC AlgoAPI{
 public:
     AlgoAPI(){};
@@ -333,7 +335,10 @@ public:
 };
 typedef std::shared_ptr<AlgoAPI> AlgoAPISPtr;
 
-//工厂
+/**
+ * AICoreFactory
+ * DESC: 获得算法功能句柄的唯一途径
+ */
 class UCLOUD_API_PUBLIC AICoreFactory{
 public:
     AICoreFactory();
@@ -346,6 +351,15 @@ public:
 UCLOUD_API_PUBLIC unsigned char* readImg_to_RGB(std::string filepath, int &width, int &height);
 UCLOUD_API_PUBLIC unsigned char* readImg_to_NV21(std::string filepath, int &width, int &height, int &stride);
 
+class UCLOUD_API_PUBLIC Clocker{
+public:
+    Clocker();
+    ~Clocker();
+    void start();
+    double end(std::string title);//return seconds
+private:
+    void* ctx;
+};
 /**
  * 20210917
  * 以下是历史遗留产物, 后期不再更新维护.

@@ -77,6 +77,36 @@ void MemPool::free(MemNode* nodePtr){
 }
 
 /**
+ * Timer
+ */
+void Timer::start(){
+    auto t = std::chrono::system_clock::now();
+    tQue.push_back(t);
+}
+
+double Timer::end(std::string title){
+    auto t = std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock> start;
+    if(!tQue.empty()){
+        start = *(tQue.rbegin());
+        tQue.pop_back();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t-start);
+        double tm_cost = double(duration.count()) * std::chrono::microseconds::period::num / std::chrono::microseconds::period::den;
+        printf("[%s] cost = %fs\n", title.c_str() ,tm_cost);
+        return tm_cost;
+    } else {
+        printf("%s skipped...\n", title.c_str());
+        return 0;
+    }
+}
+
+Timer::~Timer(){
+    tQue.clear();
+}
+
+
+
+/**
  * https://stackoverflow.com/questions/874134/find-out-if-string-ends-with-another-string-in-c
  */
 bool hasEnding (std::string const &fullString, std::string const &ending) {

@@ -48,3 +48,22 @@ unsigned char* ucloud::readImg_to_NV21(std::string filepath, int &width, int &he
     dst_ptr = BGR2YUV_nv21_with_stride(im, width, height, stride, 2);
     return dst_ptr;
 }
+
+
+Clocker::Clocker(){
+    ctx = new Timer();
+}
+
+Clocker::~Clocker(){
+    delete ctx;
+}
+
+void Clocker::start(){
+    Timer* cTx = reinterpret_cast<Timer*>(ctx);
+    cTx->start();
+}
+
+double Clocker::end(std::string title){
+    Timer* cTx = reinterpret_cast<Timer*>(ctx);
+    return cTx->end(title);
+}

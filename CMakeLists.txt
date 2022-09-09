@@ -17,6 +17,7 @@ endif()
 
 #==========全局宏定义==========
 add_definitions(-DVERBOSE=True)
+add_definitions(-DTIMING=True)
 
 
 # ========RK3399========

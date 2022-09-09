@@ -6,6 +6,10 @@
 #include <iostream>
 #include <set>
 #include <mutex>
+#include <sys/time.h>
+#include <chrono>
+#include <map>
+#include <vector>
 
 /**
  * 内存池小测试
@@ -39,6 +43,19 @@ protected:
     std::set<MemNode*> occupiedNodes;
 
     std::mutex _mlock_;
+};
+
+/**
+ * 时间计量函数
+ */
+class Timer{
+public:
+    Timer(){}
+    ~Timer();
+    void start();
+    double end(std::string title);
+private:
+    std::vector<std::chrono::time_point<std::chrono::system_clock>> tQue;
 };
 
 /**

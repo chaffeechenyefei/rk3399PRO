@@ -29,7 +29,7 @@ public:
     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas);
 
 private:
-    std::shared_ptr<BaseModel> m_net = nullptr;
+    std::shared_ptr<BaseModel> m_net = nullptr;//推理模型的主干部分
     DATA_SHAPE m_InpSp;
     DATA_SHAPE m_OutSp;//It will contain zero!!!!
     int m_OutEleNum;//输出Tensor元素总数
@@ -37,6 +37,10 @@ private:
     int m_OtpNum = 1;//输出Tensor数量
 
     MemPool m_OtpMemPool;//输出的内存池, 减少反复开辟和释放内存空间
+
+#ifdef TIMING
+    Timer m_Tk;
+#endif
 };
 
 #endif
