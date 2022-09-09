@@ -49,6 +49,7 @@ typedef enum _RET_CODE{
     ERR_NPU_RUN_FAILED          = 103, //NPU运行推理失败
     ERR_NPU_GET_OUTPUT_FAILED   = 104, //NPU获取推理输出失败
     ERR_NPU_MEM_ERR             = 105, //NPU地址分配失败
+    ERR_NPU_SYNC_NOT_MATCH      = 106, //NPU使用了input map但没有使用相应的sync
 }RET_CODE;
 
 //目标类别

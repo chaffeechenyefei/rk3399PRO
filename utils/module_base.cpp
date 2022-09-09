@@ -266,31 +266,38 @@ ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath){
 
 RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(std::vector<unsigned char*> &input_datas, std::vector<float*> &output_datas){
     LOGI << "-> BaseModel::general_infer_uint8_nhwc_to_float";
+    if(m_isMap) return RET_CODE::ERR_NPU_SYNC_NOT_MATCH;
     // Set Input Data
     int ret = -1;
     assert( input_datas.size() == m_inputAttr.size() );
-    // rknn_input* inputs = (rknn_input*)malloc(input_datas.size()*sizeof(rknn_input));
-    // memset(inputs, 0, input_datas.size()*sizeof(rknn_input));
-    //采用数组,自动free,且内部指针不需要负责释放
-    rknn_input inputs[input_datas.size()];
-    memset(inputs, 0 , sizeof(inputs)); //初始化结构体, 0 = False
 
-    for(int i=0; i < input_datas.size(); i++ ){
-        inputs[i].index = i;
-        inputs[i].type = RKNN_TENSOR_UINT8;
-        inputs[i].size = m_inputAttr[i].size;
-        inputs[i].fmt = RKNN_TENSOR_NHWC;//模型内部都是使用的NCHW, 输入设置NHWC是为了方便图片输入
-        inputs[i].buf = input_datas[i];
-    }
-    // rknn_tensor_mem
-    ret = rknn_inputs_set(m_ctx, m_inputAttr.size(), inputs);
-    if (ret != RKNN_SUCC)
-    {
-        LOGI << "rknn_input_set fail! ret = " << ret;
-        // free(inputs);
-        return RET_CODE::ERR_NPU_IOSET_FAILED;
-    }
+    if(!m_isMap){
+        /*正常情况下的使用*/
+        // rknn_input* inputs = (rknn_input*)malloc(input_datas.size()*sizeof(rknn_input));
+        // memset(inputs, 0, input_datas.size()*sizeof(rknn_input));
+        //采用数组,自动free,且内部指针不需要负责释放
+        rknn_input inputs[input_datas.size()];
+        memset(inputs, 0 , sizeof(inputs)); //初始化结构体, 0 = False
 
+        for(int i=0; i < input_datas.size(); i++ ){
+            inputs[i].index = i;
+            inputs[i].type = RKNN_TENSOR_UINT8;
+            inputs[i].size = m_inputAttr[i].size;
+            inputs[i].fmt = RKNN_TENSOR_NHWC;//模型内部都是使用的NCHW, 输入设置NHWC是为了方便图片输入
+            inputs[i].buf = input_datas[i];
+        }
+        // rknn_tensor_mem
+        ret = rknn_inputs_set(m_ctx, m_inputAttr.size(), inputs);
+        if (ret != RKNN_SUCC)
+        {
+            LOGI << "rknn_input_set fail! ret = " << ret;
+            // free(inputs);
+            return RET_CODE::ERR_NPU_IOSET_FAILED;
+        }
+    } else {
+        return RET_CODE::ERR_NPU_SYNC_NOT_MATCH;
+    }
+    
     LOGI << "-> rknn_run";
     ret = rknn_run(m_ctx, nullptr);
     if (ret != RKNN_SUCC )
@@ -338,6 +345,7 @@ ucloud::RET_CODE BaseModel::general_infer_uint8_nhwc_to_float_mem(
     std::vector<unsigned char*> &input_datas, std::vector<float*> &output_datas)
 {
     LOGI << "-> BaseModel::general_infer_uint8_nhwc_to_float_mem";
+    if(m_isMap) return RET_CODE::ERR_NPU_SYNC_NOT_MATCH;
     // Set Input Data
     int ret = -1;
     assert( input_datas.size() == m_inputAttr.size() );
