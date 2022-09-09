@@ -8,7 +8,15 @@ using namespace std;
 void BaseModel::release(){
     LOGI << "-> BaseModel::release";
     if (m_ctx > 0){
+        if(m_isMap && !m_inputAttr.empty()){
+            rknn_inputs_unmap(m_ctx, m_inputAttr.size(), m_inMem);
+        }
         rknn_destroy(m_ctx);
+        if(m_isMap){
+            drm_buf_destroy(&drm_ctx, drm_fd, buf_fd, drm_handle, drm_buf, drm_actual_size);
+            drm_deinit(&drm_ctx, drm_fd);
+            RGA_deinit(&rga_ctx);
+        }
         m_ctx = 0;
     }
     m_inputShape.clear();
@@ -236,6 +244,22 @@ ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath){
     print_output_shape();
     print_input_attr();
     print_output_attr();
+
+    //是否采用map+drm的方式进行高效推理
+    if(m_isMap){
+        rknn_inputs_map(m_ctx, io_num.n_input , m_inMem );
+        printf("input virt_addr = %p, phys_addr = 0x%llx, fd = %d, size = %d\n",
+               m_inMem[0].logical_addr, m_inMem[0].physical_addr, m_inMem[0].fd,
+               m_inMem[0].size);
+        if (m_inMem[0].physical_addr == 0xffffffffffffffff){
+            printf("get unvalid input physical address, please extend in/out memory space\n");
+            return RET_CODE::ERR_NPU_MEM_ERR;
+        }
+        //DRM
+        memset(&rga_ctx, 0, sizeof(rga_context));
+        memset(&drm_ctx, 0, sizeof(drm_context));
+        RGA_init(&rga_ctx);
+    }
     LOGI << "<- BaseModel::base_init";
     return RET_CODE::SUCCESS;
 }
@@ -260,7 +284,7 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(std::vector<unsigned char*
     }
     // rknn_tensor_mem
     ret = rknn_inputs_set(m_ctx, m_inputAttr.size(), inputs);
-    if (ret < 0)
+    if (ret != RKNN_SUCC)
     {
         LOGI << "rknn_input_set fail! ret = " << ret;
         // free(inputs);
@@ -269,7 +293,7 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(std::vector<unsigned char*
 
     LOGI << "-> rknn_run";
     ret = rknn_run(m_ctx, nullptr);
-    if (ret < 0)
+    if (ret != RKNN_SUCC )
     {
         LOGI << "rknn_run fail! ret = " << ret;
         // free(inputs);
@@ -286,7 +310,7 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(std::vector<unsigned char*
         outputs[i].want_float = 1;
     }
     ret = rknn_outputs_get(m_ctx, m_outputAttr.size(), outputs, NULL);
-    if (ret < 0)
+    if (ret != RKNN_SUCC )
     {
         LOGI << "rknn_outputs_get fail! ret = " << ret;
         // free(outputs);
@@ -332,7 +356,7 @@ ucloud::RET_CODE BaseModel::general_infer_uint8_nhwc_to_float_mem(
     }
     // rknn_tensor_mem
     ret = rknn_inputs_set(m_ctx, m_inputAttr.size(), inputs);
-    if (ret < 0)
+    if (ret != RKNN_SUCC )
     {
         LOGI << "rknn_input_set fail! ret = " << ret;
         // free(inputs);
@@ -341,7 +365,7 @@ ucloud::RET_CODE BaseModel::general_infer_uint8_nhwc_to_float_mem(
 
     LOGI << "-> rknn_run";
     ret = rknn_run(m_ctx, nullptr);
-    if (ret < 0)
+    if (ret != RKNN_SUCC )
     {
         LOGI << "rknn_run fail! ret = " << ret;
         // free(inputs);
@@ -362,7 +386,7 @@ ucloud::RET_CODE BaseModel::general_infer_uint8_nhwc_to_float_mem(
         outputs[i].size = m_outputAttr[i].n_elems*sizeof(float);
     }
     ret = rknn_outputs_get(m_ctx, m_outputAttr.size(), outputs, NULL);
-    if (ret < 0)
+    if (ret != RKNN_SUCC )
     {
         LOGI << "rknn_outputs_get fail! ret = " << ret;
         // free(outputs);

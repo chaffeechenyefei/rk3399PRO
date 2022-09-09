@@ -5,6 +5,10 @@
 
 #include <vector>
 #include <glog/logging.h>
+
+#include "drm/drm_func.h"
+#include "drm/rga_func.h"
+
 #ifdef VERBOSE
 #define LOGI LOG(INFO)
 #else
@@ -52,6 +56,7 @@ public:
      * DESC: 输出数据的指针内存由外部预先开辟
      * PARAM:
      *  input_datas: NHWC, UINT8
+     *  output_datas: float, 指针空间由外部负责
      */
     virtual ucloud::RET_CODE general_infer_uint8_nhwc_to_float_mem( 
         std::vector<unsigned char*> &input_datas, 
@@ -77,11 +82,21 @@ protected:
 
 protected:
     rknn_context m_ctx = 0;
+    rknn_tensor_mem m_inMem[1];//mem信息反馈
+    bool m_isMap = false; //是否通过使用map加速, 需要配合drm
     std::vector<DATA_SHAPE> m_inputShape;
     std::vector<DATA_SHAPE> m_outputShape;//有可能存在C=0的情况, 需要具体分析, 是否可以在模型侧解决. 所有只有elem_num是可靠的计数方式
     std::vector<rknn_tensor_attr> m_inputAttr;
     std::vector<rknn_tensor_attr> m_outputAttr;
 
+private://DRM
+    void *drm_buf = nullptr;
+    int drm_fd = -1;
+    int buf_fd = -1; // converted from buffer handle
+    unsigned int drm_handle;
+    size_t drm_actual_size = 0;
+    rga_context rga_ctx;
+    drm_context drm_ctx;
 };
 
 #endif

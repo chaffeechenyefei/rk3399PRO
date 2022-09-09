@@ -48,6 +48,7 @@ typedef enum _RET_CODE{
     ERR_NPU_IOSET_FAILED        = 102, //NPU输入输出设置失败
     ERR_NPU_RUN_FAILED          = 103, //NPU运行推理失败
     ERR_NPU_GET_OUTPUT_FAILED   = 104, //NPU获取推理输出失败
+    ERR_NPU_MEM_ERR             = 105, //NPU地址分配失败
 }RET_CODE;
 
 //目标类别

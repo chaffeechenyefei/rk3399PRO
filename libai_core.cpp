@@ -55,7 +55,7 @@ Clocker::Clocker(){
 }
 
 Clocker::~Clocker(){
-    delete ctx;
+    delete reinterpret_cast<Timer*>(ctx);
 }
 
 void Clocker::start(){

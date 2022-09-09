@@ -73,11 +73,18 @@ set(GLOG_LIBRARIES ${THIRD_PARTY_LIBS}/glog/lib/libglog.a)
 list(APPEND COMMON_INCLUDE_FILES ${GLOG_INCLUDE_DIRS})
 list(APPEND COMMON_LIB_PATHS ${GLOG_LIBRARIES})
 
+# ========DRM-RGA========
+set(STB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/3rdparty)
+list(APPEND DRM_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/3rdparty/drm/include ${CMAKE_SOURCE_DIR}/3rdparty/drm/include/libdrm )
+set(RGA_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/3rdparty/rga/include )
+list(APPEND COMMON_INCLUDE_FILES ${STB_INCLUDE_DIRS} ${DRM_INCLUDE_DIRS} ${RGA_INCLUDE_DIRS} )
+
 message("common link libs: ${COMMON_LIB_PATHS}")
 
 # ========WORKSPACE_FILES========
 set(UTIL_DIRS "${PROJECT_SOURCE_DIR}/utils")
-file(GLOB_RECURSE UTIL_CPP "${UTIL_DIRS}/*.cpp")
+file(GLOB_RECURSE UTIL_CPP "${UTIL_DIRS}/*.cpp" "${UTIL_DIRS}/drm/*.c")
+
 
 # ========CMAKE_CXX_FLAGS========
 # -Wfatal-errors 出现错误的时候停止编译
