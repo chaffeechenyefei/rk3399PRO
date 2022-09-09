@@ -23,10 +23,16 @@ RET_CODE NaiveModel::init(std::map<ucloud::InitParam, std::string> &modelpath){
     // m_net->release();
     ret = m_net->base_init(modelpath[InitParam::BASE_MODEL]);
     if(ret!=RET_CODE::SUCCESS) return ret;
-
+    //SISO的体现, 都只取index0的数据
+    assert(m_InpNum == m_net->get_input_shape().size());
+    assert(m_OtpNum == m_net->get_output_shape().size());
     m_InpSp = m_net->get_input_shape()[0];
     m_OutSp = m_net->get_output_shape()[0];
     m_OutEleNum = m_net->get_output_elem_num()[0];
+    //初始化内存池, 供内存复用的使用
+    int mem_pool_nodes = 1;
+    size_t mem_pool_size = reinterpret_cast<size_t>(m_OutEleNum*sizeof(float));
+    m_OtpMemPool.init( mem_pool_size ,mem_pool_nodes);
 
     LOGI << "<- NaiveModel::init";
     return ret;
@@ -42,7 +48,7 @@ RET_CODE NaiveModel::run(TvaiImage& tvimage, VecObjBBox &bboxes){
 
     ret = preprocess(tvimage, input_datas);
     
-    ret = m_net->general_infer(input_datas, output_datas);
+    ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
     if(ret!=RET_CODE::SUCCESS) return ret;
 
     ret = postprocess(output_datas);
@@ -55,6 +61,38 @@ RET_CODE NaiveModel::run(TvaiImage& tvimage, VecObjBBox &bboxes){
         free(t);
     }
 
+    LOGI << "<- NaiveModel::run";
+    return RET_CODE::SUCCESS;
+}
+
+ucloud::RET_CODE NaiveModel::run_mem(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes){
+    LOGI << "-> NaiveModel::run";
+    RET_CODE ret = RET_CODE::SUCCESS;
+
+    if(tvimage.format != TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+    std::vector<unsigned char*> input_datas;
+    std::vector<float*> output_datas;//不用释放
+    std::vector<MemNode*> used_MemNodes;//需要释放,还给mem pool
+
+    for(int i = 0; i < m_OtpNum; i++){
+        MemNode* tmp = m_OtpMemPool.malloc();
+        output_datas.push_back( (float*)(tmp->ptr) );
+        used_MemNodes.push_back(tmp);
+    }
+    ret = preprocess(tvimage, input_datas);
+    
+    ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+    ret = postprocess(output_datas);
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+    for(auto &&t: used_MemNodes){
+        m_OtpMemPool.free(t);
+    }
+    for(auto &&t: input_datas){
+        free(t);
+    }
     LOGI << "<- NaiveModel::run";
     return RET_CODE::SUCCESS;
 }
@@ -87,3 +125,4 @@ ucloud::RET_CODE NaiveModel::postprocess(std::vector<float*> &output_datas){
     LOGI << "<- NaiveModel::postprocess";
     return RET_CODE::SUCCESS;
 }
+

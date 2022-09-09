@@ -240,19 +240,22 @@ ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath){
     return RET_CODE::SUCCESS;
 }
 
-RET_CODE BaseModel::general_infer(std::vector<unsigned char*> input_datas, std::vector<float*> &output_datas){
-    LOGI << "-> BaseModel::general_infer";
+RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(std::vector<unsigned char*> &input_datas, std::vector<float*> &output_datas){
+    LOGI << "-> BaseModel::general_infer_uint8_nhwc_to_float";
     // Set Input Data
     int ret = -1;
     assert( input_datas.size() == m_inputAttr.size() );
-    rknn_input* inputs = (rknn_input*)malloc(input_datas.size()*sizeof(rknn_input));
-    memset(inputs, 0, input_datas.size()*sizeof(rknn_input));
+    // rknn_input* inputs = (rknn_input*)malloc(input_datas.size()*sizeof(rknn_input));
+    // memset(inputs, 0, input_datas.size()*sizeof(rknn_input));
+    //采用数组,自动free,且内部指针不需要负责释放
+    rknn_input inputs[input_datas.size()];
+    memset(inputs, 0 , sizeof(inputs)); //初始化结构体, 0 = False
 
     for(int i=0; i < input_datas.size(); i++ ){
         inputs[i].index = i;
         inputs[i].type = RKNN_TENSOR_UINT8;
         inputs[i].size = m_inputAttr[i].size;
-        inputs[i].fmt = RKNN_TENSOR_NHWC;
+        inputs[i].fmt = RKNN_TENSOR_NHWC;//模型内部都是使用的NCHW, 输入设置NHWC是为了方便图片输入
         inputs[i].buf = input_datas[i];
     }
     // rknn_tensor_mem
@@ -260,7 +263,7 @@ RET_CODE BaseModel::general_infer(std::vector<unsigned char*> input_datas, std::
     if (ret < 0)
     {
         LOGI << "rknn_input_set fail! ret = " << ret;
-        free(inputs);
+        // free(inputs);
         return RET_CODE::ERR_NPU_IOSET_FAILED;
     }
 
@@ -269,14 +272,16 @@ RET_CODE BaseModel::general_infer(std::vector<unsigned char*> input_datas, std::
     if (ret < 0)
     {
         LOGI << "rknn_run fail! ret = " << ret;
-        free(inputs);
+        // free(inputs);
         return RET_CODE::ERR_NPU_RUN_FAILED;
     }
-    if(inputs!=nullptr) free(inputs);
+    // if(inputs!=nullptr) free(inputs);
 
     // Get Output 有is_prealloc参数,可以通过内存池减少开辟, 通过memset 0, 默认关闭该功能, 即buf ptr的使用权在rknn系统, 需要copy data
-    rknn_output* outputs = (rknn_output*)malloc(m_outputAttr.size()*sizeof(rknn_output));
-    memset(outputs, 0, m_outputAttr.size()*sizeof(rknn_output));
+    // rknn_output* outputs = (rknn_output*)malloc(m_outputAttr.size()*sizeof(rknn_output));
+    // memset(outputs, 0, m_outputAttr.size()*sizeof(rknn_output));
+    rknn_output outputs[m_outputAttr.size()];
+    memset(outputs, 0 , sizeof(outputs));//初始化结构体, 0 = False
     for(int i = 0; i < m_outputAttr.size(); i++ ){
         outputs[i].want_float = 1;
     }
@@ -284,7 +289,7 @@ RET_CODE BaseModel::general_infer(std::vector<unsigned char*> input_datas, std::
     if (ret < 0)
     {
         LOGI << "rknn_outputs_get fail! ret = " << ret;
-        free(outputs);
+        // free(outputs);
         return RET_CODE::ERR_NPU_GET_OUTPUT_FAILED;
     }
 
@@ -299,7 +304,83 @@ RET_CODE BaseModel::general_infer(std::vector<unsigned char*> input_datas, std::
 
     // Release
     rknn_outputs_release(m_ctx, m_outputAttr.size(), outputs);
-    if(outputs!=nullptr) free(outputs);
-    LOGI << "<- BaseModel::general_infer";
+    // if(outputs!=nullptr) free(outputs);
+    LOGI << "<- BaseModel::general_infer_uint8_nhwc_to_float";
+    return RET_CODE::SUCCESS;
+}
+
+
+ucloud::RET_CODE BaseModel::general_infer_uint8_nhwc_to_float_mem( 
+    std::vector<unsigned char*> &input_datas, std::vector<float*> &output_datas)
+{
+    LOGI << "-> BaseModel::general_infer_uint8_nhwc_to_float_mem";
+    // Set Input Data
+    int ret = -1;
+    assert( input_datas.size() == m_inputAttr.size() );
+    // rknn_input* inputs = (rknn_input*)malloc(input_datas.size()*sizeof(rknn_input));
+    // memset(inputs, 0, input_datas.size()*sizeof(rknn_input));
+    //采用数组,自动free,且内部指针不需要负责释放
+    rknn_input inputs[input_datas.size()];
+    memset(inputs, 0 , sizeof(inputs)); //初始化结构体, 0 = False
+
+    for(int i=0; i < input_datas.size(); i++ ){
+        inputs[i].index = i;
+        inputs[i].type = RKNN_TENSOR_UINT8;
+        inputs[i].size = m_inputAttr[i].size;
+        inputs[i].fmt = RKNN_TENSOR_NHWC;//模型内部都是使用的NCHW, 输入设置NHWC是为了方便图片输入
+        inputs[i].buf = input_datas[i];
+    }
+    // rknn_tensor_mem
+    ret = rknn_inputs_set(m_ctx, m_inputAttr.size(), inputs);
+    if (ret < 0)
+    {
+        LOGI << "rknn_input_set fail! ret = " << ret;
+        // free(inputs);
+        return RET_CODE::ERR_NPU_IOSET_FAILED;
+    }
+
+    LOGI << "-> rknn_run";
+    ret = rknn_run(m_ctx, nullptr);
+    if (ret < 0)
+    {
+        LOGI << "rknn_run fail! ret = " << ret;
+        // free(inputs);
+        return RET_CODE::ERR_NPU_RUN_FAILED;
+    }
+    // if(inputs!=nullptr) free(inputs);
+
+    // Get Output 有is_prealloc参数,可以通过内存池减少开辟, 通过memset 0, 默认关闭该功能, 即buf ptr的使用权在rknn系统, 需要copy data
+    // rknn_output* outputs = (rknn_output*)malloc(m_outputAttr.size()*sizeof(rknn_output));
+    // memset(outputs, 0, m_outputAttr.size()*sizeof(rknn_output));
+    rknn_output outputs[m_outputAttr.size()];
+    // memset(outputs, 0 , sizeof(outputs));//初始化结构体, 0 = False
+    for(int i = 0; i < m_outputAttr.size(); i++ ){
+        outputs[i].want_float = 1;
+        outputs[i].is_prealloc = true;
+        outputs[i].index = i;
+        outputs[i].buf = reinterpret_cast<void*>(output_datas[i]);
+        outputs[i].size = m_outputAttr[i].n_elems*sizeof(float);
+    }
+    ret = rknn_outputs_get(m_ctx, m_outputAttr.size(), outputs, NULL);
+    if (ret < 0)
+    {
+        LOGI << "rknn_outputs_get fail! ret = " << ret;
+        // free(outputs);
+        return RET_CODE::ERR_NPU_GET_OUTPUT_FAILED;
+    }
+
+    // // Trans output result to output_datas
+    // for(int i=0; i < m_outputAttr.size(); i++){
+    //     // int hwc = m_outputShape[i].h* m_outputShape[i].w * m_outputShape[i].c;
+    //     // printf("outputs size = %d, hwc = %d \n", outputs[i].size ,hwc);//assert 4*hwc == output size
+    //     float* tmp = (float*)malloc(outputs[i].size);//移交出去的指针
+    //     memcpy(tmp, outputs[i].buf, outputs[i].size);
+    //     output_datas.push_back(tmp);
+    // }
+
+    // Release
+    rknn_outputs_release(m_ctx, m_outputAttr.size(), outputs);
+    // if(outputs!=nullptr) free(outputs);
+    LOGI << "<- BaseModel::general_infer_uint8_nhwc_to_float_mem";
     return RET_CODE::SUCCESS;
 }
