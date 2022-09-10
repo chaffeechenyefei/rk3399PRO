@@ -9,6 +9,8 @@
 #define LOGI 0 && LOG(INFO)
 #endif
 
+using namespace cv;
+
 MemPool::~MemPool(){
     MemNode* nodePtr=nullptr;
     while(freeNodeHeader){
@@ -306,6 +308,60 @@ unsigned char* BGR2YUV_nv21_with_stride(cv::Mat src, int &yuvW, int &yuvH, int &
 }
 
 
+
+Mat resize_no_aspect(cv::Mat &Input, cv::Size OupSz, float &sX, float &sY){
+    int OupW = OupSz.width; int OupH = OupSz.height;
+    int inpW = Input.cols; int inpH = Input.rows;
+    sY = (1.0*OupH)/inpH;
+    sX = (1.0*OupW)/inpW;
+    Mat Output;
+    resize(Input, Output, Size(OupW, OupH));
+    // if(inpRGB){
+    //     if(oupRGB)
+    //         cvtColor(Output,Output, COLOR_RGB2RGBA);
+    //     else
+    //         cvtColor(Output,Output, COLOR_RGB2BGRA);
+    // } else{
+    //     if(oupRGB)
+    //         cvtColor(Output,Output, COLOR_BGR2RGBA);
+    //     else
+    //         cvtColor(Output,Output, COLOR_BGR2BGRA);
+    // }
+    return Output;
+}
+
+Mat resize(cv::Mat &Input, Size OupSz, bool pad_both_side, float &aspect_ratio){
+    int OupW = OupSz.width; int OupH = OupSz.height;
+    int inpW = Input.cols; int inpH = Input.rows;
+    float aspect_ratio_H = (1.0*OupH)/inpH;
+    float aspect_ratio_W = (1.0*OupW)/inpW;
+    aspect_ratio = MIN(aspect_ratio_H, aspect_ratio_W);
+
+    int _h = MIN(int(aspect_ratio*inpH), OupH);
+    int _w = MIN(int(aspect_ratio*inpW), OupW);
+
+    Mat Output = Mat::zeros(OupSz, CV_8UC3);
+    Mat resizedInput;
+    resize(Input, resizedInput, Size(_w, _h));
+    int offset_x=0, offset_y=0;
+    if(pad_both_side){
+        offset_x = (OupW - _w)/2;
+        offset_y = (OupH - _h)/2;
+    }
+    resizedInput.copyTo(Output(Rect(offset_x,offset_y, _w,_h)));
+    // if(inpRGB){
+    //     if(oupRGB)
+    //         cvtColor(Output,Output, COLOR_RGB2RGBA);
+    //     else
+    //         cvtColor(Output,Output, COLOR_RGB2BGRA);
+    // } else{
+    //     if(oupRGB)
+    //         cvtColor(Output,Output, COLOR_BGR2RGBA);
+    //     else
+    //         cvtColor(Output,Output, COLOR_BGR2BGRA);
+    // }
+    return Output;
+}
 /////////////////////////////////////////////////////////////////////
 // Class TransformOp 
 /////////////////////////////////////////////////////////////////////

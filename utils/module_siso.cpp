@@ -63,7 +63,10 @@ RET_CODE NaiveModel::run(TvaiImage& tvimage, VecObjBBox &bboxes){
 #ifdef TIMING    
     m_Tk.end("general_infer_uint8_nhwc_to_float");
 #endif    
-    if(ret!=RET_CODE::SUCCESS) return ret;
+    if(ret!=RET_CODE::SUCCESS) {
+        for(auto &&t: input_datas) free(t);
+        return ret;
+    }
 
 #ifdef TIMING    
     m_Tk.start();
@@ -72,7 +75,11 @@ RET_CODE NaiveModel::run(TvaiImage& tvimage, VecObjBBox &bboxes){
 #ifdef TIMING    
     m_Tk.end("postprocess");
 #endif    
-    if(ret!=RET_CODE::SUCCESS) return ret;
+    if(ret!=RET_CODE::SUCCESS) {
+        for(auto &&t: input_datas) free(t);
+        for(auto &&t: output_datas) free(t);
+        return ret;
+    }
 
     for(auto &&t: output_datas){
         free(t);

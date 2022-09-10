@@ -1,4 +1,5 @@
 #include "module_base.hpp"
+#include "basic.hpp"
 #include <assert.h>
 
 using namespace ucloud;
@@ -492,4 +493,86 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(
     // if(outputs!=nullptr) free(outputs);
     LOGI << "<- BaseModel::general_infer_uint8_nhwc_to_float[drm]";
     return RET_CODE::SUCCESS;
+}
+
+//static成员变量类外初始化
+bool PreProcessModel::m_keep_aspect_ratio = false;
+bool PreProcessModel::m_pad_both_side = false;
+DATA_SHAPE PreProcessModel::m_model_input_shape = {0,0,0,0};
+MODEL_INPUT_FORMAT PreProcessModel::m_model_input_format = MODEL_INPUT_FORMAT::RGB;
+
+void PreProcessModel::set(DATA_SHAPE inputSp, MODEL_INPUT_FORMAT inputFmt,bool keep_aspect_ratio, bool pad_both_side){
+    m_keep_aspect_ratio = keep_aspect_ratio;
+    m_pad_both_side = pad_both_side;
+    m_model_input_format = inputFmt;
+    m_model_input_shape = inputSp;
+}
+
+RET_CODE PreProcessModel::preprocess(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi,cv::Mat &dst,
+        float& aspect_ratio_x, float& aspect_ratio_y)
+{
+    return preprocess(tvimage, roi, dst, 
+            m_model_input_shape, m_model_input_format, aspect_ratio_x, aspect_ratio_y,
+            m_keep_aspect_ratio, m_pad_both_side);
+}
+
+RET_CODE PreProcessModel::preprocess(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi,cv::Mat &dst, 
+        DATA_SHAPE dstSp, MODEL_INPUT_FORMAT dstFmt, float& aspect_ratio_x, float& aspect_ratio_y, 
+        bool keep_aspect_ratio, bool pad_both_side)
+{
+    RET_CODE ret = RET_CODE::SUCCESS;
+    cv::Mat src, src_rgb, src_roi, tmp, resized_roi;
+    cv::Rect _roi = {roi.x, roi.y, roi.width, roi.height};
+    /*--------------tvimage to src------------------*/
+    src = cv::Mat(cv::Size(tvimage.width,tvimage.height),CV_8UC3, tvimage.pData);
+    /*--------------src to src_rgb------------------*/
+    switch (tvimage.format)
+    {
+    case TVAI_IMAGE_FORMAT_RGB:
+        src_rgb = src;
+        break;
+    case TVAI_IMAGE_FORMAT_BGR:
+        cv::cvtColor(src, src_rgb, cv::COLOR_BGR2RGB);
+        break;
+    case TVAI_IMAGE_FORMAT_NV12:
+        cv::cvtColor(src, src_rgb, cv::COLOR_YUV2RGB_NV12);
+        break;
+    case TVAI_IMAGE_FORMAT_NV21:
+        cv::cvtColor(src, src_rgb, cv::COLOR_YUV2RGB_NV21);
+        break;                            
+    default:
+        ret = RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+        printf("tvimage.format enum[%d] is not supported\n", tvimage.format);
+        break;
+    }
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+    /*--------------src_rgb to src_roi------------------*/
+    src_roi = src_rgb(_roi);
+
+    /*--------------src_rgb to resized_roi------------------*/
+    if(keep_aspect_ratio){
+        resized_roi = resize(src_roi, cv::Size(dstSp.w,dstSp.h), pad_both_side, aspect_ratio_x);
+        aspect_ratio_y = aspect_ratio_x;
+    } else {
+        resized_roi = resize_no_aspect(src_roi, cv::Size(dstSp.w,dstSp.h), aspect_ratio_x, aspect_ratio_y);
+    }
+
+    /*--------------resized_roi(rgb) to dst------------------*/
+    switch (dstFmt)
+    {
+    case MODEL_INPUT_FORMAT::RGB :
+        dst = resized_roi;
+        break;
+    case MODEL_INPUT_FORMAT::BGR :
+        cv::cvtColor(resized_roi, dst, cv::COLOR_RGB2BGR);
+        break;
+    default:
+        ret = RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+        printf("model input format enum[%d] is not supported\n", dstFmt);
+        break;
+    }
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+    return ret;
 }

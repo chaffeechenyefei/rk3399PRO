@@ -24,17 +24,26 @@ typedef struct _DATA_SHAPE{
 } DATA_SHAPE;
 
 enum class MODEL_INPUT_FORMAT{
+    //MLU
     BGRA = 0,
     RGBA = 1,
     ABGR = 2,
     ARGB = 3,
+    //RKNN
+    BGR,
+    RGB,
 };
 
+//MLU
 enum class MODEL_OUTPUT_ORDER{
     NCHW = 0,
     NHWC = 1,
 };
 
+/**
+ * BaseModel
+ * DESC: 主要负责各种模型推理的方式
+ */
 class BaseModel: public ucloud::AlgoAPI{
 public:
     BaseModel(){};
@@ -115,5 +124,29 @@ private://DRM drm模式需要mutex保护
     drm_context drm_ctx;
     DATA_SHAPE drm_Shape={0,0,0,0};//当前Shape
 };
+
+
+/**
+ * PreProcessModel
+ * DESC: 主要负责各种输入转换的方式
+ */
+class PreProcessModel{
+public:
+    PreProcessModel(){}
+    static void set(DATA_SHAPE inputSp, MODEL_INPUT_FORMAT inputFmt,bool keep_aspect_ratio, bool pad_both_side);
+    ~PreProcessModel(){}
+    static ucloud::RET_CODE preprocess(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi,cv::Mat &dst, 
+        DATA_SHAPE dstSp, MODEL_INPUT_FORMAT dstFmt, float& aspect_ratio_x, float& aspect_ratio_y,
+        bool keep_aspect_ratio=false, bool pad_both_side = false);
+    static ucloud::RET_CODE preprocess(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi,cv::Mat &dst,
+        float& aspect_ratio_x, float& aspect_ratio_y);
+
+private:
+    static bool m_keep_aspect_ratio;
+    static bool m_pad_both_side;
+    static DATA_SHAPE m_model_input_shape;
+    static MODEL_INPUT_FORMAT m_model_input_format;
+};
+
 
 #endif

@@ -99,6 +99,10 @@ unsigned char* BGR2YUV_nv21_with_stride(cv::Mat src, int &yuvW, int &yuvH, int &
 
 void YUV2BGR_n21(unsigned char* nv21bytes,int width, int height, int stride, cv::Mat &dst );
 
+
+cv::Mat resize(cv::Mat &Input, cv::Size OupSz,bool pad_both_side, float &aspect_ratio);
+cv::Mat resize_no_aspect(cv::Mat &Input, cv::Size OupSz, float &sX, float &sY);
+
 class TransformOp{
 public:
     TransformOp();

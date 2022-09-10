@@ -9,6 +9,7 @@ using namespace ucloud;
 using std::cout;
 using std::endl;
 
+/*--------------AICoreFactory API------------------*/
 AICoreFactory::AICoreFactory(){LOGI << "AICoreFactory Constructor";}
 AICoreFactory::~AICoreFactory(){}
 
@@ -26,7 +27,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     return apiHandle;
 }
 
-
+/*--------------Read/Write API------------------*/
 unsigned char* ucloud::readImg_to_RGB(std::string filepath, int &width, int &height){
     Mat im = imread(filepath);
     unsigned char* dst_ptr = nullptr;
@@ -49,7 +50,7 @@ unsigned char* ucloud::readImg_to_NV21(std::string filepath, int &width, int &he
     return dst_ptr;
 }
 
-
+/*--------------Clocker------------------*/
 Clocker::Clocker(){
     ctx = new Timer();
 }
