@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <glog/logging.h>
+#include <opencv2/opencv.hpp>
 
 #include "drm/drm_func.h"
 #include "drm/rga_func.h"
@@ -40,20 +41,22 @@ public:
     /**
      * 读取模型权重文件, 并设置模型输入输出格式
      * */
-    ucloud::RET_CODE base_init(const std::string &modelpath);
+    ucloud::RET_CODE base_init(const std::string &modelpath, bool useDRM = false);
     virtual ~BaseModel();
+    virtual void release();
     /**
      * general_infer_uint8_nhwc_to_float [tested]
-     * DESC: 输出数据的指针内存由函数内部malloc, 需要使用完毕后在外部free
+     * DESC: 输出数据的指针内存由函数内部malloc, 需要使用完毕后在外部free; MIMO
      * PARAM:
      *  input_datas: NHWC, UINT8
+     *  input_shapes: DATA_SHAPE, 只有m_isMap模式下有效, 图像resize通过drm实现, 需要获取输入数据的形状
      */
     virtual ucloud::RET_CODE general_infer_uint8_nhwc_to_float( 
-        std::vector<unsigned char*> &input_datas, 
+        std::vector<unsigned char*> &input_datas,
         std::vector<float*> &output_datas);//设置virtual, 兼容其他方式的rknn处理
     /**
      * general_infer_uint8_nhwc_to_float_mem [tested]
-     * DESC: 输出数据的指针内存由外部预先开辟
+     * DESC: 输出数据的指针内存由外部预先开辟; MIMO
      * PARAM:
      *  input_datas: NHWC, UINT8
      *  output_datas: float, 指针空间由外部负责
@@ -61,7 +64,20 @@ public:
     virtual ucloud::RET_CODE general_infer_uint8_nhwc_to_float_mem( 
         std::vector<unsigned char*> &input_datas, 
         std::vector<float*> &output_datas);//设置virtual, 兼容其他方式的rknn处理
-    virtual void release();
+
+    /**
+     * general_infer_uint8_nhwc_to_float []
+     * DESC: 输出数据的指针内存由函数内部malloc, 需要使用完毕后在外部free; SIMO
+     * PARAM:
+     *  input_img: NHWC, UINT8
+     *  input_shape: DATA_SHAPE, 只有m_isMap模式下有效, 图像resize通过drm实现, 需要获取输入数据的形状
+     */
+    virtual ucloud::RET_CODE general_infer_uint8_nhwc_to_float( 
+        cv::Mat &input_img,
+        std::vector<float*> &output_datas);//设置virtual, 兼容其他方式的rknn处理    
+
+
+    
 
     std::vector<DATA_SHAPE> get_output_shape();
     DATA_SHAPE get_output_shape(int index);
@@ -89,7 +105,7 @@ protected:
     std::vector<rknn_tensor_attr> m_inputAttr;
     std::vector<rknn_tensor_attr> m_outputAttr;
 
-private://DRM
+private://DRM drm模式需要mutex保护
     void *drm_buf = nullptr;
     int drm_fd = -1;
     int buf_fd = -1; // converted from buffer handle
@@ -97,6 +113,7 @@ private://DRM
     size_t drm_actual_size = 0;
     rga_context rga_ctx;
     drm_context drm_ctx;
+    DATA_SHAPE drm_Shape={0,0,0,0};//当前Shape
 };
 
 #endif

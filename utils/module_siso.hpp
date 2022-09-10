@@ -25,6 +25,11 @@ public:
      * DESC: 内部使用general_infer_uint8_nhwc_to_float_mem 减少内存开辟和复制
      */
     virtual ucloud::RET_CODE run_mem(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes);
+    /**
+     * run_drm
+     * DESC: 通过drm进行resize, 速度会快一些, 但是本次提供的so不支持rknn_inputs_map方式... [untested]
+     */    
+    virtual ucloud::RET_CODE run_drm(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes);
     virtual ucloud::RET_CODE preprocess(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas);
     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas);
 

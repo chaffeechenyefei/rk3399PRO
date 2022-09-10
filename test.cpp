@@ -75,7 +75,7 @@ int main(int argc, char **argv)
         avg_time += tm_cost;
         if(ret!=RET_CODE::SUCCESS){
             if(imgBuf) free(imgBuf);
-            printf("err in ptrHandle->run(tvInp, bboxes) \n");
+            printf("err [%d] in ptrHandle->run(tvInp, bboxes) \n", ret);
             return -2;
         }
     }

@@ -21,7 +21,8 @@ RET_CODE NaiveModel::init(std::map<ucloud::InitParam, std::string> &modelpath){
         return RET_CODE::ERR_INIT_PARAM_FAILED;
     }
     // m_net->release();
-    ret = m_net->base_init(modelpath[InitParam::BASE_MODEL]);
+    bool useDRM = false;
+    ret = m_net->base_init(modelpath[InitParam::BASE_MODEL], useDRM);
     if(ret!=RET_CODE::SUCCESS) return ret;
     //SISO的体现, 都只取index0的数据
     assert(m_InpNum == m_net->get_input_shape().size());
@@ -39,7 +40,7 @@ RET_CODE NaiveModel::init(std::map<ucloud::InitParam, std::string> &modelpath){
 }
 
 RET_CODE NaiveModel::run(TvaiImage& tvimage, VecObjBBox &bboxes){
-    // return run_mem(tvimage, bboxes);
+    // return run_drm(tvimage, bboxes);
     LOGI << "-> NaiveModel::run";
     RET_CODE ret = RET_CODE::SUCCESS;
 
@@ -131,6 +132,42 @@ ucloud::RET_CODE NaiveModel::run_mem(ucloud::TvaiImage& tvimage, ucloud::VecObjB
         free(t);
     }
     LOGI << "<- NaiveModel::run_mem";
+    return RET_CODE::SUCCESS;
+}
+
+RET_CODE NaiveModel::run_drm(TvaiImage& tvimage, VecObjBBox &bboxes){
+    // return run_mem(tvimage, bboxes);
+    LOGI << "-> NaiveModel::run_drm";
+    RET_CODE ret = RET_CODE::SUCCESS;
+
+    if(tvimage.format != TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+    // std::vector<unsigned char*> input_datas;
+    std::vector<float*> output_datas;
+
+    Mat im(tvimage.height,tvimage.width,CV_8UC3, tvimage.pData); 
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+    ret = m_net->general_infer_uint8_nhwc_to_float(im, output_datas);
+#ifdef TIMING    
+    m_Tk.end("general_infer_uint8_nhwc_to_float");
+#endif    
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+    ret = postprocess(output_datas);
+#ifdef TIMING    
+    m_Tk.end("postprocess");
+#endif    
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+    for(auto &&t: output_datas){
+        free(t);
+    }
+    LOGI << "<- NaiveModel::run_drm";
     return RET_CODE::SUCCESS;
 }
 

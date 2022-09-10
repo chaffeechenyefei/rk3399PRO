@@ -11,9 +11,13 @@ void BaseModel::release(){
         if(m_isMap && !m_inputAttr.empty()){
             rknn_inputs_unmap(m_ctx, m_inputAttr.size(), m_inMem);
         }
-        rknn_destroy(m_ctx);
+        rknn_destroy(m_ctx); m_ctx = 0;
         if(m_isMap){
-            drm_buf_destroy(&drm_ctx, drm_fd, buf_fd, drm_handle, drm_buf, drm_actual_size);
+            // drm_buf_destroy(&drm_ctx, drm_fd, buf_fd, drm_handle, drm_buf, drm_actual_size);
+            if(drm_buf) {
+                drm_buf_destroy(&drm_ctx, drm_fd, buf_fd, drm_handle, drm_buf, drm_actual_size);
+                drm_buf = nullptr;
+            }
             drm_deinit(&drm_ctx, drm_fd);
             RGA_deinit(&rga_ctx);
         }
@@ -184,7 +188,7 @@ unsigned char * BaseModel::load_model(const char *filename, int *model_size)
     return model;
 }
 
-ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath){
+ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath, bool useDRM){
     LOGI << "-> BaseModel::base_init";
     release();
     unsigned char *model = nullptr;
@@ -246,6 +250,7 @@ ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath){
     print_output_attr();
 
     //是否采用map+drm的方式进行高效推理
+    m_isMap = useDRM;
     if(m_isMap){
         rknn_inputs_map(m_ctx, io_num.n_input , m_inMem );
         printf("input virt_addr = %p, phys_addr = 0x%llx, fd = %d, size = %d\n",
@@ -259,12 +264,16 @@ ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath){
         memset(&rga_ctx, 0, sizeof(rga_context));
         memset(&drm_ctx, 0, sizeof(drm_context));
         RGA_init(&rga_ctx);
+        drm_fd = drm_init(&drm_ctx);
     }
     LOGI << "<- BaseModel::base_init";
     return RET_CODE::SUCCESS;
 }
 
-RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(std::vector<unsigned char*> &input_datas, std::vector<float*> &output_datas){
+RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(
+    std::vector<unsigned char*> &input_datas, 
+    std::vector<float*> &output_datas)
+{
     LOGI << "-> BaseModel::general_infer_uint8_nhwc_to_float";
     if(m_isMap) return RET_CODE::ERR_NPU_SYNC_NOT_MATCH;
     // Set Input Data
@@ -414,5 +423,73 @@ ucloud::RET_CODE BaseModel::general_infer_uint8_nhwc_to_float_mem(
     rknn_outputs_release(m_ctx, m_outputAttr.size(), outputs);
     // if(outputs!=nullptr) free(outputs);
     LOGI << "<- BaseModel::general_infer_uint8_nhwc_to_float_mem";
+    return RET_CODE::SUCCESS;
+}
+
+//SIMO
+RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(
+    cv::Mat &input_img,
+    std::vector<float*> &output_datas)
+{
+    LOGI << "-> BaseModel::general_infer_uint8_nhwc_to_float[drm]";
+    if(!m_isMap) return RET_CODE::ERR_NPU_SYNC_NOT_MATCH;
+    // Set Input Data
+    int ret = -1;
+    assert( 1 == m_inputAttr.size() );
+    // size_t actual_size = 0;
+    if(drm_buf==nullptr){
+        drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, input_img.cols, input_img.rows, input_img.channels() * 8,
+                            &buf_fd, &drm_handle, &drm_actual_size);
+    } else if(drm_buf!=nullptr && (drm_Shape.w!=input_img.cols || drm_Shape.h != input_img.rows ) ){
+        //第一次初始化时跳过, 之后如果size不对则需要重新开辟空间
+        drm_buf_destroy(&drm_ctx, drm_fd, buf_fd, drm_handle, drm_buf, drm_actual_size);
+        drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, input_img.cols, input_img.rows, input_img.channels() * 8,
+                            &buf_fd, &drm_handle, &drm_actual_size);
+    }
+    
+    memcpy(drm_buf, input_img.data , input_img.total() * input_img.channels());
+    
+    img_resize_fast(&rga_ctx, buf_fd, input_img.cols, input_img.rows, m_inMem[0].physical_addr, m_inputShape[0].w, m_inputShape[0].h);
+    rknn_inputs_sync(m_ctx, 1, m_inMem);
+
+    LOGI << "-> rknn_run";
+    ret = rknn_run(m_ctx, nullptr);
+    if (ret != RKNN_SUCC )
+    {
+        LOGI << "rknn_run fail! ret = " << ret;
+        // free(inputs);
+        return RET_CODE::ERR_NPU_RUN_FAILED;
+    }
+    // if(inputs!=nullptr) free(inputs);
+
+    // Get Output 有is_prealloc参数,可以通过内存池减少开辟, 通过memset 0, 默认关闭该功能, 即buf ptr的使用权在rknn系统, 需要copy data
+    // rknn_output* outputs = (rknn_output*)malloc(m_outputAttr.size()*sizeof(rknn_output));
+    // memset(outputs, 0, m_outputAttr.size()*sizeof(rknn_output));
+    rknn_output outputs[m_outputAttr.size()];
+    memset(outputs, 0 , sizeof(outputs));//初始化结构体, 0 = False
+    for(int i = 0; i < m_outputAttr.size(); i++ ){
+        outputs[i].want_float = 1;
+    }
+    ret = rknn_outputs_get(m_ctx, m_outputAttr.size(), outputs, NULL);
+    if (ret != RKNN_SUCC )
+    {
+        LOGI << "rknn_outputs_get fail! ret = " << ret;
+        // free(outputs);
+        return RET_CODE::ERR_NPU_GET_OUTPUT_FAILED;
+    }
+
+    // Trans output result to output_datas
+    for(int i=0; i < m_outputAttr.size(); i++){
+        // int hwc = m_outputShape[i].h* m_outputShape[i].w * m_outputShape[i].c;
+        // printf("outputs size = %d, hwc = %d \n", outputs[i].size ,hwc);//assert 4*hwc == output size
+        float* tmp = (float*)malloc(outputs[i].size);//移交出去的指针
+        memcpy(tmp, outputs[i].buf, outputs[i].size);
+        output_datas.push_back(tmp);
+    }
+
+    // Release
+    rknn_outputs_release(m_ctx, m_outputAttr.size(), outputs);
+    // if(outputs!=nullptr) free(outputs);
+    LOGI << "<- BaseModel::general_infer_uint8_nhwc_to_float[drm]";
     return RET_CODE::SUCCESS;
 }
