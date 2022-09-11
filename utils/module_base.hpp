@@ -130,22 +130,42 @@ private://DRM drm模式需要mutex保护
  * PreProcessModel
  * DESC: 主要负责各种输入转换的方式
  */
+typedef struct _PRE_PARAM{
+    bool keep_aspect_ratio;
+    bool pad_both_side;
+    DATA_SHAPE model_input_shape;
+    MODEL_INPUT_FORMAT model_input_format;
+} PRE_PARAM;
 class PreProcessModel{
 public:
     PreProcessModel(){}
-    static void set(DATA_SHAPE inputSp, MODEL_INPUT_FORMAT inputFmt,bool keep_aspect_ratio, bool pad_both_side);
+    // static void set(DATA_SHAPE inputSp, MODEL_INPUT_FORMAT inputFmt,bool keep_aspect_ratio, bool pad_both_side);
     ~PreProcessModel(){}
+
+    /*- image with roi and basic atomic param -----------------------------------*/
     static ucloud::RET_CODE preprocess(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi,cv::Mat &dst, 
         DATA_SHAPE dstSp, MODEL_INPUT_FORMAT dstFmt, float& aspect_ratio_x, float& aspect_ratio_y,
         bool keep_aspect_ratio=false, bool pad_both_side = false);
-    static ucloud::RET_CODE preprocess(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi,cv::Mat &dst,
+    /*- image with roi and PRE_PARAM -----------------------------------*/
+    static ucloud::RET_CODE preprocess(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi,cv::Mat &dst, PRE_PARAM& config,
         float& aspect_ratio_x, float& aspect_ratio_y);
 
-private:
-    static bool m_keep_aspect_ratio;
-    static bool m_pad_both_side;
-    static DATA_SHAPE m_model_input_shape;
-    static MODEL_INPUT_FORMAT m_model_input_format;
+
+    /*- tvimage should be rgb only!!! -----------------------------------*/
+    static ucloud::RET_CODE preprocess_rgb_subpixel(cv::Mat &InputRGB, std::vector<cv::Rect>& rois, std::vector<cv::Mat> &dst, 
+        DATA_SHAPE dstSp, MODEL_INPUT_FORMAT dstFmt, std::vector<float>& aspect_ratio_x, std::vector<float>& aspect_ratio_y,
+        bool keep_aspect_ratio=false, bool pad_both_side = false);
+    /*- do color changes only!!! -----------------------------------*/    
+    static ucloud::RET_CODE preprocess_all_to_rgb(ucloud::TvaiImage &tvimage, cv::Mat &dst);
+    /*- combine  preprocess_all_to_rgb + preprocess_rgb_subpixel -----------------------------------*/    
+    static ucloud::RET_CODE preprocess_subpixel(ucloud::TvaiImage &tvimage, std::vector<cv::Rect> rois, std::vector<cv::Mat> &dst, PRE_PARAM& config,
+        std::vector<float>& aspect_ratio_x, std::vector<float>& aspect_ratio_y);
+
+// private:
+//     static bool m_keep_aspect_ratio;
+//     static bool m_pad_both_side;
+//     static DATA_SHAPE m_model_input_shape;
+//     static MODEL_INPUT_FORMAT m_model_input_format;
 };
 
 
