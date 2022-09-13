@@ -199,7 +199,7 @@ ucloud::RET_CODE NaiveModel::preprocess(ucloud::TvaiImage& tvimage, std::vector<
         dst, m_param_img2tensor, aX, aY);
     if(ret!=RET_CODE::SUCCESS) return ret;
     for(auto &&ele: dst){
-        cv::imwrite("preprocess_img.png", ele);
+        // cv::imwrite("preprocess_img.png", ele);
         unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
         memcpy(data, ele.data, ele.total()*3);
         input_datas.push_back(data);
