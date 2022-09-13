@@ -596,6 +596,7 @@ ucloud::RET_CODE PreProcessModel::preprocess_rgb_subpixel(cv::Mat &InputRGB, std
     DATA_SHAPE dstSp, MODEL_INPUT_FORMAT dstFmt, std::vector<float>& aspect_ratio_x, std::vector<float>& aspect_ratio_y,
     bool keep_aspect_ratio, bool pad_both_side)
 {
+    LOGI << "-> PreProcessModel::preprocess_rgb_subpixel";
     RET_CODE ret = RET_CODE::SUCCESS;
     cv::Mat sub_cvimage, resized_roi ,target_cvimage;
     for(auto &&roi: rois){
@@ -627,10 +628,12 @@ ucloud::RET_CODE PreProcessModel::preprocess_rgb_subpixel(cv::Mat &InputRGB, std
         if(ret!=RET_CODE::SUCCESS) return ret;   
         dst.push_back(target_cvimage);
     }
+    LOGI << "<- PreProcessModel::preprocess_rgb_subpixel";
     return ret;
 }
 
 ucloud::RET_CODE PreProcessModel::preprocess_all_to_rgb(ucloud::TvaiImage &tvimage, cv::Mat &dst){
+    LOGI << "-> PreProcessModel::preprocess_all_to_rgb";
     RET_CODE ret = RET_CODE::SUCCESS;
     cv::Mat tmp;
     /*--------------tvimage to src------------------*/
@@ -657,18 +660,21 @@ ucloud::RET_CODE PreProcessModel::preprocess_all_to_rgb(ucloud::TvaiImage &tvima
         printf("tvimage.format enum[%d] is not supported\n", tvimage.format);
         break;
     }
+    LOGI << "<- PreProcessModel::preprocess_all_to_rgb";
     if(ret!=RET_CODE::SUCCESS) return ret;    
 }
 
 ucloud::RET_CODE PreProcessModel::preprocess_subpixel(ucloud::TvaiImage &tvimage, std::vector<cv::Rect> rois, std::vector<cv::Mat> &dst, PRE_PARAM& config,
         std::vector<float>& aspect_ratio_x, std::vector<float>& aspect_ratio_y)
 {
+    LOGI << "-> PreProcessModel::preprocess_subpixel";
     cv::Mat cvimage;
     ucloud::RET_CODE ret = preprocess_all_to_rgb(tvimage, cvimage);
     if(ret!=RET_CODE::SUCCESS) return ret;
     ret = preprocess_rgb_subpixel(cvimage, rois, dst, 
             config.model_input_shape, config.model_input_format, 
-            aspect_ratio_x, aspect_ratio_y);
+            aspect_ratio_x, aspect_ratio_y,config.keep_aspect_ratio, config.pad_both_side);
     if(ret!=RET_CODE::SUCCESS) return ret;
+    LOGI << "<- PreProcessModel::preprocess_subpixel";
     return ret;
 }

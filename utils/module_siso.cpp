@@ -34,6 +34,11 @@ RET_CODE NaiveModel::init(std::map<ucloud::InitParam, std::string> &modelpath){
     int mem_pool_nodes = 1;
     size_t mem_pool_size = reinterpret_cast<size_t>(m_OutEleNum*sizeof(float));
     m_OtpMemPool.init( mem_pool_size ,mem_pool_nodes);
+    //图像前处理参数
+    m_param_img2tensor.keep_aspect_ratio = true;
+    m_param_img2tensor.pad_both_side = false;
+    m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;
+    m_param_img2tensor.model_input_shape = m_InpSp;
 
     LOGI << "<- NaiveModel::init";
     return ret;
@@ -54,7 +59,8 @@ RET_CODE NaiveModel::run(TvaiImage& tvimage, VecObjBBox &bboxes){
     ret = preprocess(tvimage, input_datas);
 #ifdef TIMING    
     m_Tk.end("preprocess");
-#endif    
+#endif
+    if(ret!=RET_CODE::SUCCESS) return ret;
 
 #ifdef TIMING    
     m_Tk.start();
@@ -180,14 +186,26 @@ RET_CODE NaiveModel::run_drm(TvaiImage& tvimage, VecObjBBox &bboxes){
 
 ucloud::RET_CODE NaiveModel::preprocess(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas){
     LOGI << "-> NaiveModel::preprocess";
-    Mat im(tvimage.height,tvimage.width,CV_8UC3, tvimage.pData);
-    Mat resized_im;
-    cv::resize(im, resized_im, Size(m_InpSp.w,m_InpSp.h));
-    unsigned char *tmp = (unsigned char *)malloc(resized_im.cols*resized_im.rows*3);
-    memcpy(tmp, resized_im.data, resized_im.cols*resized_im.rows*3);
-    input_datas.push_back(tmp);
+    // Mat im(tvimage.height,tvimage.width,CV_8UC3, tvimage.pData);
+    // Mat resized_im;
+    // cv::resize(im, resized_im, Size(m_InpSp.w,m_InpSp.h));
+    // unsigned char *tmp = (unsigned char *)malloc(resized_im.cols*resized_im.rows*3);
+    // memcpy(tmp, resized_im.data, resized_im.cols*resized_im.rows*3);
+    // input_datas.push_back(tmp);
+    std::vector<cv::Mat> dst;
+    std::vector<float> aX,aY;
+    std::vector<cv::Rect> roi = {cv::Rect(0,0,tvimage.width,tvimage.height)};
+    RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, roi, 
+        dst, m_param_img2tensor, aX, aY);
+    if(ret!=RET_CODE::SUCCESS) return ret;
+    for(auto &&ele: dst){
+        cv::imwrite("preprocess_img.png", ele);
+        unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
+        memcpy(data, ele.data, ele.total()*3);
+        input_datas.push_back(data);
+    }
     LOGI << "<- NaiveModel::preprocess";
-    return RET_CODE::SUCCESS;
+    return ret;
 }
 
 

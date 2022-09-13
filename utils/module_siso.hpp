@@ -40,6 +40,7 @@ private:
     int m_OutEleNum;//输出Tensor元素总数
     int m_InpNum = 1;//输入Tensor数量
     int m_OtpNum = 1;//输出Tensor数量
+    PRE_PARAM m_param_img2tensor;
 
     MemPool m_OtpMemPool;//输出的内存池, 减少反复开辟和释放内存空间
 
