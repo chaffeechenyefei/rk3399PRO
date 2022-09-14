@@ -130,6 +130,10 @@ add_executable(test_resnet test_resnet.cpp)
 target_include_directories(test_resnet PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 target_link_libraries(test_resnet ${RK_LIBS} dl ${OPENCV_LIBS})
 
+add_executable(test_yolo test_yolo.cpp)
+target_include_directories(test_yolo PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+target_link_libraries(test_yolo ${RK_LIBS} dl ${OPENCV_LIBS})
+
 message("=========END=========")
 
 

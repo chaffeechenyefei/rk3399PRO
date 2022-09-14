@@ -2,12 +2,14 @@
 #include <opencv2/opencv.hpp>
 #include "utils/basic.hpp"
 #include "utils/module_siso.hpp"
+#include "utils/module_yolo.hpp"
 #include <iostream>
 
 using namespace cv;
 using namespace ucloud;
 using std::cout;
 using std::endl;
+using std::vector;
 
 /*--------------AICoreFactory API------------------*/
 AICoreFactory::AICoreFactory(){LOGI << "AICoreFactory Constructor";}
@@ -19,6 +21,14 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     {
     case AlgoAPIName::UDF_JSON:
         apiHandle = std::make_shared<NaiveModel>();
+        break;
+    case AlgoAPIName::GENERAL_DETECTOR:
+    {
+        YOLO_DETECTION* _ptr_ = new YOLO_DETECTION();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR};
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }
         break;
     default:
         std::cout << "ERROR: Current API is not ready yet!" << std::endl;

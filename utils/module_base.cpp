@@ -35,6 +35,19 @@ BaseModel::~BaseModel(){
     this->release();
 }
 
+std::vector<std::vector<int>> BaseModel::get_output_dims(){
+    std::vector<std::vector<int>> output_dims;
+    for(auto &&m: m_outputAttr){
+        int nd = m.n_dims - 1;//1,h,w,c,...; 1 is ignored
+        std::vector<int> tmp;
+        for(int i = 0; i < nd; i++ ){
+            tmp.push_back(m.dims[i]);
+        }
+        output_dims.push_back(tmp);
+    }
+    return output_dims;
+}
+
 std::vector<DATA_SHAPE> BaseModel::get_output_shape(){
     return m_outputShape;
 }
@@ -120,13 +133,19 @@ static const char* get_format_string(rknn_tensor_format fmt)
     default: return "UNKNOW";
     }
 }
+//rknn_tensor_attr 中的 dims 数组顺序与 rknn_toolkit 的获取的 numpy 的顺序 相反
 static void dump_tensor_attr(rknn_tensor_attr *attr)
-{
-    printf("index=%d, name=%s, n_dims=%d, dims=[%d, %d, %d, %d], n_elems=%d, size=%d, fmt=%s, type=%s, qnt_type=%s, "
+{   
+    printf("index=%d, name=%s, n_dims=%d , n_elems=%d, size=%d, fmt=%s, type=%s, qnt_type=%s, "
            "zp=%d, scale=%f\n",
-           attr->index, attr->name, attr->n_dims, attr->dims[3], attr->dims[2], attr->dims[1], attr->dims[0],
+           attr->index, attr->name, attr->n_dims,
            attr->n_elems, attr->size, get_format_string(attr->fmt), get_type_string(attr->type),
            get_qnt_type_string(attr->qnt_type), attr->zp, attr->scale);
+    printf("dims[0->n] = [");
+    for(int i=0; i<attr->n_dims; i++){
+        printf("%d,", attr->dims[i]);
+    }
+    printf("]\n");
 }
 void BaseModel::print_input_attr(){
     printf("===print_input_attr===\n");
@@ -677,4 +696,93 @@ ucloud::RET_CODE PreProcessModel::preprocess_subpixel(ucloud::TvaiImage &tvimage
     if(ret!=RET_CODE::SUCCESS) return ret;
     LOGI << "<- PreProcessModel::preprocess_subpixel";
     return ret;
+}
+
+
+void PostProcessModel::base_output2ObjBox_multiCls(float* output ,std::vector<VecObjBBox> &vecbox, 
+    CLS_TYPE* cls_map, std::map<CLS_TYPE, int> &unique_cls_map ,int nbboxes ,int stride ,float threshold){
+    //xywh+objectness+nc (xywh=centerXY,WH)
+    int nc = stride - 5;
+    for (int i=0; i<unique_cls_map.size(); i++){
+        vecbox.push_back(VecObjBBox());
+    }
+    for( int i=0; i < nbboxes; i++ ){
+        float* _output = &output[i*stride];
+        float objectness = _output[4];
+        if( objectness < threshold )
+            continue;
+        else {
+            BBox fbox;
+            float cx = *_output++;
+            float cy = *_output++;
+            float w = *_output++;
+            float h = *_output++;
+            fbox.x0 = cx - w/2;
+            fbox.y0 = cy - h/2;
+            fbox.x1 = cx + w/2;
+            fbox.y1 = cy + h/2;
+            fbox.x = fbox.x0; fbox.y = fbox.y0; fbox.w = w; fbox.h = h;
+            _output++;//skip objectness
+            fbox.objectness = objectness;
+            int maxid = -1;
+            float max_confidence = 0;
+            float* confidence = _output;
+            argmax(confidence, nc , maxid, max_confidence);
+            fbox.confidence = objectness*max_confidence;
+            fbox.quality = max_confidence;//++quality using max_confidence instead for object detection
+            if (maxid < 0 || cls_map == nullptr)
+                fbox.objtype = CLS_TYPE::UNKNOWN;
+            else
+                fbox.objtype = cls_map[maxid];
+            if(unique_cls_map.find(fbox.objtype)!=unique_cls_map.end())
+                vecbox[unique_cls_map[fbox.objtype]].push_back(fbox);
+        }
+    }
+    return;
+}
+
+template<typename T>
+bool base_sortBox(const T& a, const T& b) {
+  return  a.confidence > b.confidence;
+}
+template<typename T>
+void base_nmsBBox(std::vector<T>& input, float threshold, int type, std::vector<T>& output) {
+  std::sort(input.begin(), input.end(), base_sortBox<T>);
+  std::vector<int> bboxStat(input.size(), 0);
+  for (size_t i=0; i<input.size(); ++i) {
+    if (bboxStat[i] == 1) continue;
+    output.push_back(input[i]);
+    float area0 = (input[i].y1 - input[i].y0 + 1)*(input[i].x1 - input[i].x0 + 1);
+    for (size_t j=i+1; j<input.size(); ++j) {
+      if (bboxStat[j] == 1) continue;
+      float roiWidth = std::min(input[i].x1, input[j].x1) - std::max(input[i].x0, input[j].x0);
+      float roiHeight = std::min(input[i].y1, input[j].y1) - std::max(input[i].y0, input[j].y0);
+      if (roiWidth<=0 || roiHeight<=0) continue;
+      float area1 = (input[j].y1 - input[j].y0 + 1)*(input[j].x1 - input[j].x0 + 1);
+      float ratio = 0.0;
+      if (type == NMS_UNION) {
+        ratio = roiWidth*roiHeight/(area0 + area1 - roiWidth*roiHeight);
+      } else {
+        ratio = roiWidth*roiHeight / std::min(area0, area1);
+      }
+
+      if (ratio > threshold) bboxStat[j] = 1; 
+    }
+  }
+  return;
+}
+/**
+ * Multi Class
+ **/ 
+void base_nmsBBox(std::vector<VecObjBBox> &input, float threshold, int type, VecObjBBox &output){
+    LOGI << "-> YOLO_DETECTION::base_nmsBBox";
+    if (input.empty()){
+        VecObjBBox().swap(output);
+        return;
+    }
+    for (int i = 0; i < input.size(); i++ ){
+        base_nmsBBox(input[i], threshold, type, output);
+    }
+    LOGI << "<- YOLO_DETECTION::base_nmsBBox";
+    return;
 }

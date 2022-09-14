@@ -10,11 +10,16 @@
 #include "drm/drm_func.h"
 #include "drm/rga_func.h"
 
+
 #ifdef VERBOSE
 #define LOGI LOG(INFO)
 #else
 #define LOGI 0 && LOG(INFO)
 #endif
+
+#define NMS_UNION 0
+#define NMS_MIN 1
+#define CLIP(x) ((x) < 0 ? 0 : ((x) > 1 ? 1 : (x)))
 
 typedef struct _DATA_SHAPE{
     int n;
@@ -39,6 +44,8 @@ enum class MODEL_OUTPUT_ORDER{
     NCHW = 0,
     NHWC = 1,
 };
+
+
 
 /**
  * BaseModel
@@ -94,6 +101,7 @@ public:
     DATA_SHAPE get_input_shape(int index);
     std::vector<int> get_output_elem_num();
     std::vector<int> get_input_elem_num();
+    std::vector<std::vector<int>> get_output_dims();
 
 
 protected:
@@ -113,6 +121,8 @@ protected:
     std::vector<DATA_SHAPE> m_outputShape;//有可能存在C=0的情况, 需要具体分析, 是否可以在模型侧解决. 所有只有elem_num是可靠的计数方式
     std::vector<rknn_tensor_attr> m_inputAttr;
     std::vector<rknn_tensor_attr> m_outputAttr;
+
+    
 
 private://DRM drm模式需要mutex保护
     void *drm_buf = nullptr;
@@ -167,6 +177,35 @@ public:
 //     static DATA_SHAPE m_model_input_shape;
 //     static MODEL_INPUT_FORMAT m_model_input_format;
 };
+
+class PostProcessModel{
+public:
+    PostProcessModel(){}
+    ~PostProcessModel(){}
+    static void base_output2ObjBox_multiCls(float* output ,std::vector<ucloud::VecObjBBox> &vecbox, 
+        ucloud::CLS_TYPE* cls_map, std::map<ucloud::CLS_TYPE, int> &unique_cls_map ,int nbboxes ,int stride ,float threshold=0.8);
+};
+
+template<typename T>
+void base_nmsBBox(std::vector<T>& input, float threshold, int type, std::vector<T>& output);
+void base_nmsBBox(std::vector<ucloud::VecObjBBox> &input, float threshold, int type, ucloud::VecObjBBox &output);
+template<typename T>
+void base_transform_xyxy_xyhw(std::vector<T> &vecbox, float expand_ratio ,float aspect_ratio){
+    for (int i=0 ; i < vecbox.size(); i++ ){
+        float cx = (vecbox[i].x0 + vecbox[i].x1)/(2*aspect_ratio);
+        float cy = (vecbox[i].y0 + vecbox[i].y1)/(2*aspect_ratio);
+        float w = (vecbox[i].x1 - vecbox[i].x0)*expand_ratio/aspect_ratio;
+        float h = (vecbox[i].y1 - vecbox[i].y0)*expand_ratio/aspect_ratio;
+        float _x0 = cx - w/2;
+        float _y0 = cy - h/2;
+
+        vecbox[i].rect.x = int(_x0);
+        vecbox[i].rect.y = int(_y0);
+        vecbox[i].rect.width = int(w);
+        vecbox[i].rect.height = int(h);
+    }
+};
+
 
 
 #endif

@@ -119,6 +119,7 @@ ucloud::RET_CODE NaiveModel::run_mem(ucloud::TvaiImage& tvimage, ucloud::VecObjB
 #ifdef TIMING    
     m_Tk.end("preprocess");
 #endif    
+    if(ret!=RET_CODE::SUCCESS) return ret;
     
 #ifdef TIMING    
     m_Tk.start();

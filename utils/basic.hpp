@@ -78,9 +78,31 @@ string new_str                //替换子串
  */
 std::string subreplace(std::string resource_str, std::string sub_str, std::string new_str);
 
+template<typename T>
+inline void argmax(T* data, int L ,int &pos, T &val){
+    assert(L>0);
+    pos = 0;
+    val = data[0];
+    for(int i = 1; i < L; i++){
+        if(data[i] > val){
+            pos = i;
+            val = data[i];
+        }
+    }
+}
 
+#include <sys/stat.h>
+inline bool exists_file(const std::string& name) {
+  struct stat buffer;   
+  return (stat (name.c_str(), &buffer) == 0); 
+}
 
-
+inline bool float_in_range(float val, float maxval, float minval){
+    if (val<=maxval && val>=minval){
+        return true;
+    } else
+        return false;
+}
 
 // 图像格式
 typedef enum {

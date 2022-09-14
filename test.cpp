@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
     printf("get algo api\n");
     ucloud::AlgoAPISPtr ptrHandle = nullptr;
-    ptrHandle = ucloud::AICoreFactory::getAlgoAPI(ucloud::AlgoAPIName::UDF_JSON);
+    ptrHandle = ucloud::AICoreFactory::getAlgoAPI(ucloud::AlgoAPIName::GENERAL_DETECTOR);
 
     printf("init model\n");
     std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},};
