@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 
     printf("infer\n");
     auto avg_time = 0.f;
-    for(int i = 0; i < 10; i++){
+    for(int i = 0; i < 1; i++){
         VecObjBBox bboxes;
         Tk.start();
         ret = ptrHandle->run(tvInp, bboxes);
@@ -77,6 +77,11 @@ int main(int argc, char **argv)
             if(imgBuf) free(imgBuf);
             printf("err [%d] in ptrHandle->run(tvInp, bboxes) \n", ret);
             return -2;
+        }
+        int cnt = 0;
+        for(auto &&box: bboxes){
+            if(cnt++ > 5) break;
+            printf("[%d]%f,%f,%f,%f,%f,%f \n",box.objtype, box.confidence, box.objectness, box.x0, box.y0, box.x1, box.y1);
         }
     }
     printf("avg exec ptrHandle->run time = %f\n", avg_time/10);

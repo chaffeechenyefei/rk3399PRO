@@ -23,10 +23,13 @@ public:
 protected:
     virtual ucloud::RET_CODE preprocess(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratios);
     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, ucloud::VecObjBBox &bboxes, std::vector<float> &aspect_ratios);
-    virtual ucloud::RET_CODE rknn_output_to_boxes( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
+    virtual ucloud::RET_CODE rknn_output_to_boxes_c_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
+    virtual ucloud::RET_CODE rknn_output_to_boxes_python_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
     /**
-     * [1 na h w d ] -> [ d w h na 1] -> [d w h na] -> dim0:d dim1:w dim2:h dim3:na
-     */
+     * 输出Tensor的维度:
+     * [1 na h w d ] flatten -> [1, na*h*w*d ] dim0: na*h*w*d dim1:1
+     * [1 nl na 2] flatten -> [1, nl*na*2] dim0: nl*na*2 dim1:1
+     **/
     virtual bool check_output_dims();
 
 private:
@@ -38,8 +41,9 @@ private:
     int m_nl = 3;//3 layers
     std::vector<int> m_OutEleNums;//输出Tensor元素总数
     /**
-     * 输出Tensor的维度:reversed [3 52 92 14] 3:nl, h,w, 14:xywh+nc
-     * [1 na h w d ] -> [ d w h na 1] -> [d w h na] -> dim0:d dim1:w dim2:h dim3:na
+     * 输出Tensor的维度:
+     * [1 na h w d ] flatten -> [1, na*h*w*d ]
+     * [1 nl na 2] flatten -> [1, nl*na*2]
      **/
     std::vector<std::vector<int>> m_OutEleDims;
     PRE_PARAM m_param_img2tensor;
@@ -47,8 +51,8 @@ private:
 
     std::vector<ucloud::CLS_TYPE> m_clss;
     std::map<ucloud::CLS_TYPE, int> m_unique_clss_map;
-    float m_threshold = 0.6;
-    float m_nms_threshold = 0.6;
+    float m_threshold = 0.4;
+    float m_nms_threshold = 0.2;
 
 #ifdef TIMING
     Timer m_Tk;

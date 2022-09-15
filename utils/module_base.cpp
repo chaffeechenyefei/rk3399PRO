@@ -38,7 +38,7 @@ BaseModel::~BaseModel(){
 std::vector<std::vector<int>> BaseModel::get_output_dims(){
     std::vector<std::vector<int>> output_dims;
     for(auto &&m: m_outputAttr){
-        int nd = m.n_dims - 1;//1,h,w,c,...; 1 is ignored
+        int nd = m.n_dims;
         std::vector<int> tmp;
         for(int i = 0; i < nd; i++ ){
             tmp.push_back(m.dims[i]);
