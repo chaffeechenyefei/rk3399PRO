@@ -23,27 +23,39 @@ public:
 protected:
     virtual ucloud::RET_CODE preprocess(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratios);
     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, ucloud::VecObjBBox &bboxes, std::vector<float> &aspect_ratios);
-    virtual ucloud::RET_CODE rknn_output_to_boxes_c_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
-    virtual ucloud::RET_CODE rknn_output_to_boxes_python_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
     /**
-     * 输出Tensor的维度:
+     * 模型输出Tensor的维度:
      * [1 na h w d ] flatten -> [1, na*h*w*d ] dim0: na*h*w*d dim1:1
      * [1 nl na 2] flatten -> [1, nl*na*2] dim0: nl*na*2 dim1:1
      **/
     virtual bool check_output_dims();
+    virtual ucloud::RET_CODE rknn_output_to_boxes_c_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
+    virtual ucloud::RET_CODE rknn_output_to_boxes_python_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
+    /**
+     * 模型输出Tensor的维度:
+     * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
+     * dim0 = 2,NC+1
+     * dim1 = L
+     * dim2 = 1
+     **/    
+    virtual bool check_output_dims_1LX();
+    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
 
 private:
     std::shared_ptr<BaseModel> m_net = nullptr;//推理模型的主干部分
     DATA_SHAPE m_InpSp;
     int m_InpNum = 1;//输入Tensor数量
-    int m_OtpNum = 4;//输出Tensor数量 3 layer+1 anchor_gir
+    // int m_OtpNum = 4;//输出Tensor数量 3 layer+1 anchor_gir
+    int m_OtpNum = 3;//输出Tensor数量 3 xy, wh, conf+prob
     int m_nc = 0;
     int m_nl = 3;//3 layers
     std::vector<int> m_OutEleNums;//输出Tensor元素总数
     /**
      * 输出Tensor的维度:
-     * [1 na h w d ] flatten -> [1, na*h*w*d ]
-     * [1 nl na 2] flatten -> [1, nl*na*2]
+     * 3x[1 na h w d ] flatten -> [1, na*h*w*d ]
+     * 1x[1 nl na 2] flatten -> [1, nl*na*2]
+     * ------------ OR -------------------
+     * xy[1,D,2] wh[1,D,2] conf[1,D,NC+1]
      **/
     std::vector<std::vector<int>> m_OutEleDims;
     PRE_PARAM m_param_img2tensor;
@@ -52,7 +64,7 @@ private:
     std::vector<ucloud::CLS_TYPE> m_clss;
     std::map<ucloud::CLS_TYPE, int> m_unique_clss_map;
     float m_threshold = 0.4;
-    float m_nms_threshold = 0.2;
+    float m_nms_threshold = 0.6;
 
 #ifdef TIMING
     Timer m_Tk;

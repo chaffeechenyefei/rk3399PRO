@@ -44,7 +44,7 @@ RET_CODE YOLO_DETECTION::init(std::map<ucloud::InitParam, std::string> &modelpat
     m_param_img2tensor.model_input_shape = m_InpSp;
 
     m_strides = {8,16,32,64};
-    if(!check_output_dims()){
+    if(!check_output_dims_1LX()){
         printf("output dims check failed\n");
         return RET_CODE::ERR_MODEL_NOT_MATCH;
     }
@@ -68,6 +68,32 @@ bool YOLO_DETECTION::check_output_dims(){
                     m_OutEleDims[i][0] = %d not equals\n", \
                     m_InpSp.h / m_strides[i], m_InpSp.w / m_strides[i], NA, D , m_OutEleDims[i][0] \
                     );
+            return false;
+        }
+    }
+    return true;
+}
+/**
+ * 输出Tensor的维度:
+ * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
+ * dim0 = 2,NC+1
+ * dim1 = L
+ * dim2 = 1
+ **/  
+bool YOLO_DETECTION::check_output_dims_1LX(){
+    int L = -1;
+    if(m_OtpNum != 3){
+        printf("m_OtpNum(%d) is not 3(cxcy,wh,conf)\n",m_OtpNum);
+        return false;
+    }
+    if(m_OutEleDims[2][0]!=m_nc+1){
+        printf( "NC(%d)+1 is not m_OutEleDims[2][0](%d)\n", m_nc, m_OutEleDims[2][0]);
+        return false;
+    }
+    for(int i =0 ; i < m_OtpNum; i++){
+        if(L==-1) L = m_OutEleDims[i][1];
+        if(L!=m_OutEleDims[i][1]){
+            printf("L = %d, m_OutEleDims[%d][1] = %d not matched\n",L, i , m_OutEleDims[i][1]);
             return false;
         }
     }
@@ -162,8 +188,8 @@ ucloud::RET_CODE YOLO_DETECTION::preprocess(ucloud::TvaiImage& tvimage, std::vec
         unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
         memcpy(data, ele.data, ele.total()*3);
         // memset(data,255,ele.total()*3);//ATT.
-        for(int i = 0; i < ele.total()*3; i++)
-            data[i] = 255;
+        // for(int i = 0; i < ele.total()*3; i++) //check the output of net to ensure result on PC and Emb equals.
+        //     data[i] = 255;
         input_datas.push_back(data);
     }
     aspect_ratio = aX;
@@ -178,7 +204,8 @@ ucloud::RET_CODE YOLO_DETECTION::postprocess(std::vector<float*> &output_datas, 
     std::vector<VecObjBBox> vecBox;
     VecObjBBox vecBox_after_nms;
     // rknn_output_to_boxes_c_data_layer(output_datas, vecBox);
-    rknn_output_to_boxes_python_data_layer(output_datas, vecBox);
+    // rknn_output_to_boxes_python_data_layer(output_datas, vecBox);
+    rknn_output_to_boxes_1LX(output_datas, vecBox);
     int n = 0;
     for(auto &&box: vecBox){
         n+=box.size();
@@ -195,6 +222,70 @@ ucloud::RET_CODE YOLO_DETECTION::postprocess(std::vector<float*> &output_datas, 
     LOGI << "<- YOLO_DETECTION::postprocess";
     return RET_CODE::SUCCESS;
 }
+
+/**
+ * 输入Tensor的维度:
+ * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
+ * dim0 = 2,NC+1
+ * dim1 = L
+ * dim2 = 1
+ **/  
+ucloud::RET_CODE YOLO_DETECTION::rknn_output_to_boxes_1LX( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes){
+    LOGI << "<- YOLO_DETECTION::rknn_output_to_boxes_1LX";
+    int stepxywh = 2;
+    int stepConf = m_nc + 1;
+    int L = m_OutEleDims[0][1];
+    int NC = m_nc;
+    for (int i=0; i<m_unique_clss_map.size(); i++){
+        bboxes.push_back(VecObjBBox());
+    }
+
+    int cnt = 0;
+    float *ptrXY = output_datas[0];//center x,y
+    float *ptrWH = output_datas[1];
+    float *ptrProb = output_datas[2];//objectness+prob of classes
+    for(int i = 0; i < L; i++){
+        float objectness = *ptrProb;
+        // printf("objectness:%f\n", objectness);
+        if( objectness<m_threshold ) {
+            ptrXY += stepxywh;
+            ptrWH += stepxywh;
+            ptrProb += stepConf;
+            continue;
+        } else{ //threshold
+            cnt++;
+            BBox fbox;
+            float cx = *ptrXY++;
+            float cy = *ptrXY++;
+            float cw = *ptrWH++; 
+            float ch = *ptrWH++;
+            fbox.x0 = cx - cw/2;
+            fbox.y0 = cy - ch/2;
+            fbox.x1 = cx + cw/2;
+            fbox.y1 = cy + ch/2;
+            fbox.x = fbox.x0; fbox.y = fbox.y0; fbox.w = cw; fbox.h = ch;
+            fbox.objectness = objectness;
+            int maxid = -1;
+            float max_confidence = 0;
+            float* confidence = ptrProb+1;
+            argmax(confidence, NC , maxid, max_confidence);
+            fbox.confidence = objectness*max_confidence;
+            fbox.quality = max_confidence;//++quality using max_confidence instead for object detection
+            ptrProb += stepConf;
+            if (maxid < 0 || m_clss.empty())
+                fbox.objtype = CLS_TYPE::UNKNOWN;
+            else
+                fbox.objtype = m_clss[maxid];
+            if(m_unique_clss_map.find(fbox.objtype)!=m_unique_clss_map.end())
+                bboxes[m_unique_clss_map[fbox.objtype]].push_back(fbox);
+        } //threshold
+    }
+    // printf("[%d] over threshold: %f\n",cnt, m_threshold);
+
+    LOGI << "-> YOLO_DETECTION::rknn_output_to_boxes_1LX";
+    return RET_CODE::SUCCESS;
+}
+
 
 
 /**
@@ -257,7 +348,7 @@ ucloud::RET_CODE YOLO_DETECTION::rknn_output_to_boxes_python_data_layer( std::ve
                         fbox.y0 = cy - ch/2;
                         fbox.x1 = cx + cw/2;
                         fbox.y1 = cy + ch/2;
-                        fbox.x = fbox.x0; fbox.y = fbox.y0; fbox.w = w; fbox.h = h;
+                        fbox.x = fbox.x0; fbox.y = fbox.y0; fbox.w = cw; fbox.h = ch;
                         tmp++;//skip objectness
                         fbox.objectness = objectness;
                         int maxid = -1;
@@ -349,7 +440,7 @@ ucloud::RET_CODE YOLO_DETECTION::rknn_output_to_boxes_c_data_layer( std::vector<
                         fbox.y0 = cy - ch/2;
                         fbox.x1 = cx + cw/2;
                         fbox.y1 = cy + ch/2;
-                        fbox.x = fbox.x0; fbox.y = fbox.y0; fbox.w = w; fbox.h = h;
+                        fbox.x = fbox.x0; fbox.y = fbox.y0; fbox.w = cw; fbox.h = ch;
                         // tmp++;//skip objectness
                         fbox.objectness = objectness;
                         int maxid = -1;
