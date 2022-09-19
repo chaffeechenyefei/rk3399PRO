@@ -21,3 +21,20 @@ add_definitions(-DTIMING=True) 用于设定是否进行内部耗时显示
 
 ## 4. 接口说明:
 见test.cpp中的使用方式
+
+## 5. 编译相关:
+* 编译使用gcc: gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu.tgz
+
+source: ufs/edge_box/gcc/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu.tgz
+
+* 编译使用第三方静态库: ufs/edge_box/third_libs_compiled/aarch64_gcc11/opencv_aarch64.tar
+解压后, 即ffmpeg gflags glog opencv这四个库, 当时为寒武纪aach64编译的, 可以通用.
+
+* 编译使用的rknn的头文件和动态库:
+即rknpu中的firefly定制版本：https://gitlab.com/firefly-linux/external/rknpu/-/tree/firefly
+
+git头文件: https://gitlab.com/firefly-linux/external/rknpu/-/tree/firefly/rknn/rknn_api/librknn_api/include/rknn_api.h
+
+git动态库: https://gitlab.com/firefly-linux/external/rknpu/-/tree/firefly/rknn/rknn_api/librknn_api/lib64/librknn_api.so(与嵌入式上不兼容)
+
+实际动态库: ufs/edge_box/rk3399/lib64_firefly/librknn_api.so (从嵌入式中提取出的, 仅用于firefly rk3399PRO)
