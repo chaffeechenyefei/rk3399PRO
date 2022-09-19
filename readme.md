@@ -38,3 +38,15 @@ git头文件: https://gitlab.com/firefly-linux/external/rknpu/-/tree/firefly/rkn
 git动态库: https://gitlab.com/firefly-linux/external/rknpu/-/tree/firefly/rknn/rknn_api/librknn_api/lib64/librknn_api.so(与嵌入式上不兼容)
 
 实际动态库: ufs/edge_box/rk3399/lib64_firefly/librknn_api.so (从嵌入式中提取出的, 仅用于firefly rk3399PRO)
+
+* 如何让vscode直接使用指定gcc编译器:
+
+在vscode中通过command+shift+p组合键调出命令框, 找到CMake: Editor User-Local CMake Kits, 在其中添加如下内容, 便可以直接在vscode界面中进行build, 只需要选择"x86_64-aarch64"作为Kits即可.
+```commandline
+  {
+    "name": "x86_64-aarch64",
+    "compilers": {
+      "C": "/project/rk3399_workspace/gcc_tool/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc",
+      "CXX": "/project/rk3399_workspace/gcc_tool/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-g++"
+    }
+```
