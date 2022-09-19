@@ -188,6 +188,7 @@ unsigned char * BaseModel::load_model(const char *filename, int *model_size)
     if (fp == nullptr)
     {
         printf("fopen %s fail!\n", filename);
+        fflush(stdout);
         return nullptr;
     }
     fseek(fp, 0, SEEK_END);
@@ -197,6 +198,7 @@ unsigned char * BaseModel::load_model(const char *filename, int *model_size)
     if (model_len != fread(model, 1, model_len, fp))
     {
         printf("fread %s fail!\n", filename);
+        fflush(stdout);
         free(model);
         return nullptr;
     }
@@ -294,6 +296,7 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(
     std::vector<unsigned char*> &input_datas, 
     std::vector<float*> &output_datas)
 {
+    // return RET_CODE::FAILED;
     LOGI << "-> BaseModel::general_infer_uint8_nhwc_to_float";
     if(m_isMap) return RET_CODE::ERR_NPU_SYNC_NOT_MATCH;
     // Set Input Data
@@ -319,7 +322,8 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(
         ret = rknn_inputs_set(m_ctx, m_inputAttr.size(), inputs);
         if (ret != RKNN_SUCC)
         {
-            LOGI << "rknn_input_set fail! ret = " << ret;
+            printf("rknn_input_set fail! ret = %d", ret);
+            fflush(stdout);
             // free(inputs);
             return RET_CODE::ERR_NPU_IOSET_FAILED;
         }
@@ -331,7 +335,8 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(
     ret = rknn_run(m_ctx, nullptr);
     if (ret != RKNN_SUCC )
     {
-        LOGI << "rknn_run fail! ret = " << ret;
+        printf("rknn_run fail! ret = %d",ret);
+        fflush(stdout);
         // free(inputs);
         return RET_CODE::ERR_NPU_RUN_FAILED;
     }
@@ -348,7 +353,8 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(
     ret = rknn_outputs_get(m_ctx, m_outputAttr.size(), outputs, NULL);
     if (ret != RKNN_SUCC )
     {
-        LOGI << "rknn_outputs_get fail! ret = " << ret;
+        printf("rknn_outputs_get fail! ret = %d",ret);
+        fflush(stdout);
         // free(outputs);
         return RET_CODE::ERR_NPU_GET_OUTPUT_FAILED;
     }
@@ -680,7 +686,8 @@ ucloud::RET_CODE PreProcessModel::preprocess_all_to_rgb(ucloud::TvaiImage &tvima
         break;
     }
     LOGI << "<- PreProcessModel::preprocess_all_to_rgb";
-    if(ret!=RET_CODE::SUCCESS) return ret;    
+    // if(ret!=RET_CODE::SUCCESS) return ret;   
+    return ret; 
 }
 
 ucloud::RET_CODE PreProcessModel::preprocess_subpixel(ucloud::TvaiImage &tvimage, std::vector<cv::Rect> rois, std::vector<cv::Mat> &dst, PRE_PARAM& config,
