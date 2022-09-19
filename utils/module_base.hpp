@@ -164,12 +164,12 @@ public:
     /*- tvimage should be rgb only!!! -----------------------------------*/
     static ucloud::RET_CODE preprocess_rgb_subpixel(cv::Mat &InputRGB, std::vector<cv::Rect>& rois, std::vector<cv::Mat> &dst, 
         DATA_SHAPE dstSp, MODEL_INPUT_FORMAT dstFmt, std::vector<float>& aspect_ratio_x, std::vector<float>& aspect_ratio_y,
-        bool keep_aspect_ratio=false, bool pad_both_side = false);
+        bool keep_aspect_ratio=false, bool pad_both_side = false, bool use_subpixel=true);
     /*- do color changes only!!! -----------------------------------*/    
     static ucloud::RET_CODE preprocess_all_to_rgb(ucloud::TvaiImage &tvimage, cv::Mat &dst);
     /*- combine  preprocess_all_to_rgb + preprocess_rgb_subpixel -----------------------------------*/    
     static ucloud::RET_CODE preprocess_subpixel(ucloud::TvaiImage &tvimage, std::vector<cv::Rect> rois, std::vector<cv::Mat> &dst, PRE_PARAM& config,
-        std::vector<float>& aspect_ratio_x, std::vector<float>& aspect_ratio_y);
+        std::vector<float>& aspect_ratio_x, std::vector<float>& aspect_ratio_y, bool use_subpixel=true);
 
 // private:
 //     static bool m_keep_aspect_ratio;

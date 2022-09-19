@@ -177,14 +177,15 @@ ucloud::RET_CODE YOLO_DETECTION::preprocess(ucloud::TvaiImage& tvimage, std::vec
     // unsigned char *tmp = (unsigned char *)malloc(resized_im.cols*resized_im.rows*3);
     // memcpy(tmp, resized_im.data, resized_im.cols*resized_im.rows*3);
     // input_datas.push_back(tmp);
+    bool use_subpixel = false;
     std::vector<cv::Mat> dst;
     std::vector<float> aX,aY;
     std::vector<cv::Rect> roi = {cv::Rect(0,0,tvimage.width,tvimage.height)};
     RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, roi, 
-        dst, m_param_img2tensor, aX, aY);
+        dst, m_param_img2tensor, aX, aY, use_subpixel);
     if(ret!=RET_CODE::SUCCESS) return ret;
     for(auto &&ele: dst){
-        cv::imwrite("preprocess_img.png", ele);
+        // cv::imwrite("preprocess_img.png", ele);
         unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
         memcpy(data, ele.data, ele.total()*3);
         // memset(data,255,ele.total()*3);//ATT.

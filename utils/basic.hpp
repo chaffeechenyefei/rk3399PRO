@@ -104,6 +104,13 @@ inline bool float_in_range(float val, float maxval, float minval){
         return false;
 }
 
+template<typename T>
+T clip( T val, T min, T max){
+    val = std::min(val, max);
+    val = std::max(val, min);
+    return val;
+}
+
 // 图像格式
 typedef enum {
     BGR = 0, /*default keep BGR*/

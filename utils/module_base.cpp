@@ -619,14 +619,28 @@ RET_CODE PreProcessModel::preprocess(ucloud::TvaiImage &tvimage, ucloud::TvaiRec
 
 ucloud::RET_CODE PreProcessModel::preprocess_rgb_subpixel(cv::Mat &InputRGB, std::vector<cv::Rect>& rois, std::vector<cv::Mat> &dst, 
     DATA_SHAPE dstSp, MODEL_INPUT_FORMAT dstFmt, std::vector<float>& aspect_ratio_x, std::vector<float>& aspect_ratio_y,
-    bool keep_aspect_ratio, bool pad_both_side)
+    bool keep_aspect_ratio, bool pad_both_side, bool use_subpixel)
 {
     LOGI << "-> PreProcessModel::preprocess_rgb_subpixel";
     RET_CODE ret = RET_CODE::SUCCESS;
     cv::Mat sub_cvimage, resized_roi ,target_cvimage;
     for(auto &&roi: rois){
-        getRectSubPix(InputRGB, cv::Size(roi.width, roi.height), 
-            cv::Point2f(float(roi.x + (1.0*roi.width)/2), float(roi.y + (1.0*roi.height)/2)) , sub_cvimage);
+        if(roi.x == 0 && roi.y == 0 && roi.width == InputRGB.cols && roi.height == InputRGB.rows ){
+            //roi即原图大小
+            sub_cvimage = InputRGB;
+        } else {
+            if (use_subpixel)
+                getRectSubPix(InputRGB, cv::Size(roi.width, roi.height), 
+                    cv::Point2f(float(roi.x + (1.0*roi.width)/2), float(roi.y + (1.0*roi.height)/2)) , sub_cvimage);
+            else{
+                int x = clip<int>(roi.x, 0, InputRGB.cols-10);
+                int y = clip<int>(roi.y, 0, InputRGB.rows-10);
+                int w = clip<int>(roi.width,1, InputRGB.cols-x);
+                int h = clip<int>(roi.height,1, InputRGB.rows-y);
+                InputRGB(cv::Rect(x,y,w,h)).copyTo(sub_cvimage);
+            }
+        }
+
         float aX=1.0; float aY=1.0;
         if(keep_aspect_ratio){
             resized_roi = resize(sub_cvimage, cv::Size(dstSp.w,dstSp.h), pad_both_side, aX);
@@ -657,6 +671,9 @@ ucloud::RET_CODE PreProcessModel::preprocess_rgb_subpixel(cv::Mat &InputRGB, std
     return ret;
 }
 
+/**
+ * 输入TVAI_IMAGE_FORMAT_RGB时,不会额外开辟空间, 返回的dst使用的是tvimage的pData
+ */
 ucloud::RET_CODE PreProcessModel::preprocess_all_to_rgb(ucloud::TvaiImage &tvimage, cv::Mat &dst){
     LOGI << "-> PreProcessModel::preprocess_all_to_rgb";
     RET_CODE ret = RET_CODE::SUCCESS;
@@ -673,8 +690,9 @@ ucloud::RET_CODE PreProcessModel::preprocess_all_to_rgb(ucloud::TvaiImage &tvima
         cv::cvtColor(tmp, dst, cv::COLOR_YUV2RGB_NV21);
         break;
     case TVAI_IMAGE_FORMAT_RGB:
-        tmp = cv::Mat(cv::Size(tvimage.width,tvimage.height),CV_8UC3, tvimage.pData);
-        tmp.copyTo(dst);
+        dst = cv::Mat(cv::Size(tvimage.width,tvimage.height),CV_8UC3, tvimage.pData);
+        // tmp.copyTo(dst);
+        // dst = tmp;
         break;
     case TVAI_IMAGE_FORMAT_BGR:
         tmp = cv::Mat(cv::Size(tvimage.width,tvimage.height),CV_8UC3, tvimage.pData);
@@ -691,7 +709,7 @@ ucloud::RET_CODE PreProcessModel::preprocess_all_to_rgb(ucloud::TvaiImage &tvima
 }
 
 ucloud::RET_CODE PreProcessModel::preprocess_subpixel(ucloud::TvaiImage &tvimage, std::vector<cv::Rect> rois, std::vector<cv::Mat> &dst, PRE_PARAM& config,
-        std::vector<float>& aspect_ratio_x, std::vector<float>& aspect_ratio_y)
+        std::vector<float>& aspect_ratio_x, std::vector<float>& aspect_ratio_y, bool use_subpixel)
 {
     LOGI << "-> PreProcessModel::preprocess_subpixel";
     cv::Mat cvimage;
@@ -699,7 +717,7 @@ ucloud::RET_CODE PreProcessModel::preprocess_subpixel(ucloud::TvaiImage &tvimage
     if(ret!=RET_CODE::SUCCESS) return ret;
     ret = preprocess_rgb_subpixel(cvimage, rois, dst, 
             config.model_input_shape, config.model_input_format, 
-            aspect_ratio_x, aspect_ratio_y,config.keep_aspect_ratio, config.pad_both_side);
+            aspect_ratio_x, aspect_ratio_y,config.keep_aspect_ratio, config.pad_both_side, use_subpixel);
     if(ret!=RET_CODE::SUCCESS) return ret;
     LOGI << "<- PreProcessModel::preprocess_subpixel";
     return ret;

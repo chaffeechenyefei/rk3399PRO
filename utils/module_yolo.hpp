@@ -4,6 +4,11 @@
 #include "module_base.hpp"
 #include "basic.hpp"
 
+/**
+ * YOLO_DETECTION
+ * yolov5系列支持, 需要配合特定export_rknn.py输出的结果
+ * chaffee.chen@ucloud.cn 2022-09-19
+ */
 class YOLO_DETECTION: public ucloud::AlgoAPI{
 public:
 /**
@@ -31,7 +36,7 @@ protected:
     virtual bool check_output_dims();
     virtual ucloud::RET_CODE rknn_output_to_boxes_c_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
     virtual ucloud::RET_CODE rknn_output_to_boxes_python_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
-    /**
+    /** <====current situation
      * 模型输出Tensor的维度:
      * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
      * dim0 = 2,NC+1
@@ -55,7 +60,7 @@ private:
      * 3x[1 na h w d ] flatten -> [1, na*h*w*d ]
      * 1x[1 nl na 2] flatten -> [1, nl*na*2]
      * ------------ OR -------------------
-     * xy[1,D,2] wh[1,D,2] conf[1,D,NC+1]
+     * xy[1,D,2] wh[1,D,2] conf[1,D,NC+1] <====current situation
      **/
     std::vector<std::vector<int>> m_OutEleDims;
     PRE_PARAM m_param_img2tensor;

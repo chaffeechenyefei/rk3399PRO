@@ -56,6 +56,7 @@ int main(int argc, char **argv)
     printf("get algo api\n");
     ucloud::AlgoAPISPtr ptrHandle = nullptr;
     ptrHandle = ucloud::AICoreFactory::getAlgoAPI(ucloud::AlgoAPIName::GENERAL_DETECTOR);
+    // ptrHandle->set_param(0.6,0.6,) 这里省略了阈值的设定, 使用默认阈值
 
     printf("init model\n");
     std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},};
