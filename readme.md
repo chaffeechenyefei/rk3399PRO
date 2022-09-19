@@ -49,4 +49,5 @@ git动态库: https://gitlab.com/firefly-linux/external/rknpu/-/tree/firefly/rkn
       "C": "/project/rk3399_workspace/gcc_tool/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc",
       "CXX": "/project/rk3399_workspace/gcc_tool/gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-g++"
     }
+  }
 ```
