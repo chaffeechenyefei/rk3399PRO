@@ -23,7 +23,7 @@ int RGA_init(rga_context* rga_ctx);
 
 void img_resize_fast(rga_context *rga_ctx, int src_fd, int src_w, int src_h, uint64_t dst_phys, int dst_w, int dst_h);
 
-void img_resize_slow(rga_context *rga_ctx, void *src_virt, int src_w, int src_h, void *dst_virt, int dst_w, int dst_h);
+int img_resize_slow(rga_context *rga_ctx, void *src_virt, int src_w, int src_h, void *dst_virt, int dst_w, int dst_h);
 
 int RGA_deinit(rga_context* rga_ctx);
 

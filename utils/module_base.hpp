@@ -137,6 +137,39 @@ private://DRM drm模式需要mutex保护
 
 
 /**
+ * drm for preprocess
+ * https://blog.csdn.net/u014644466/article/details/124568216
+ */
+class ImageUtil{
+public:
+    ImageUtil(){};
+    virtual ~ImageUtil() { release(); };
+    ucloud::RET_CODE init(int w, int h, int channels);
+    /**
+     * dstPtr需要在外部实现开辟
+     * src必须是RGB或者BGR 输出同样format
+     */
+    ucloud::RET_CODE resize(const cv::Mat &src, const cv::Size &size, void *dstPtr);
+    ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, DATA_SHAPE size, void *dstPtr);
+
+protected:
+    void *drm_buf = NULL;
+    int drm_fd = -1;
+    int buf_fd = -1;  // converted from buffer handle
+    unsigned int handle;
+    size_t actual_size = 0;
+    rga_context rga_ctx;
+    drm_context drm_ctx;
+    int W = -1;
+    int H = -1;
+    int C = -1;
+    bool initialed = false;
+
+    void release(void);
+
+};
+
+/**
  * PreProcessModel
  * DESC: 主要负责各种输入转换的方式
  */
@@ -196,6 +229,22 @@ void base_transform_xyxy_xyhw(std::vector<T> &vecbox, float expand_ratio ,float 
         float cy = (vecbox[i].y0 + vecbox[i].y1)/(2*aspect_ratio);
         float w = (vecbox[i].x1 - vecbox[i].x0)*expand_ratio/aspect_ratio;
         float h = (vecbox[i].y1 - vecbox[i].y0)*expand_ratio/aspect_ratio;
+        float _x0 = cx - w/2;
+        float _y0 = cy - h/2;
+
+        vecbox[i].rect.x = int(_x0);
+        vecbox[i].rect.y = int(_y0);
+        vecbox[i].rect.width = int(w);
+        vecbox[i].rect.height = int(h);
+    }
+};
+template<typename T>
+void base_transform_xyxy_xyhw(std::vector<T> &vecbox, float expand_ratio ,float aX, float aY){
+    for (int i=0 ; i < vecbox.size(); i++ ){
+        float cx = (vecbox[i].x0 + vecbox[i].x1)/(2*aX);
+        float cy = (vecbox[i].y0 + vecbox[i].y1)/(2*aY);
+        float w = (vecbox[i].x1 - vecbox[i].x0)*expand_ratio/aX;
+        float h = (vecbox[i].y1 - vecbox[i].y0)*expand_ratio/aY;
         float _x0 = cx - w/2;
         float _y0 = cy - h/2;
 

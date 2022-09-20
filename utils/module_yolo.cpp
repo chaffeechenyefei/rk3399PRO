@@ -8,6 +8,7 @@ using namespace std;
 YOLO_DETECTION::YOLO_DETECTION(){
     LOGI << "-> YOLO_DETECTION";
     m_net = std::make_shared<BaseModel>();
+    m_drm = std::make_shared<ImageUtil>();
 }
 
 YOLO_DETECTION::~YOLO_DETECTION(){
@@ -120,13 +121,14 @@ RET_CODE YOLO_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes){
     if(ret!=RET_CODE::SUCCESS) return ret;
 
     std::vector<unsigned char*> input_datas;
-    std::vector<float> aspect_ratios;
+    std::vector<float> aspect_ratios, aX, aY;
     std::vector<float*> output_datas;
 
 #ifdef TIMING    
     m_Tk.start();
 #endif
-    ret = preprocess(tvimage, input_datas, aspect_ratios);
+    // ret = preprocess(tvimage, input_datas, aspect_ratios);
+    ret = preprocess_drm(tvimage, input_datas, aX, aY);
 #ifdef TIMING    
     m_Tk.end("preprocess");
 #endif
@@ -147,7 +149,8 @@ RET_CODE YOLO_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes){
 #ifdef TIMING    
     m_Tk.start();
 #endif
-    ret = postprocess(output_datas, bboxes, aspect_ratios);
+    // ret = postprocess(output_datas, bboxes, aspect_ratios);
+    ret = postprocess_drm(output_datas, bboxes, aX, aY);
 #ifdef TIMING    
     m_Tk.end("postprocess");
 #endif    
@@ -196,6 +199,58 @@ ucloud::RET_CODE YOLO_DETECTION::preprocess(ucloud::TvaiImage& tvimage, std::vec
     aspect_ratio = aX;
     LOGI << "<- YOLO_DETECTION::preprocess";
     return ret;
+}
+
+ucloud::RET_CODE YOLO_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, 
+    std::vector<float> &aX, std::vector<float> &aY)
+{
+    LOGI << "-> YOLO_DETECTION::preprocess_drm";
+    bool valid_input_format = true;
+    switch (tvimage.format)
+    {
+    case TVAI_IMAGE_FORMAT_RGB:
+    case TVAI_IMAGE_FORMAT_BGR:
+        break;
+    default:
+        valid_input_format = false;
+        break;
+    }
+    if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+
+    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.w);
+    RET_CODE uret = m_drm->init(tvimage.width, tvimage.height, 3);
+    if(uret!=RET_CODE::SUCCESS) return uret;
+    int ret = m_drm->resize(tvimage,m_InpSp, data);
+    input_datas.push_back(data);
+    aX.push_back( (float(m_InpSp.w))/tvimage.width );
+    aY.push_back( (float(m_InpSp.h))/tvimage.height );
+
+    LOGI << "<- YOLO_DETECTION::preprocess_drm";
+    return RET_CODE::SUCCESS;
+}
+
+ucloud::RET_CODE YOLO_DETECTION::postprocess_drm(std::vector<float*> &output_datas, ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY){
+    LOGI << "-> YOLO_DETECTION::postprocess_drm";
+    if(output_datas.empty()) return RET_CODE::ERR_POST_EXE;
+
+    std::vector<VecObjBBox> vecBox;
+    VecObjBBox vecBox_after_nms;
+    rknn_output_to_boxes_1LX(output_datas, vecBox);
+    int n = 0;
+    for(auto &&box: vecBox){
+        n+=box.size();
+    }
+    LOGI << "rknn_output_to_boxes " << n;
+    base_nmsBBox(vecBox,m_nms_threshold, NMS_MIN ,vecBox_after_nms );
+    LOGI << "after nms " << vecBox_after_nms.size() << std::endl;
+    base_transform_xyxy_xyhw(vecBox_after_nms, 1.0, aX[0], aY[0]);
+    bboxes = vecBox_after_nms;
+    // LOGI << "after filter " << bboxes.size() << std::endl;
+    std::vector<VecObjBBox>().swap(vecBox);
+    VecObjBBox().swap(vecBox_after_nms);
+    vecBox.clear();
+    LOGI << "<- YOLO_DETECTION::postprocess_drm";
+    return RET_CODE::SUCCESS;
 }
 
 ucloud::RET_CODE YOLO_DETECTION::postprocess(std::vector<float*> &output_datas, VecObjBBox &bboxes, std::vector<float> &aspect_ratios){

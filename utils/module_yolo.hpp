@@ -26,6 +26,8 @@ public:
  * non-public API
  */
 protected:
+    virtual ucloud::RET_CODE preprocess_drm(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
+    virtual ucloud::RET_CODE postprocess_drm(std::vector<float*> &output_datas, ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
     virtual ucloud::RET_CODE preprocess(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratios);
     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, ucloud::VecObjBBox &bboxes, std::vector<float> &aspect_ratios);
     /**
@@ -48,6 +50,7 @@ protected:
 
 private:
     std::shared_ptr<BaseModel> m_net = nullptr;//推理模型的主干部分
+    std::shared_ptr<ImageUtil> m_drm = nullptr;
     DATA_SHAPE m_InpSp;
     int m_InpNum = 1;//输入Tensor数量
     // int m_OtpNum = 4;//输出Tensor数量 3 layer+1 anchor_gir

@@ -16,10 +16,10 @@
 
 int RGA_init(rga_context *rga_ctx)
 {
-    rga_ctx->rga_handle = dlopen("/usr/lib/librga.so", RTLD_LAZY);
+    rga_ctx->rga_handle = dlopen("/usr/lib/aarch64-linux-gnu/librga.so", RTLD_LAZY);
     if (!rga_ctx->rga_handle)
     {
-        printf("dlopen /usr/lib/librga.so failed\n");
+        printf("dlopen /usr/lib/aarch64-linux-gnu/librga.so failed\n");
         return -1;
     }
     rga_ctx->init_func = (FUNC_RGA_INIT)dlsym(rga_ctx->rga_handle, "c_RkRgaInit");
@@ -69,7 +69,7 @@ void img_resize_fast(rga_context *rga_ctx, int src_fd, int src_w, int src_h, uin
     return;
 }
 
-void img_resize_slow(rga_context *rga_ctx, void *src_virt, int src_w, int src_h, void *dst_virt, int dst_w, int dst_h)
+int img_resize_slow(rga_context *rga_ctx, void *src_virt, int src_w, int src_h, void *dst_virt, int dst_w, int dst_h)
 {
     // printf("rga use virtual, src(%dx%d) -> dst(%dx%d)\n", src_w, src_h, dst_w, dst_h);
 
@@ -97,11 +97,12 @@ void img_resize_slow(rga_context *rga_ctx, void *src_virt, int src_w, int src_h,
         if (ret)
         {
             printf("c_RkRgaBlit error : %s\n", strerror(errno));
+            return -1;
         }
 
-        return;
+        return 1;
     }
-    return;
+    return -2;
 }
 
 int RGA_deinit(rga_context *rga_ctx)

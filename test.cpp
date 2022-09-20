@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     printf("infer\n");
     auto avg_time = 0.f;
     VecObjBBox bboxes;
-    int loop_times = 1;
+    int loop_times = 3;
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
         }
         int cnt = 0;
         for(auto &&box: bboxes){
-            if(cnt++ > 20) break;
+            if(cnt++ > 1) break;
             printf("[%d]%f,%f,%f,%f,%f,%f \n",box.objtype, box.confidence, box.objectness, box.x0, box.y0, box.x1, box.y1);
         }
     }
