@@ -30,15 +30,7 @@ protected:
     virtual ucloud::RET_CODE postprocess_drm(std::vector<float*> &output_datas, ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
     virtual ucloud::RET_CODE preprocess(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratios);
     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, ucloud::VecObjBBox &bboxes, std::vector<float> &aspect_ratios);
-    /**
-     * 模型输出Tensor的维度:
-     * [1 na h w d ] flatten -> [1, na*h*w*d ] dim0: na*h*w*d dim1:1
-     * [1 nl na 2] flatten -> [1, nl*na*2] dim0: nl*na*2 dim1:1
-     **/
-    virtual bool check_output_dims();
-    virtual ucloud::RET_CODE rknn_output_to_boxes_c_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
-    virtual ucloud::RET_CODE rknn_output_to_boxes_python_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
-    /** <====current situation
+    /** mode=0: Detect Layer标准输出
      * 模型输出Tensor的维度:
      * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
      * dim0 = 2,NC+1
@@ -47,6 +39,23 @@ protected:
      **/    
     virtual bool check_output_dims_1LX();
     virtual ucloud::RET_CODE rknn_output_to_boxes_1LX( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
+    /** mode=1: Detect Layer仅进行了sigmoid
+     * 模型输出Tensor的维度:
+     * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1] anchors_grid [nl,na,2]
+     * dim0 = 2,NC+1
+     * dim1 = L
+     * dim2 = 1
+     **/
+    virtual bool check_output_dims_1LX2(){return true;};
+    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX2( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);  
+    /** mode=2: Detect Layer仅进行了sigmoid, 且不进行permute
+     * 模型输出Tensor的维度:
+     * wywhs [1,na*no,h,w]xnl(3) anchors_grid [nl,na,2]
+     * dim0 = w
+     * dim1 = h
+     * dim2 = na*no
+     **/    
+    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX3( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);  
 
 private:
     std::shared_ptr<BaseModel> m_net = nullptr;//推理模型的主干部分

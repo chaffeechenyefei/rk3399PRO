@@ -45,35 +45,14 @@ RET_CODE YOLO_DETECTION::init(std::map<ucloud::InitParam, std::string> &modelpat
     m_param_img2tensor.model_input_shape = m_InpSp;
 
     m_strides = {8,16,32,64};
-    if(!check_output_dims_1LX()){
-        printf("output dims check failed\n");
-        return RET_CODE::ERR_MODEL_NOT_MATCH;
-    }
+    // if(!check_output_dims_1LX()){
+    //     printf("output dims check failed\n");
+    //     return RET_CODE::ERR_MODEL_NOT_MATCH;
+    // }
     LOGI << "<- NaiveModel::init";
     return ret;
 }
 
-/**
- * 输出Tensor的维度:
- * [1 na h w d ] flatten -> [1, na*h*w*d ] dim0: na*h*w*d dim1:1
- * [1 nl na 2] flatten -> [1, nl*na*2] dim0: nl*na*2 dim1:1
- **/
-bool YOLO_DETECTION::check_output_dims(){
-    int NA = 3;
-    int D = m_nc+5;
-    for(int i = 0; i < m_OtpNum - 1 ; i++ ){//minus 1,因为最后一个是grid_anchors
-        int dim1_expected = m_InpSp.h / m_strides[i] * m_InpSp.w / m_strides[i] * NA * D;
-        if (dim1_expected != m_OutEleDims[i][0] ){
-            printf("m_InpSp.h / m_strides[i] = %d, m_InpSp.w / m_strides[i] = %d, \
-                    NA = %d, D = %d, \
-                    m_OutEleDims[i][0] = %d not equals\n", \
-                    m_InpSp.h / m_strides[i], m_InpSp.w / m_strides[i], NA, D , m_OutEleDims[i][0] \
-                    );
-            return false;
-        }
-    }
-    return true;
-}
 /**
  * 输出Tensor的维度:
  * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
@@ -279,6 +258,168 @@ ucloud::RET_CODE YOLO_DETECTION::postprocess(std::vector<float*> &output_datas, 
     return RET_CODE::SUCCESS;
 }
 
+/** mode=2: Detect Layer仅进行了sigmoid, 且不进行permute
+ * 模型输出Tensor的维度:
+ * wywhs [1,na*no,h,w]xnl(3) anchors_grid [nl,na,2]
+ * dim0 = w
+ * dim1 = h
+ * dim2 = na*no
+ **/
+ucloud::RET_CODE YOLO_DETECTION::rknn_output_to_boxes_1LX3( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes){
+    LOGI << "<- YOLO_DETECTION::rknn_output_to_boxes_1LX3";
+    int NL = m_nl;
+    int NA = m_OutEleDims[3][1];
+    int NC = m_nc;
+    for (int i=0; i<m_unique_clss_map.size(); i++){
+        bboxes.push_back(VecObjBBox());
+    }
+
+    int cnt = 0;
+    float *ptrAnchorGrid = output_datas[3];
+
+    for(int nl=0; nl < NL; nl++){ // Layer
+        float* ptrXYWHS = output_datas[nl]; //[1,na,no,h,w]
+        for(int na=0; na < NA; na++){ //num of anchors
+            int H = m_InpSp.h / m_strides[nl];
+            int W = m_InpSp.w / m_strides[nl];
+            int hwStep = H*W;
+            float agX = ptrAnchorGrid[ nl*NA*2 + na*2 + 0];
+            float agY = ptrAnchorGrid[ nl*NA*2 + na*2 + 1];
+            float* ptrNoHW = ptrXYWHS+na*(NC+5)*hwStep; //[no,h,w]
+            float* ptrX = ptrNoHW;
+            float* ptrY = ptrNoHW + hwStep;
+            float* ptrW = ptrNoHW + 2*hwStep;
+            float* ptrH = ptrNoHW + 3*hwStep;
+            float* ptrObj = ptrNoHW + 4*hwStep; //[h,w] objectness
+            for(int h = 0; h < H; h++){
+                for(int w = 0; w < W; w++){
+                    float objectness = *ptrObj++;
+                    if(objectness<m_threshold){
+                        ptrX++; ptrY++; ptrW++; ptrH++;
+                        continue;
+                    } else {
+                        cnt++;
+                        BBox fbox;
+                        float cx = *ptrX++;
+                        float cy = *ptrY++;
+                        float cw = *ptrW++; 
+                        float ch = *ptrH++;
+                        cx = (cx*2 - 0.5 + w)*m_strides[nl];
+                        cy = (cy*2 - 0.5 + h)*m_strides[nl];
+                        cw = cw*cw*4*agX;
+                        ch = ch*ch*4*agY;
+                        fbox.x0 = cx - cw/2;
+                        fbox.y0 = cy - ch/2;
+                        fbox.x1 = cx + cw/2;
+                        fbox.y1 = cy + ch/2;
+                        fbox.x = fbox.x0; fbox.y = fbox.y0; fbox.w = cw; fbox.h = ch;
+                        fbox.objectness = objectness;
+                        int maxid = -1;
+                        float max_confidence = 0;
+                        float* confidence = (float*)malloc(sizeof(float)*NC);
+                        for(int i = 0; i < NC; i++){
+                            confidence[i] = *(ptrNoHW+(i+5)*hwStep);
+                        }
+                        argmax(confidence, NC , maxid, max_confidence);
+                        free(confidence);
+                        fbox.confidence = objectness*max_confidence;
+                        fbox.quality = max_confidence;//++quality using max_confidence instead for object detection
+
+                        if (maxid < 0 || m_clss.empty())
+                            fbox.objtype = CLS_TYPE::UNKNOWN;
+                        else
+                            fbox.objtype = m_clss[maxid];
+                        if(m_unique_clss_map.find(fbox.objtype)!=m_unique_clss_map.end())
+                            bboxes[m_unique_clss_map[fbox.objtype]].push_back(fbox);
+                    }//if objectness < m_threshold
+                }//w
+            }//h
+        }//num of anchors
+
+    }// Layer
+    LOGI << "-> YOLO_DETECTION::rknn_output_to_boxes_1LX3";
+    return RET_CODE::SUCCESS;
+}  
+
+/** mode=1: Detect Layer仅进行了sigmoid
+ * 输入Tensor的维度:
+ * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1] anchors_grid [nl,na,2]
+ * dim0 = 2,NC+1
+ * dim1 = L
+ * dim2 = 1
+ **/  
+ucloud::RET_CODE YOLO_DETECTION::rknn_output_to_boxes_1LX2( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes){
+    LOGI << "<- YOLO_DETECTION::rknn_output_to_boxes_1LX2";
+    int stepxywh = 2;
+    int stepConf = m_nc + 1;
+    int L = m_OutEleDims[0][1];
+    int NL = m_nl;
+    int NA = m_OutEleDims[3][1];
+    int NC = m_nc;
+    for (int i=0; i<m_unique_clss_map.size(); i++){
+        bboxes.push_back(VecObjBBox());
+    }
+
+    int cnt = 0;
+    float *ptrXY = output_datas[0];//center x,y
+    float *ptrWH = output_datas[1];
+    float *ptrProb = output_datas[2];//objectness+prob of classes
+    float *ptrAnchorGrid = output_datas[3];
+
+    for(int nl=0; nl < NL; nl++){ // Layer
+        for(int na=0; na < NA; na++){ //num of anchors
+            int H = m_InpSp.h / m_strides[nl];
+            int W = m_InpSp.w / m_strides[nl];
+            float agX = ptrAnchorGrid[ nl*NA*2 + na*2 + 0];
+            float agY = ptrAnchorGrid[ nl*NA*2 + na*2 + 1];
+            for(int h = 0; h < H; h++){
+                for(int w = 0; w < W; w++){
+                    float objectness = *ptrProb;
+                    if(objectness<m_threshold){
+                        ptrXY += stepxywh;
+                        ptrWH += stepxywh;
+                        ptrProb += stepConf;
+                        continue;
+                    } else {
+                        cnt++;
+                        BBox fbox;
+                        float cx = *ptrXY++;
+                        float cy = *ptrXY++;
+                        float cw = *ptrWH++; 
+                        float ch = *ptrWH++;
+                        cx = (cx*2 - 0.5 + w)*m_strides[nl];
+                        cy = (cy*2 - 0.5 + h)*m_strides[nl];
+                        cw = cw*cw*4*agX;
+                        ch = ch*ch*4*agY;
+                        fbox.x0 = cx - cw/2;
+                        fbox.y0 = cy - ch/2;
+                        fbox.x1 = cx + cw/2;
+                        fbox.y1 = cy + ch/2;
+                        fbox.x = fbox.x0; fbox.y = fbox.y0; fbox.w = cw; fbox.h = ch;
+                        fbox.objectness = objectness;
+                        int maxid = -1;
+                        float max_confidence = 0;
+                        float* confidence = ptrProb+1;
+                        argmax(confidence, NC , maxid, max_confidence);
+                        fbox.confidence = objectness*max_confidence;
+                        fbox.quality = max_confidence;//++quality using max_confidence instead for object detection
+                        ptrProb += stepConf;
+                        if (maxid < 0 || m_clss.empty())
+                            fbox.objtype = CLS_TYPE::UNKNOWN;
+                        else
+                            fbox.objtype = m_clss[maxid];
+                        if(m_unique_clss_map.find(fbox.objtype)!=m_unique_clss_map.end())
+                            bboxes[m_unique_clss_map[fbox.objtype]].push_back(fbox);
+                    }//if objectness < m_threshold
+                }//w
+            }//h
+        }//num of anchors
+
+    }// Layer
+    LOGI << "-> YOLO_DETECTION::rknn_output_to_boxes_1LX2";
+    return RET_CODE::SUCCESS;
+}
+
 /**
  * 输入Tensor的维度:
  * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
@@ -341,189 +482,6 @@ ucloud::RET_CODE YOLO_DETECTION::rknn_output_to_boxes_1LX( std::vector<float*> &
     LOGI << "-> YOLO_DETECTION::rknn_output_to_boxes_1LX";
     return RET_CODE::SUCCESS;
 }
-
-
-
-/**
- * [1 na h w d ]
- * [ 1 3:nl 3:na 2:(xy) ]
- */
-ucloud::RET_CODE YOLO_DETECTION::rknn_output_to_boxes_python_data_layer( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes){
-    LOGI << "<- YOLO_DETECTION::rknn_output_to_boxes_python_data_layer";
-    int NC = m_nc;
-    int NL = m_nl;//3
-    int NA = 3;
-    int D = NC + 5;
-    for (int i=0; i<m_unique_clss_map.size(); i++){
-        bboxes.push_back(VecObjBBox());
-    }
-
-    float* anchor_grid = output_datas[NL];
-    for(int nl = 0; nl < NL; nl++){
-        for(int na = 0; na < NA; na++ ){
-            printf("%f,%f ", anchor_grid[nl*NA*2+na*2+0] , anchor_grid[nl*NA*2+na*2+1]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-    int cnt = 0;
-    for(int nl = 0; nl < NL; nl++){
-        //layers
-        float *layer = output_datas[nl];
-        int H = m_InpSp.h/m_strides[nl];
-        int W = m_InpSp.w/m_strides[nl];
-        float* pp = layer;
-        printf("layer[%d] :", nl );
-        for(int p = 0; p < 10; p++ ){
-            printf("%f, ", *pp++);
-        }
-        printf("\n");
-        //num of anchors: na
-        for(int na = 0; na < NA; na++){
-            for(int h = 0; h < H; h++){//feature map h
-                for(int w=0; w < W; w++){ //w
-                    // float *tmp = layer+nl*NA*H*W*D+na*H*W*D+h*W*D+w*D;
-                    float objectness = *(layer+4);
-                    // printf("objectness:%f\n", objectness);
-                    if( objectness<m_threshold ) {
-                        layer += D;
-                        continue;
-                    } else{ //threshold
-                        cnt++;
-                        BBox fbox;
-                        float *tmp = layer;
-                        float cx = *tmp++;
-                        float cy = *tmp++;
-                        float cw = *tmp++; 
-                        float ch = *tmp++;
-                        cx = (cx*2 - 0.5 + w )*m_strides[nl];
-                        cy = (cy*2 - 0.5 + h )*m_strides[nl];
-                        cw = (cw*cw*4)* anchor_grid[nl*NA*2+na*2+0];   //anchor_grid[nl*NA*2+na*2+0];
-                        ch = (ch*ch*4)* anchor_grid[nl*NA*2+na*2+1];   //anchor_grid[nl*NA*2+na*2+1];
-                        fbox.x0 = cx - cw/2;
-                        fbox.y0 = cy - ch/2;
-                        fbox.x1 = cx + cw/2;
-                        fbox.y1 = cy + ch/2;
-                        fbox.x = fbox.x0; fbox.y = fbox.y0; fbox.w = cw; fbox.h = ch;
-                        tmp++;//skip objectness
-                        fbox.objectness = objectness;
-                        int maxid = -1;
-                        float max_confidence = 0;
-                        float* confidence = tmp;
-                        argmax(confidence, NC , maxid, max_confidence);
-                        fbox.confidence = objectness*max_confidence;
-                        fbox.quality = max_confidence;//++quality using max_confidence instead for object detection
-                        layer += D;
-                        if (maxid < 0 || m_clss.empty())
-                            fbox.objtype = CLS_TYPE::UNKNOWN;
-                        else
-                            fbox.objtype = m_clss[maxid];
-                        if(m_unique_clss_map.find(fbox.objtype)!=m_unique_clss_map.end())
-                            bboxes[m_unique_clss_map[fbox.objtype]].push_back(fbox);
-                    } //threshold
-                } //w
-            }//feature map h
-        }//num of anchors: na
-        printf("[%d] over threshold: %d\n",cnt, m_threshold);
-    }
-    LOGI << "<- YOLO_DETECTION::rknn_output_to_boxes_python_data_layer";
-    return RET_CODE::SUCCESS;
-}
-
-/**
- * anchor_grid 
- * python data layer [ 1 3:nl 3:na 2:(xy) ]
- * c data layer [(xy), na , nl ]
- */
-static inline float get_anchor_grid_from_c_data_layer(float* anchor_grid, int nl, int na , int xy ,int NA, int NL){
-    return anchor_grid[ xy*NA*NL+na*NL+nl ];
-}
-/**
- * output layer [1 na h w d ] -> [ d w h na 1] -> [d w h na] -> dim0:d dim1:w dim2:h dim3:na 
- * python data layer [1 na h w d ]
- * c data layer [d w h na]
- */
-static inline float get_xywhoc_from_c_data_layer(float *output, int na, int h, int w, int d, int NA, int H, int W){
-    return output[ d*W*H*NA + w*H*NA + h*NA + na];
-}
-ucloud::RET_CODE YOLO_DETECTION::rknn_output_to_boxes_c_data_layer( std::vector<float*> &output_datas, std::vector<ucloud::VecObjBBox> &bboxes){
-    LOGI << "<- YOLO_DETECTION::rknn_output_to_boxes_c_data_layer";
-    int NC = m_clss.size();
-    int NL = m_nl;//3
-    int NA = 3;
-    int D = NC + 5;
-    for (int i=0; i<m_unique_clss_map.size(); i++){
-        bboxes.push_back(VecObjBBox());
-    }
-    float* confidence = (float*)malloc(sizeof(float)*NC);
-    float* anchor_grid = output_datas[NL];
-    // printf("anchor_grid:");
-    // for(int nl = 0; nl < NL; nl++){
-    //     printf("[layer:%d] = ", nl);
-    //     for(int na = 0; na < NA; na++){
-    //         printf("%f,%f ", \
-    //             anchor_grid[nl*NA*2+na*2], anchor_grid[nl*NA*2+na*2+1]);
-    //         // get_anchor_grid_from_c_data_layer(anchor_grid, nl, na , 0 , NA, NL), \
-    //         // get_anchor_grid_from_c_data_layer(anchor_grid, nl, na , 1 , NA, NL));
-    //     }
-    //     printf("\n");
-    // }
-
-    for(int nl = 0; nl < NL; nl++){
-        //layers
-        float *layer = output_datas[nl];
-        int H = m_InpSp.h/m_strides[nl];
-        int W = m_InpSp.w/m_strides[nl];
-        //num of anchors: na
-        for(int na = 0; na < NA; na++){
-            for(int h = 0; h < H; h++){//feature map h
-                for(int w=0; w < W; w++){ //w
-                    float objectness = get_xywhoc_from_c_data_layer(layer,na,h,w,4,NA,H,W);
-                    // printf("objectness:%f\n", objectness);
-                    if( objectness<m_threshold ) {
-                        continue;
-                    } else{ //threshold
-                        BBox fbox;
-                        float cx = get_xywhoc_from_c_data_layer(layer,na,h,w,0,NA,H,W);
-                        float cy = get_xywhoc_from_c_data_layer(layer,na,h,w,1,NA,H,W);
-                        float cw =  get_xywhoc_from_c_data_layer(layer,na,h,w,2,NA,H,W);
-                        float ch =  get_xywhoc_from_c_data_layer(layer,na,h,w,3,NA,H,W);
-                        cx = (cx*2 - 0.5 + w )*m_strides[nl];
-                        cy = (cy*2 - 0.5 + h )*m_strides[nl];
-                        cw = (cw*cw*4)* anchor_grid[nl*NA*2+na*2+0];//get_anchor_grid_from_c_data_layer(anchor_grid, nl, na , 0 , NA, NL);   //anchor_grid[nl*NL*NA*2+na*NA*2+0];
-                        ch = (ch*ch*4)* anchor_grid[nl*NA*2+na*2+1];//get_anchor_grid_from_c_data_layer(anchor_grid, nl, na , 1 , NA, NL);   //anchor_grid[nl*NL*NA*2+na*NA*2+1];
-                        fbox.x0 = cx - cw/2;
-                        fbox.y0 = cy - ch/2;
-                        fbox.x1 = cx + cw/2;
-                        fbox.y1 = cy + ch/2;
-                        fbox.x = fbox.x0; fbox.y = fbox.y0; fbox.w = cw; fbox.h = ch;
-                        // tmp++;//skip objectness
-                        fbox.objectness = objectness;
-                        int maxid = -1;
-                        float max_confidence = 0;
-                        for(int i=0; i < NC; i++){
-                            confidence[i] = get_xywhoc_from_c_data_layer(layer,na,h,w,i+5,NA,H,W);
-                        }
-                        argmax(confidence, NC , maxid, max_confidence);
-                        fbox.confidence = objectness*max_confidence;
-                        fbox.quality = max_confidence;//++quality using max_confidence instead for object detection
-                        // layer += D;
-                        if (maxid < 0 || m_clss.empty())
-                            fbox.objtype = CLS_TYPE::UNKNOWN;
-                        else
-                            fbox.objtype = m_clss[maxid];
-                        if(m_unique_clss_map.find(fbox.objtype)!=m_unique_clss_map.end())
-                            bboxes[m_unique_clss_map[fbox.objtype]].push_back(fbox);
-                    } //threshold
-                } //w
-            }//feature map h
-        }//num of anchors: na
-    }
-    free(confidence);
-    LOGI << "-> YOLO_DETECTION::rknn_output_to_boxes_c_data_layer";
-    return RET_CODE::SUCCESS;
-}
-
 
 static inline int get_unique_cls_num(std::vector<CLS_TYPE>& output_clss, std::map<CLS_TYPE,int> &unique_cls_order ){
     unique_cls_order.clear();
