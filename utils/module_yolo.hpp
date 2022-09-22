@@ -3,6 +3,7 @@
 
 #include "module_base.hpp"
 #include "basic.hpp"
+#include "module_track.hpp"
 
 /**
  * YOLO_DETECTION
@@ -60,6 +61,7 @@ protected:
 private:
     std::shared_ptr<BaseModel> m_net = nullptr;//推理模型的主干部分
     std::shared_ptr<ImageUtil> m_drm = nullptr;
+    std::shared_ptr<ByteTrackNoReIDPool> m_track = nullptr;
     DATA_SHAPE m_InpSp;
     int m_InpNum = 1;//输入Tensor数量
     // int m_OtpNum = 4;//输出Tensor数量 3 layer+1 anchor_gir

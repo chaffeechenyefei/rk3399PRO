@@ -9,6 +9,7 @@ YOLO_DETECTION::YOLO_DETECTION(){
     LOGI << "-> YOLO_DETECTION";
     m_net = std::make_shared<BaseModel>();
     m_drm = std::make_shared<ImageUtil>();
+    m_track = std::make_shared<ByteTrackNoReIDPool>(5,30);
 }
 
 YOLO_DETECTION::~YOLO_DETECTION(){
