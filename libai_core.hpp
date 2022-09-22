@@ -285,10 +285,6 @@ typedef enum _InitParam{
     BASE_MODEL          = 0, //基础模型(检测模型/特征提取模型/分类模型)
     TRACK_MODEL         = 1, //跟踪模型
     SUB_MODEL           = 2, //模型级联时, 主模型用于初步检测, 次模型用于二次过滤, 提高精度
-
-    PED_MODEL           = 10,
-    HAND_MODEL          = 11,
-    FACE_MODEL          = 12,
 }InitParam;
 
 typedef enum _APIParam{
@@ -314,9 +310,7 @@ public:
      */
     virtual RET_CODE init(std::map<InitParam, std::string> &modelpath){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
 
-    virtual RET_CODE set_param(float threshold, float nms_threshold, \
-                            TvaiResolution maxTargetSize, TvaiResolution minTargetSize, \
-                            std::vector<TvaiRect> &pAoiRect){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
+    virtual RET_CODE set_param(float threshold, float nms_threshold){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     /** ALL_IN_ONE 
      * general detection(including face/skeleton/ped_car_non_car detection) and face feature extraction
      * */

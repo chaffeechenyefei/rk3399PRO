@@ -3,6 +3,8 @@
 
 #define CENTER(x,y) x/2+y/2
 
+using namespace bytetrack_no_reid;
+
 vector<STrack*> BYTETracker::joint_stracks(vector<STrack*> &tlista, vector<STrack> &tlistb)
 {
 	map<int, int> exists;
@@ -560,8 +562,8 @@ double BYTETracker::lapjv(const vector<vector<float> > &cost, vector<int> &rowso
 	return opt;
 }
 
-Scalar BYTETracker::get_color(int idx)
-{
-	idx += 3;
-	return Scalar(37 * idx % 255, 17 * idx % 255, 29 * idx % 255);
-}
+// Scalar BYTETracker::get_color(int idx)
+// {
+// 	idx += 3;
+// 	return Scalar(37 * idx % 255, 17 * idx % 255, 29 * idx % 255);
+// }

@@ -1,9 +1,10 @@
 #pragma once
 
 #include "STrack.h"
-#include "Eigen/Dense"
-#include "Eigen/Core"
+#include <Eigen/Dense>
+#include <Eigen/Core>
 
+namespace bytetrack_no_reid {
 struct Object
 {
 	vector<float> fea;
@@ -22,7 +23,7 @@ public:
 	void reset(float track_threshold,float high_detect_threshold,int frame_rate=30,int track_buffer=30);
 
 	vector<STrack> update(const vector<Object>& objects);
-	Scalar get_color(int idx);
+	// Scalar get_color(int idx);
 
 private:
 	vector<STrack*> joint_stracks(vector<STrack*> &tlista, vector<STrack> &tlistb);
@@ -58,3 +59,6 @@ private:
 	vector<STrack> removed_stracks;
 	byte_kalman::KalmanFilter kalman_filter;
 };
+};
+
+

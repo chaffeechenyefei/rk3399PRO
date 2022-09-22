@@ -3,6 +3,8 @@
 
 constexpr  const float gating_theshold = 9.4877;
 
+using namespace bytetrack_no_reid;
+
 BYTETracker::BYTETracker(float track_threshold, float high_detect_threshold,int frame_rate,int track_buffer){
 	track_thresh = track_threshold;
 	high_thresh = high_detect_threshold;
