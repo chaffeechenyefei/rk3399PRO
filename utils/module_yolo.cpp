@@ -39,10 +39,10 @@ RET_CODE YOLO_DETECTION::init(std::map<ucloud::InitParam, std::string> &modelpat
     m_OutEleDims = m_net->get_output_dims();
     m_OutEleNums = m_net->get_output_elem_num();
     //图像前处理参数
-    m_param_img2tensor.keep_aspect_ratio = true;
-    m_param_img2tensor.pad_both_side = false;
-    m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;
-    m_param_img2tensor.model_input_shape = m_InpSp;
+    m_param_img2tensor.keep_aspect_ratio = true;//保持长宽比, opencv有效, drm无效
+    m_param_img2tensor.pad_both_side = false;//仅进行单边(右下)补齐, drm无效
+    m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;//转换成RGB格式
+    m_param_img2tensor.model_input_shape = m_InpSp;//resize的需求尺寸
 
     m_strides = {8,16,32,64};
     // if(!check_output_dims_1LX()){
@@ -151,8 +151,8 @@ RET_CODE YOLO_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes){
 }
 
 
-ucloud::RET_CODE YOLO_DETECTION::preprocess(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratio  ){
-    LOGI << "-> YOLO_DETECTION::preprocess";
+ucloud::RET_CODE YOLO_DETECTION::preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratio  ){
+    LOGI << "-> YOLO_DETECTION::preprocess_opencv";
     // Mat im(tvimage.height,tvimage.width,CV_8UC3, tvimage.pData);
     // Mat resized_im;
     // cv::resize(im, resized_im, Size(m_InpSp.w,m_InpSp.h));
@@ -176,7 +176,7 @@ ucloud::RET_CODE YOLO_DETECTION::preprocess(ucloud::TvaiImage& tvimage, std::vec
         input_datas.push_back(data);
     }
     aspect_ratio = aX;
-    LOGI << "<- YOLO_DETECTION::preprocess";
+    LOGI << "<- YOLO_DETECTION::preprocess_opencv";
     return ret;
 }
 
@@ -189,6 +189,8 @@ ucloud::RET_CODE YOLO_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage, std:
     {
     case TVAI_IMAGE_FORMAT_RGB:
     case TVAI_IMAGE_FORMAT_BGR:
+    case TVAI_IMAGE_FORMAT_NV12:
+    case TVAI_IMAGE_FORMAT_NV21:
         break;
     default:
         valid_input_format = false;
@@ -197,12 +199,17 @@ ucloud::RET_CODE YOLO_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage, std:
     if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
 
     unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.w);
-    RET_CODE uret = m_drm->init(tvimage.width, tvimage.height, 3);
+    RET_CODE uret = m_drm->init(tvimage);
     if(uret!=RET_CODE::SUCCESS) return uret;
-    int ret = m_drm->resize(tvimage,m_InpSp, data);
+    // int ret = m_drm->resize(tvimage,m_InpSp, data);
+    int ret = m_drm->resize(tvimage, m_param_img2tensor, data);
     input_datas.push_back(data);
     aX.push_back( (float(m_InpSp.w))/tvimage.width );
     aY.push_back( (float(m_InpSp.h))/tvimage.height );
+
+    // cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
+    // cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
+    // cv::imwrite("preprocess_drm.jpg", cvimage_show);
 
     LOGI << "<- YOLO_DETECTION::preprocess_drm";
     return RET_CODE::SUCCESS;
@@ -232,8 +239,8 @@ ucloud::RET_CODE YOLO_DETECTION::postprocess_drm(std::vector<float*> &output_dat
     return RET_CODE::SUCCESS;
 }
 
-ucloud::RET_CODE YOLO_DETECTION::postprocess(std::vector<float*> &output_datas, VecObjBBox &bboxes, std::vector<float> &aspect_ratios){
-    LOGI << "-> YOLO_DETECTION::postprocess";
+ucloud::RET_CODE YOLO_DETECTION::postprocess_opencv(std::vector<float*> &output_datas, VecObjBBox &bboxes, std::vector<float> &aspect_ratios){
+    LOGI << "-> YOLO_DETECTION::postprocess_opencv";
     if(output_datas.empty()) return RET_CODE::ERR_POST_EXE;
 
     std::vector<VecObjBBox> vecBox;
@@ -254,7 +261,7 @@ ucloud::RET_CODE YOLO_DETECTION::postprocess(std::vector<float*> &output_datas, 
     std::vector<VecObjBBox>().swap(vecBox);
     VecObjBBox().swap(vecBox_after_nms);
     vecBox.clear();
-    LOGI << "<- YOLO_DETECTION::postprocess";
+    LOGI << "<- YOLO_DETECTION::postprocess_opencv";
     return RET_CODE::SUCCESS;
 }
 

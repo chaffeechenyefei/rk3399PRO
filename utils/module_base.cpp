@@ -285,8 +285,8 @@ ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath, bool useDRM)
         //DRM
         memset(&rga_ctx, 0, sizeof(rga_context));
         memset(&drm_ctx, 0, sizeof(drm_context));
-        RGA_init(&rga_ctx);
-        drm_fd = drm_init(&drm_ctx);
+        RGA_init(&rga_ctx, "/usr/lib/aarch64-linux-gnu/librga.so");
+        drm_fd = drm_init(&drm_ctx, "/usr/lib/aarch64-linux-gnu/libdrm.so");
     }
     LOGI << "<- BaseModel::base_init";
     return RET_CODE::SUCCESS;
@@ -814,27 +814,122 @@ void base_nmsBBox(std::vector<VecObjBBox> &input, float threshold, int type, Vec
 /*----------------------------------------------------------------------*/
 /*ImageUtil DRM*/
 /*----------------------------------------------------------------------*/
-ucloud::RET_CODE ImageUtil::init(int w, int h, int channels) {
+ucloud::RET_CODE ImageUtil::init(ucloud::TvaiImage &tvimage) {
     LOGI << "-> ImageUtil::init";
     //w,h需要偶数
-    w += (w%2==0)?0:1;
-    h += (h%2==0)?0:1;
+    int texW,texH,bpp;
+    int channels = 1;
+    bool valid_img_fmt = true;
+    switch (tvimage.format)
+    {
+    case TVAI_IMAGE_FORMAT_BGR:
+    case TVAI_IMAGE_FORMAT_RGB:
+        texW = tvimage.width;
+        texH = tvimage.height;
+        texW += (texW%2==0)?0:1;
+        bpp = 3*8;//bit per pixel
+        channels = 3;
+        break;
+    case TVAI_IMAGE_FORMAT_NV12:
+    case TVAI_IMAGE_FORMAT_NV21:
+        texW = tvimage.width;
+        texH = 3*tvimage.height/2;
+        bpp = 8;
+        channels = 1;
+        break;
+    default:
+        valid_img_fmt = false;
+        break;
+    }
+    if(!valid_img_fmt){
+        printf("ImageUtil::init failed for unsupported image format\n");
+        return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+    }
+    // w += (w%2==0)?0:1;
     if(!initialed){
         // LOGI << "memset";
         memset(&rga_ctx, 0, sizeof(rga_context));
         memset(&drm_ctx, 0, sizeof(drm_context));
         LOGI << "drm_init";
-        drm_fd = drm_init(&drm_ctx);
+        if(exists_file(dl_drm_path))
+            drm_fd = drm_init(&drm_ctx, dl_drm_path.c_str());
+        else{
+            printf("drm_init failed, because %s not found\n", dl_drm_path.c_str());
+            return RET_CODE::FAILED;
+        }
         if(drm_fd < 0){
             printf("drm_init failed\n");
             return RET_CODE::FAILED;
         }
         LOGI << "drm_buf_alloc";
-        drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, w, h, channels*8, &buf_fd, &handle,
-                            &actual_size);
-        W = w; H = h; C = channels;
+        if(exists_file(dl_drm_path)){
+            drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, texW, texH, bpp, &buf_fd, &handle,
+                                &actual_size);
+            W = texW; H = texH;                            
+        }
+        else{
+            printf("rga_init failed, because %s not found\n", dl_rga_path.c_str());
+            return RET_CODE::FAILED;
+        }
         LOGI << "RGA_init";
-        RGA_init(&rga_ctx);
+        int ret = RGA_init(&rga_ctx, dl_rga_path.c_str());
+        if(ret<0){
+            printf("rga_init failed\n");
+            return RET_CODE::FAILED;
+        }
+        initialed = true;
+    } else {
+        if(texW!=W || texH!=H || channels!=C){
+            LOGI << "reinitial";
+            drm_buf_destroy(&drm_ctx, drm_fd, buf_fd, handle, drm_buf, actual_size);
+            drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, texW, texH, bpp, &buf_fd, &handle,
+                            &actual_size);
+            W = texW; H = texH; C = channels;
+        }
+    }    
+    LOGI << "<- ImageUtil::init";
+    return RET_CODE::SUCCESS;
+}
+
+ucloud::RET_CODE ImageUtil::init(int w, int h, int channels) {
+    LOGI << "-> ImageUtil::init";
+    //w,h需要偶数
+    if(channels == 3) w += (w%2==0)?0:1;
+    if(!initialed){
+        // LOGI << "memset";
+        memset(&rga_ctx, 0, sizeof(rga_context));
+        memset(&drm_ctx, 0, sizeof(drm_context));
+        LOGI << "drm_init";
+        if(exists_file(dl_drm_path))
+            drm_fd = drm_init(&drm_ctx, dl_drm_path.c_str());
+        else{
+            printf("drm_init failed, because %s not found\n", dl_drm_path.c_str());
+            return RET_CODE::FAILED;
+        }
+        if(drm_fd < 0){
+            printf("drm_init failed\n");
+            return RET_CODE::FAILED;
+        }
+        LOGI << "drm_buf_alloc";
+        if(exists_file(dl_drm_path)){
+            if(channels==3)
+                drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, w, h, channels*8, &buf_fd, &handle,
+                                &actual_size);
+            else
+                drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, w, 3*h/2, channels*8, &buf_fd, &handle,
+                                &actual_size);
+            W = w; H = h; C = channels;                            
+        }
+        else{
+            printf("rga_init failed, because %s not found\n", dl_rga_path.c_str());
+            return RET_CODE::FAILED;
+        }
+        LOGI << "RGA_init";
+        int ret = RGA_init(&rga_ctx, dl_rga_path.c_str());
+        if(ret<0){
+            printf("rga_init failed\n");
+            return RET_CODE::FAILED;
+        }
         initialed = true;
     } else {
         if(w!=W || h!=H || channels!=C){
@@ -858,6 +953,40 @@ void ImageUtil::release(void) {
     initialed = false;
 }
 
+RGA_MODE ImageUtil::get_rga_mode(TvaiImageFormat inputFMT, MODEL_INPUT_FORMAT outputFMT ){
+    RGA_MODE ret = RGBtoRGB;
+    switch (inputFMT)
+    {
+    case TVAI_IMAGE_FORMAT_BGR :
+        if(outputFMT == MODEL_INPUT_FORMAT::BGR )
+            ret = BGRtoBGR;
+        else if(outputFMT == MODEL_INPUT_FORMAT::RGB)
+            ret = BGRtoRGB;
+        break;
+    case TVAI_IMAGE_FORMAT_RGB :
+        if(outputFMT == MODEL_INPUT_FORMAT::BGR )
+            ret = RGBtoBGR;
+        else if(outputFMT == MODEL_INPUT_FORMAT::RGB)
+            ret = RGBtoRGB;
+        break;
+    case TVAI_IMAGE_FORMAT_NV21:
+        if(outputFMT == MODEL_INPUT_FORMAT::BGR )
+            ret = NV21toBGR;
+        else if(outputFMT == MODEL_INPUT_FORMAT::RGB)
+            ret = NV21toRGB;    
+        break;
+    case TVAI_IMAGE_FORMAT_NV12:
+        if(outputFMT == MODEL_INPUT_FORMAT::BGR )
+            ret = NV12toBGR;
+        else if(outputFMT == MODEL_INPUT_FORMAT::RGB)
+            ret = NV12toRGB;
+        break;
+    default:
+        break;
+    }
+    return ret;
+};
+
 RET_CODE ImageUtil::resize(const cv::Mat& src, const cv::Size& size, void* dstPtr) {
     if (src.empty()) {
         printf("[ImageUtil::resize()] src is empty!\n");
@@ -878,10 +1007,9 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, DATA_SHAPE size, void *ds
     assert(tvimage.format == TVAI_IMAGE_FORMAT_RGB || tvimage.format == TVAI_IMAGE_FORMAT_BGR );
     int img_width = tvimage.width;
     int img_height = tvimage.height;
-
+    //图像的宽必须是偶数才能drm resize
     int img_width_pad = img_width + ((img_width%2==0)?0:1);
     int img_height_pad = img_height + ((img_height%2==0)?0:1);
-
     cv::Mat cvimage(img_height,img_width,CV_8UC3,tvimage.pData);
     cv::Mat cvimage_padded = cv::Mat::zeros(cv::Size(img_width_pad, img_height_pad), CV_8UC3);
     // printf("%d,%d,%d,%d\n",cvimage_padded.cols, cvimage_padded.rows, img_width, img_height);
@@ -896,4 +1024,61 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, DATA_SHAPE size, void *ds
     // cv::imwrite("resized.jpg", cvimage_show);
     if(ret >= 0) return RET_CODE::SUCCESS;
     else return RET_CODE::FAILED;                    
+}
+
+RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr){
+    LOGI << "-> ImageUtil::resize";
+    int img_width = tvimage.width;
+    int img_height = tvimage.height;
+    bool valid_img_format = true;
+    int img_width_pad = img_width + ((img_width%2==0)?0:1);
+    int ret = -1;
+    RGA_MODE mode = get_rga_mode(tvimage.format, pre_param.model_input_format);
+    switch (tvimage.format)
+    {
+    case TVAI_IMAGE_FORMAT_BGR:
+    case TVAI_IMAGE_FORMAT_RGB:
+        {
+        LOGI << "TVAI_IMAGE_FORMAT_BGR/TVAI_IMAGE_FORMAT_RGB";
+        //图像的宽必须是偶数才能drm resize
+        cv::Mat cvimage(img_height,img_width,CV_8UC3,tvimage.pData);
+        if( img_width==img_width_pad ){
+            memcpy(drm_buf, cvimage.data, img_width_pad * img_height * 3);
+        } else{
+            cv::Mat cvimage_padded = cv::Mat::zeros(cv::Size(img_width_pad, img_height), CV_8UC3);
+            cv::Mat tmp = cvimage_padded(cv::Rect(0,0,img_width, img_height));
+            cvimage.copyTo(tmp);
+            memcpy(drm_buf, cvimage_padded.data, img_width_pad * img_height * 3);
+            ret = img_resize_to_dst_format_slow(&rga_ctx, drm_buf, img_width_pad, img_height, dstPtr, 
+                pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
+        }
+        }    
+        break;
+    case TVAI_IMAGE_FORMAT_NV21:
+    case TVAI_IMAGE_FORMAT_NV12:
+        {
+        LOGI << "TVAI_IMAGE_FORMAT_NV21/TVAI_IMAGE_FORMAT_NV12";
+        memcpy(drm_buf, tvimage.pData, 3*img_width * img_height/2);
+        ret = img_resize_to_dst_format_slow(&rga_ctx, drm_buf, img_width, img_height, dstPtr, 
+            pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
+        }
+        break;
+    default:
+        valid_img_format = false;
+        break;
+    }
+    if(!valid_img_format){
+        printf("invalid image format for ImageUtil::resize\n");
+        return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+    }
+
+
+
+
+    
+    LOGI << "<- ImageUtil::resize";
+    // cv::Mat cvimage_show(size.h, size.w, CV_8UC3, dstPtr);
+    // cv::imwrite("resized.jpg", cvimage_show);
+    if(ret >= 0) return RET_CODE::SUCCESS;
+    else return RET_CODE::FAILED;      
 }

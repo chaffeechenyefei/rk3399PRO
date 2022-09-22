@@ -51,6 +51,18 @@ unsigned char* ucloud::readImg_to_RGB(std::string filepath, int &width, int &hei
     return dst_ptr;
 }
 
+unsigned char* ucloud::readImg_to_BGR(std::string filepath, int &width, int &height){
+    Mat im = imread(filepath);
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    dst_ptr = (unsigned char*)malloc(im.total()*3);
+    memcpy(dst_ptr, im.data, im.total()*3);
+    width = im.cols;
+    height = im.rows;
+    return dst_ptr;
+}
+
 unsigned char* ucloud::readImg_to_NV21(std::string filepath, int &width, int &height, int &stride){
     Mat im = imread(filepath);
     unsigned char* dst_ptr = nullptr;
@@ -58,6 +70,35 @@ unsigned char* ucloud::readImg_to_NV21(std::string filepath, int &width, int &he
         return dst_ptr;
     dst_ptr = BGR2YUV_nv21_with_stride(im, width, height, stride, 2);
     return dst_ptr;
+}
+
+unsigned char* ucloud::readImg_to_NV12(std::string filepath, int &width, int &height, int &stride){
+    Mat im = imread(filepath);
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    dst_ptr = BGR2YUV_nv12_with_stride(im, width, height, stride, 2);
+    return dst_ptr;
+}
+
+unsigned char* ucloud::readImg_to_NV21(std::string filepath, int w, int h,int &width, int &height, int &stride){
+    Mat im = imread(filepath);
+    cv::resize(im,im, cv::Size(w,h));
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    dst_ptr = BGR2YUV_nv21_with_stride(im, width, height, stride, 2);
+    return dst_ptr;    
+}
+
+unsigned char* ucloud::readImg_to_NV12(std::string filepath, int w, int h,int &width, int &height, int &stride){
+    Mat im = imread(filepath);
+    cv::resize(im,im, cv::Size(w,h));
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    dst_ptr = BGR2YUV_nv12_with_stride(im, width, height, stride, 2);
+    return dst_ptr;    
 }
 
 void ucloud::writeImg(std::string filepath , unsigned char* img, int width, int height, bool overwrite){
@@ -140,6 +181,37 @@ void ucloud::drawImg(unsigned char* img, int width, int height, VecObjBBox &bbox
         }
         free(rand_color);
     }
+}
+
+unsigned char* ucloud::yuv_reader(std::string filename, int w, int h){
+    std::ifstream fin(filename, std::ios::binary);
+    int l = fin.tellg();
+    fin.seekg(0, std::ios::end);
+    int m = fin.tellg();
+    fin.seekg(0,std::ios::beg);
+    // cout << "file size " << (m-l) << " bytes" << endl;
+    assert(m-l == w*h/2*3);
+    int stride = w;
+    int wh = w*h;
+    unsigned char* yuvdata = (unsigned char*)malloc(int(wh/2*3)*sizeof(unsigned char));
+    fin.read( reinterpret_cast<char*>(yuvdata) , int(wh/2*3)*sizeof(unsigned char));
+    fin.close();
+    return yuvdata;
+}
+
+unsigned char* ucloud::rgb_reader(std::string filename, int w, int h){
+    std::ifstream fin(filename, std::ios::binary);
+    int l = fin.tellg();
+    fin.seekg(0, std::ios::end);
+    int m = fin.tellg();
+    fin.seekg(0,std::ios::beg);
+    assert(m-l == w*h*3);
+    int stride = w;
+    int wh = w*h;
+    unsigned char* rgbdata = (unsigned char*)malloc(int(wh*3)*sizeof(unsigned char));
+    fin.read( reinterpret_cast<char*>(rgbdata) , int(wh*3)*sizeof(unsigned char));
+    fin.close();
+    return rgbdata;
 }
 
 /*--------------Clocker------------------*/

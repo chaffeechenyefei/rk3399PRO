@@ -15,7 +15,7 @@
 #include "drm_func.h"
 #include <dlfcn.h>
 
-int drm_init(drm_context *drm_ctx)
+int drm_init(drm_context *drm_ctx, const char* dlpath)
 {
     static const char *card = "/dev/dri/card0";
     int flag = O_RDWR;
@@ -27,11 +27,11 @@ int drm_init(drm_context *drm_ctx)
         printf("failed to open %s\n", card);
         return -1;
     }
-
-    drm_ctx->drm_handle = dlopen("/usr/lib/aarch64-linux-gnu/libdrm.so", RTLD_LAZY);
+    //"/usr/lib/aarch64-linux-gnu/libdrm.so"
+    drm_ctx->drm_handle = dlopen( dlpath, RTLD_LAZY);
     if (!drm_ctx->drm_handle)
     {
-        printf("failed to dlopen /usr/lib/aarch64-linux-gnu/libdrm.so\n");
+        printf("failed to dlopen %s\n", dlpath);
         drm_deinit(drm_ctx, drm_fd);
         return -1;
     }

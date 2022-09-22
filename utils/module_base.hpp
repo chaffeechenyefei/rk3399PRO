@@ -140,17 +140,30 @@ private://DRM drm模式需要mutex保护
  * drm for preprocess
  * https://blog.csdn.net/u014644466/article/details/124568216
  */
+typedef struct _PRE_PARAM{
+    bool keep_aspect_ratio;
+    bool pad_both_side;
+    DATA_SHAPE model_input_shape;
+    MODEL_INPUT_FORMAT model_input_format;
+} PRE_PARAM;
 class ImageUtil{
 public:
     ImageUtil(){};
     virtual ~ImageUtil() { release(); };
     ucloud::RET_CODE init(int w, int h, int channels);
+    ucloud::RET_CODE init(ucloud::TvaiImage &tvimage);
     /**
      * dstPtr需要在外部实现开辟
      * src必须是RGB或者BGR 输出同样format
      */
     ucloud::RET_CODE resize(const cv::Mat &src, const cv::Size &size, void *dstPtr);
-    ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, DATA_SHAPE size, void *dstPtr);
+    ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, DATA_SHAPE dst_size,void *dstPtr);
+    /**
+     * dstPtr需要在外部实现开辟
+     * tvimage 支持 RGB/BGR/nv21/nv12
+     * dst_fmt 支持 RGB/BGR
+     */
+    ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr);
 
 protected:
     void *drm_buf = NULL;
@@ -164,8 +177,11 @@ protected:
     int H = -1;
     int C = -1;
     bool initialed = false;
+    std::string dl_drm_path = "/usr/lib/aarch64-linux-gnu/libdrm.so";
+    std::string dl_rga_path = "/usr/lib/aarch64-linux-gnu/librga.so";
 
     void release(void);
+    RGA_MODE get_rga_mode(ucloud::TvaiImageFormat inputFMT, MODEL_INPUT_FORMAT outputFMT );
 
 };
 
@@ -173,12 +189,6 @@ protected:
  * PreProcessModel
  * DESC: 主要负责各种输入转换的方式
  */
-typedef struct _PRE_PARAM{
-    bool keep_aspect_ratio;
-    bool pad_both_side;
-    DATA_SHAPE model_input_shape;
-    MODEL_INPUT_FORMAT model_input_format;
-} PRE_PARAM;
 class PreProcessModel{
 public:
     PreProcessModel(){}

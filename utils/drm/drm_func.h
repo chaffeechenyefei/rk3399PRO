@@ -39,7 +39,7 @@ enum drm_rockchip_gem_mem_type
                        ROCKCHIP_BO_WC | ROCKCHIP_BO_SECURE
 };
 
-int drm_init(drm_context *drm_ctx);
+int drm_init(drm_context *drm_ctx, const char* dlpath);
 
 void* drm_buf_alloc(drm_context *drm_ctx,int drm_fd, int TexWidth, int TexHeight,int bpp,int *fd,unsigned int *handle,size_t *actual_size);
 

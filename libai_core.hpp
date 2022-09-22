@@ -351,13 +351,28 @@ public:
 };
 
 UCLOUD_API_PUBLIC unsigned char* readImg_to_RGB(std::string filepath, int &width, int &height);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_BGR(std::string filepath, int &width, int &height);
 UCLOUD_API_PUBLIC unsigned char* readImg_to_NV21(std::string filepath, int &width, int &height, int &stride);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_NV12(std::string filepath, int &width, int &height, int &stride);
+/**
+ * 读入图像, 并转为yuv数据, 同时进行缩放
+ * PARA:
+ * w :将输入图像resize到w/h尺寸
+ * h :将输入图像resize到w/h尺寸
+ * width :yuv能适配的尺寸
+ * height :yuv能适配的尺寸
+ */
+UCLOUD_API_PUBLIC unsigned char* readImg_to_NV21(std::string filepath, int w, int h,int &width, int &height, int &stride);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_NV12(std::string filepath, int w, int h,int &width, int &height, int &stride);
 //写图像, 是否采用覆盖式写入
 UCLOUD_API_PUBLIC void writeImg(std::string filepath , unsigned char* imgPtr, int width, int height, bool overwrite=true);
 UCLOUD_API_PUBLIC void freeImg(unsigned char** imgPtr);
 // use_rand_color: 在没有trackid的时候, 是否使用random color或统一的[0,255,0]
 UCLOUD_API_PUBLIC void drawImg(unsigned char* img, int width, int height, VecObjBBox &bboxs, \
         bool disp_landmark=false ,bool disp_label=false, bool use_rand_color=true, int color_for_trackid_or_cls = 0);
+//读取yuv和rgb的二进制文件流, 便于测试
+UCLOUD_API_PUBLIC unsigned char* yuv_reader(std::string filename, int w=1920, int h=1080);
+UCLOUD_API_PUBLIC unsigned char* rgb_reader(std::string filename, int w=1920, int h=1080);        
 
 class UCLOUD_API_PUBLIC Clocker{
 public:

@@ -125,6 +125,7 @@ void swapYUV_I420toNV21(unsigned char* i420bytes, unsigned char* nv21bytes, int 
 void BGR2YUV_nv21(cv::Mat src, cv::Mat &dst, int &yuvW, int &yuvH);
 void BGR2YUV_nv12(cv::Mat src, cv::Mat &dst, int &yuvW, int &yuvH);
 unsigned char* BGR2YUV_nv21_with_stride(cv::Mat src, int &yuvW, int &yuvH, int &stride , int align=64);
+unsigned char* BGR2YUV_nv12_with_stride(cv::Mat src, int &yuvW, int &yuvH, int &stride , int align=64);
 
 void YUV2BGR_n21(unsigned char* nv21bytes,int width, int height, int stride, cv::Mat &dst );
 

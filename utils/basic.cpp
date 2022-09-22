@@ -307,6 +307,39 @@ unsigned char* BGR2YUV_nv21_with_stride(cv::Mat src, int &yuvW, int &yuvH, int &
     return dst;
 }
 
+unsigned char* BGR2YUV_nv12_with_stride(cv::Mat src, int &yuvW, int &yuvH, int &stride , int align){
+    int H = src.rows;
+    int W = src.cols;
+    int padH = H + ( H%2!=0 ? 1: 0 );
+    int padW = W + ( W%2!=0 ? 1: 0 );
+    cv::Mat padim = cv::Mat::zeros(cv::Size(padW,padH), src.type());
+    src.copyTo(padim(cv::Rect(0,0,W,H)));
+
+    cv::Mat _dst = cv::Mat(padH*1.5, padW, CV_8UC1, cv::Scalar(0));
+    cv::Mat src_YUV_I420(padH*1.5, padW, CV_8UC1, cv::Scalar(0));  //YUV_I420
+    cv::cvtColor(padim, src_YUV_I420, CV_BGR2YUV_I420);
+    swapYUV_I420toNV12(src_YUV_I420.data, _dst.data, padW, padH);
+
+    int dst_stride = padW;
+    dst_stride = std::ceil(1.0 * dst_stride / align) * align;  // align stride to 64 by default
+
+    unsigned char* dst = (uchar*)malloc(3*dst_stride*padH/2);
+
+    if(!_dst.isContinuous()){
+        std::cout << "[BGR2YUV_nv12_with_stride] _dst not continuous" << std::endl;
+    }
+
+    for (int i = 0 ; i < 3*padH/2; i++){
+        uchar* ptr_src = _dst.data + i*padW;
+        uchar* ptr_dst = dst + i*dst_stride;
+        memcpy(ptr_dst, ptr_src, padW);
+    }
+    yuvW = padW;
+    yuvH = padH;
+    stride = dst_stride;
+    return dst;
+}
+
 
 
 Mat resize_no_aspect(cv::Mat &Input, cv::Size OupSz, float &sX, float &sY){
