@@ -82,6 +82,11 @@ typedef enum _CLS_TYPE{
     //高空抛物
     FALLING_OBJ                 = 600   ,   //高空抛物--轨迹确定
     FALLING_OBJ_UNCERTAIN               ,   //高空抛物--轨迹未确定
+    //车牌检测
+    LICPLATE_BLUE               = 700   ,   //蓝牌
+    LICPLATE_SGREEN                     ,   //小型新能源车（纯绿）
+    LICPLATE_BGREEN                     ,   //大型新能源车（黄加绿）
+    LICPLATE_YELLOW                     ,   //黄牌
 
     OTHERS                      = 900   ,   //其它类别, 相当于占位符
     OTHERS_A                    = 901   ,   //自定义占位符
@@ -265,6 +270,8 @@ typedef enum _AlgoAPIName{
     PED_SK_DETECTOR     = 19,//行人弯腰检测，测试环节[本质是行人检测+骨架检测]
     FACE_DETECTOR_ATTR  = 20,//人脸检测
     GENERAL_DETECTORV2  = 21,//跟踪器替代
+    LICPLATE_DETECTOR   = 22, //车牌检测
+    LICPLATE_RECOGNIZER = 23, //车牌识别
 // #endif
     RESERVED1           = 41,//yingxun保留
     RESERVED2           = 42,
@@ -367,6 +374,52 @@ UCLOUD_API_PUBLIC void drawImg(unsigned char* img, int width, int height, VecObj
 //读取yuv和rgb的二进制文件流, 便于测试
 UCLOUD_API_PUBLIC unsigned char* yuv_reader(std::string filename, int w=1920, int h=1080);
 UCLOUD_API_PUBLIC unsigned char* rgb_reader(std::string filename, int w=1920, int h=1080);        
+//视频读取基于opencv
+class UCLOUD_API_PUBLIC VIDOUT{
+public:
+    VIDOUT(){}
+    ~VIDOUT(){release();}
+    VIDOUT(const VIDOUT &obj)=delete;
+    VIDOUT& operator=(const VIDOUT & rhs)=delete;
+    unsigned char* bgrbuf=nullptr;
+    unsigned char* yuvbuf=nullptr;
+    int w,h,s;//yuv
+    int _w,_h;//bgr
+    void release(){
+        if(bgrbuf!=nullptr) free(bgrbuf);
+        if(yuvbuf!=nullptr) free(yuvbuf);
+    }
+};
+class UCLOUD_API_PUBLIC vidReader{
+public:
+    vidReader(){}
+    ~vidReader(){release();}
+    bool init(std::string filename);
+    unsigned char* getbgrImg(int &width, int &height);
+    unsigned char* getyuvImg(int &width, int &height, int &stride);
+    VIDOUT* getImg();
+    int len(){return m_len;}
+    int width();
+    int height();
+    int fps();
+private:
+    void release();
+    void* handle_t=nullptr;
+    int m_len = 0;
+};
+class UCLOUD_API_PUBLIC vidWriter{
+public:
+    vidWriter(){};
+    ~vidWriter(){release();}
+    bool init(std::string filename, int width, int height, int fps);
+    void writeImg(unsigned char* buf, int bufw, int bufh);
+private:
+    void release();
+    void* handle_t=nullptr;
+    int m_width;
+    int m_height;
+    int m_fps;
+};
 
 class UCLOUD_API_PUBLIC Clocker{
 public:

@@ -17,7 +17,7 @@ endif()
 
 #==========全局宏定义==========
 # add_definitions(-DVERBOSE=True) #设定时 LOGI<< 触发输出, 否则不输出
-add_definitions(-DTIMING=True) #是否进行内部耗时显示
+# add_definitions(-DTIMING=True) #是否进行内部耗时显示
 
 
 # ========RK3399========
@@ -124,17 +124,23 @@ set_target_properties(ai_core PROPERTIES PUBLIC_HEADER "libai_core.hpp" )
 
 
 include_directories( ${CMAKE_SOURCE_DIR}/3rdparty/ )
+#yolo检测模型单帧测试
 add_executable(test_yolo test_yolo.cpp)
-# target_include_directories(test_rk PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 target_link_libraries(test_yolo ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
 
 add_executable(test_resnet test_resnet.cpp)
 target_include_directories(test_resnet PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 target_link_libraries(test_resnet ${RK_LIBS} dl ${OPENCV_LIBS})
 
+#任意模型读取后, 输入输出shape打印
 add_executable(test_any test_any_model.cpp)
 target_include_directories(test_any PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
 target_link_libraries(test_any ${RK_LIBS} dl ${OPENCV_LIBS})
+
+#视频读写推理测试
+add_executable(test_video test_video.cpp)
+target_link_libraries(test_video ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
+
 
 message("=========END=========")
 

@@ -9,7 +9,8 @@ YOLO_DETECTION::YOLO_DETECTION(){
     LOGI << "-> YOLO_DETECTION";
     m_net = std::make_shared<BaseModel>();
     m_drm = std::make_shared<ImageUtil>();
-    m_track = std::make_shared<ByteTrackNoReIDPool>(5,30);
+    m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
+    m_track_param = {m_threshold, m_threshold+0.1f};
 }
 
 YOLO_DETECTION::~YOLO_DETECTION(){
@@ -31,7 +32,13 @@ RET_CODE YOLO_DETECTION::init(std::map<ucloud::InitParam, std::string> &modelpat
     }
     // m_net->release();
     bool useDRM = false;
+    #ifdef TIMING    
+    m_Tk.start();
+    #endif
     ret = m_net->base_init(modelpath[InitParam::BASE_MODEL], useDRM);
+    #ifdef TIMING    
+    m_Tk.end("model loading");
+    #endif
     if(ret!=RET_CODE::SUCCESS) return ret;
     //SISO的体现, 都只取index0的数据
     assert(m_InpNum == m_net->get_input_shape().size());
@@ -139,6 +146,15 @@ RET_CODE YOLO_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes){
         for(auto &&t: output_datas) free(t);
         return ret;
     }
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+    m_track->update(tvimage, bboxes, m_track_param);
+#ifdef TIMING    
+    m_Tk.end("tracking");
+#endif  
+    
 
     for(auto &&t: output_datas){
         free(t);

@@ -61,7 +61,8 @@ protected:
 private:
     std::shared_ptr<BaseModel> m_net = nullptr;//推理模型的主干部分
     std::shared_ptr<ImageUtil> m_drm = nullptr;
-    std::shared_ptr<ByteTrackNoReIDPool> m_track = nullptr;
+    std::shared_ptr<TrackPoolAPI<BYTETRACKPARM>> m_track = nullptr;
+    BYTETRACKPARM m_track_param;
     DATA_SHAPE m_InpSp;
     int m_InpNum = 1;//输入Tensor数量
     // int m_OtpNum = 4;//输出Tensor数量 3 layer+1 anchor_gir
@@ -84,6 +85,9 @@ private:
     std::map<ucloud::CLS_TYPE, int> m_unique_clss_map;
     float m_threshold = 0.4;
     float m_nms_threshold = 0.6;
+
+    int m_fps = 5;
+    int m_nn_buf = 30;
 
 #ifdef TIMING
     Timer m_Tk;

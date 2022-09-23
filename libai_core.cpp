@@ -183,6 +183,7 @@ void ucloud::drawImg(unsigned char* img, int width, int height, VecObjBBox &bbox
     }
 }
 
+
 unsigned char* ucloud::yuv_reader(std::string filename, int w, int h){
     std::ifstream fin(filename, std::ios::binary);
     int l = fin.tellg();
@@ -212,6 +213,139 @@ unsigned char* ucloud::rgb_reader(std::string filename, int w, int h){
     fin.read( reinterpret_cast<char*>(rgbdata) , int(wh*3)*sizeof(unsigned char));
     fin.close();
     return rgbdata;
+}
+
+/*--------------视频读写------------------*/
+//视频读取基于opencv
+void vidReader::release(){
+    if(handle_t!=nullptr){
+        VideoCapture* vid = reinterpret_cast<VideoCapture*>(handle_t);
+        vid->release();    
+        handle_t = nullptr;
+        m_len = 0;
+    }
+}
+
+bool vidReader::init(std::string filename){
+    release();
+    VideoCapture* vid = new VideoCapture();
+    bool ret = vid->open(filename);
+    if(!ret) {
+        std::cout << "video open failed"<<std::endl;
+        vid->release();
+        return ret;
+    }
+    m_len = vid->get(CV_CAP_PROP_FRAME_COUNT);
+    handle_t = reinterpret_cast<void*>(vid);
+    return ret;
+}
+
+unsigned char* vidReader::getbgrImg(int &width, int &height){
+    VideoCapture* vid = reinterpret_cast<VideoCapture*>(handle_t);
+    Mat frame, img;
+    bool ret = vid->isOpened();
+    if(!ret) { std::cout<< "open failed" << std::endl; return nullptr;}
+    ret = vid->read(frame);
+    if(!ret || frame.empty() ){
+        return nullptr;
+    }
+    frame.copyTo(img);
+    width = img.cols;
+    height = img.rows;
+    unsigned char* buf = (unsigned char*)malloc(width*height*3*sizeof(unsigned char));
+    memcpy(buf, img.data, img.total()*3);
+    return buf;
+}
+
+unsigned char* vidReader::getyuvImg(int &width, int &height, int &stride){
+    VideoCapture* vid = reinterpret_cast<VideoCapture*>(handle_t);
+    Mat frame, img;
+    bool ret = vid->isOpened();
+    if(!ret) { std::cout<< "open failed" << std::endl; return nullptr;}
+    ret = vid->read(frame);
+    if(!ret || frame.empty() ){
+        return nullptr;
+    }
+    frame.copyTo(img);
+    unsigned char* dst_ptr = nullptr;
+    dst_ptr = BGR2YUV_nv21_with_stride(img, width, height, stride, 2);
+    return dst_ptr;
+}
+
+VIDOUT* vidReader::getImg(){
+    VideoCapture* vid = reinterpret_cast<VideoCapture*>(handle_t);
+    Mat frame, img;
+    bool ret = vid->isOpened();
+    if(!ret) { std::cout<< "open failed" << std::endl;}
+    ret = vid->read(frame);
+    if(!ret || frame.empty() ){
+        return nullptr;
+    }
+    frame.copyTo(img);
+
+    unsigned char* bgrbuf = (unsigned char*)malloc(img.total()*3*sizeof(unsigned char));
+    memcpy(bgrbuf, img.data, img.total()*3);
+
+    int width, height, stride;
+    unsigned char* yuvbuf = nullptr;
+    yuvbuf = BGR2YUV_nv21_with_stride(img, width, height, stride, 2);
+
+    VIDOUT* rett = new VIDOUT();
+    rett->bgrbuf = bgrbuf;
+    rett->yuvbuf = yuvbuf;
+    rett->w = width;
+    rett->h = height;
+    rett->s = stride;
+    rett->_w = img.cols;
+    rett->_h = img.rows;
+    return rett;
+}
+
+int vidReader::width(){
+    VideoCapture* vid = reinterpret_cast<VideoCapture*>(handle_t);
+    return vid->get(CV_CAP_PROP_FRAME_WIDTH);
+}
+
+int vidReader::height(){
+    VideoCapture* vid = reinterpret_cast<VideoCapture*>(handle_t);
+    return vid->get(CV_CAP_PROP_FRAME_HEIGHT);    
+}
+
+int vidReader::fps(){
+    VideoCapture* vid = reinterpret_cast<VideoCapture*>(handle_t);
+    return vid->get(CV_CAP_PROP_FPS);
+}
+
+bool vidWriter::init(std::string filename, int width, int height, int fps){
+    release();
+    VideoWriter* vid = new VideoWriter();
+    // bool ret = vid->open(filename, CV_FOURCC('D','I','V','X'), fps, Size(width, height));
+    bool ret = vid->open(filename, CV_FOURCC('H','2','6','4'), fps, Size(width, height));
+    if(!ret) {
+        vid->release();
+        return ret;
+    }
+    m_fps = fps;
+    m_height = height;
+    m_width = width;
+    handle_t = reinterpret_cast<void*>(vid);
+    return ret;
+}
+
+void vidWriter::release(){
+    if(handle_t!=nullptr){
+        VideoWriter* vid = reinterpret_cast<VideoWriter*>(handle_t);
+        vid->release();    
+        handle_t = nullptr;
+    }    
+}
+
+void vidWriter::writeImg(unsigned char* buf, int bufw, int bufh){
+    VideoWriter* vid = reinterpret_cast<VideoWriter*>(handle_t);
+    Mat img( Size(bufw, bufh),CV_8UC3, buf);
+    Mat img_fit;
+    resize(img, img_fit, Size(m_width, m_height));
+    vid->write(img_fit);
 }
 
 /*--------------Clocker------------------*/

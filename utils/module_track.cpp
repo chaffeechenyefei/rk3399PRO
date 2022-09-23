@@ -25,6 +25,7 @@ void ByteTrackNoReIDPool::add_trackor(int cam_uuid, BYTETRACKPARM params){
         if(m_params[cam_uuid].track_threshold == params.track_threshold \
             && m_params[cam_uuid].high_detect_threshold == params.high_detect_threshold){
             //threshold一致 nothing
+            return;
         } else {
             m_params[cam_uuid] = params;
             m_trackors[cam_uuid]->reset(params.track_threshold, params.high_detect_threshold, m_fps, m_nn_buf);
@@ -32,7 +33,7 @@ void ByteTrackNoReIDPool::add_trackor(int cam_uuid, BYTETRACKPARM params){
     }
 }
 
-void ByteTrackNoReIDPool::update(TvaiImage &tvimage, VecObjBBox &bboxIN, BYTETRACKPARM params){
+void ByteTrackNoReIDPool::update(TvaiImage &tvimage, VecObjBBox &bboxIN, BYTETRACKPARM &params){
     int cam_uuid = tvimage.uuid_cam;
     add_trackor(cam_uuid, params);
     vector<bytetrack_no_reid::Object> vecObjIN;
