@@ -51,3 +51,6 @@ git动态库: https://gitlab.com/firefly-linux/external/rknpu/-/tree/firefly/rkn
     }
   }
 ```
+
+* 时钟同步:
+```find ./ -type f |xargs touch```

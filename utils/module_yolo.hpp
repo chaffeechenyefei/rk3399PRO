@@ -86,7 +86,7 @@ private:
     float m_threshold = 0.4;
     float m_nms_threshold = 0.6;
 
-    int m_fps = 5;
+    int m_fps = 25;
     int m_nn_buf = 30;
 
 #ifdef TIMING

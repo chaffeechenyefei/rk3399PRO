@@ -86,7 +86,7 @@ void Timer::start(){
     tQue.push_back(t);
 }
 
-double Timer::end(std::string title){
+double Timer::end(std::string title, bool display){
     auto t = std::chrono::system_clock::now();
     std::chrono::time_point<std::chrono::system_clock> start;
     if(!tQue.empty()){
@@ -94,10 +94,10 @@ double Timer::end(std::string title){
         tQue.pop_back();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(t-start);
         double tm_cost = double(duration.count()) * std::chrono::microseconds::period::num / std::chrono::microseconds::period::den;
-        printf("[%s] cost = %fs\n", title.c_str() ,tm_cost);
+        if(display) printf("[%s] cost = %fs\n", title.c_str() ,tm_cost);
         return tm_cost;
     } else {
-        printf("%s skipped...\n", title.c_str());
+        if(display) printf("%s skipped...\n", title.c_str());
         return 0;
     }
 }

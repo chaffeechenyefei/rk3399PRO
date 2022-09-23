@@ -53,7 +53,7 @@ public:
     Timer(){}
     ~Timer();
     void start();
-    double end(std::string title);
+    double end(std::string title, bool display=true);
 private:
     std::vector<std::chrono::time_point<std::chrono::system_clock>> tQue;
 };

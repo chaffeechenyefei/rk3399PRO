@@ -10,6 +10,8 @@ using namespace ucloud;
 using std::cout;
 using std::endl;
 using std::vector;
+using cv::Scalar;
+using cv::Size;
 
 /*--------------AICoreFactory API------------------*/
 AICoreFactory::AICoreFactory(){LOGI << "AICoreFactory Constructor";}
@@ -319,8 +321,8 @@ int vidReader::fps(){
 bool vidWriter::init(std::string filename, int width, int height, int fps){
     release();
     VideoWriter* vid = new VideoWriter();
-    // bool ret = vid->open(filename, CV_FOURCC('D','I','V','X'), fps, Size(width, height));
-    bool ret = vid->open(filename, CV_FOURCC('H','2','6','4'), fps, Size(width, height));
+    bool ret = vid->open(filename, CV_FOURCC('D','I','V','X'), fps, Size(width, height));
+    // bool ret = vid->open(filename, CV_FOURCC('H','2','6','4'), fps, Size(width, height));
     if(!ret) {
         vid->release();
         return ret;
@@ -362,7 +364,7 @@ void Clocker::start(){
     cTx->start();
 }
 
-double Clocker::end(std::string title){
+double Clocker::end(std::string title, bool display){
     Timer* cTx = reinterpret_cast<Timer*>(ctx);
-    return cTx->end(title);
+    return cTx->end(title, display);
 }

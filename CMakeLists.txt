@@ -26,11 +26,14 @@ message("-- RK3399_HOME: ${RK3399_HOME}")
 set(RK_LIBS "${RK3399_HOME}/lib64/librknn_api.so")
 set(RK_INCLUDE_DIRS "${RK3399_HOME}/include")
 
+set(OPENCV_VERSION "opencv")
+# set(OPENCV_VERSION "opencv_ffmpeg")
+
 # ========OPENCV========
 set(THIRD_PARTY_LIBS "/project/rk3399_workspace/libs")
-set(OPENCV_INCLUDE_DIRS ${THIRD_PARTY_LIBS}/opencv/include)
-set(OPENCV_LIB_PATH ${THIRD_PARTY_LIBS}/opencv/lib)
-set(OPENCV_EXTRA_LIB_PATH ${THIRD_PARTY_LIBS}/opencv/share/OpenCV/3rdparty/lib)
+set(OPENCV_INCLUDE_DIRS ${THIRD_PARTY_LIBS}/${OPENCV_VERSION}/include)
+set(OPENCV_LIB_PATH ${THIRD_PARTY_LIBS}/${OPENCV_VERSION}/lib)
+set(OPENCV_EXTRA_LIB_PATH ${THIRD_PARTY_LIBS}/${OPENCV_VERSION}/share/OpenCV/3rdparty/lib)
 set(OPENCV_LIBS "")
 list(APPEND OPENCV_LIBS ${OPENCV_LIB_PATH}/libopencv_video.a)
 list(APPEND OPENCV_LIBS ${OPENCV_LIB_PATH}/libopencv_objdetect.a)
@@ -60,6 +63,17 @@ list(APPEND OPENCV_LIBS ${OPENCV_EXTRA_LIB_PATH}/libIlmImf.a)
 list(APPEND OPENCV_LIBS ${OPENCV_EXTRA_LIB_PATH}/libquirc.a)
 list(APPEND OPENCV_LIBS ${OPENCV_EXTRA_LIB_PATH}/libtegra_hal.a)
 message(STATUS "opencv libraries: ${OPENCV_LIBS}")
+
+# ========ffmpeg========
+set(FFMPEG_LIB_PATH "${THIRD_PARTY_LIBS}/ffmpeg_n4.3.4/lib")
+list(APPEND OPENCV_LIBS ${FFMPEG_LIB_PATH}/libavformat.a)
+list(APPEND OPENCV_LIBS ${FFMPEG_LIB_PATH}/libavdevice.a)
+list(APPEND OPENCV_LIBS ${FFMPEG_LIB_PATH}/libavfilter.a)
+list(APPEND OPENCV_LIBS ${FFMPEG_LIB_PATH}/libavcodec.a)
+list(APPEND OPENCV_LIBS ${FFMPEG_LIB_PATH}/libavutil.a)
+# list(APPEND FFMPEG_LIBRARIES "${FFMPEG_LIBRARIES_PATH}/libpostproc.a")
+list(APPEND OPENCV_LIBS ${FFMPEG_LIB_PATH}/libswresample.a)
+list(APPEND OPENCV_LIBS ${FFMPEG_LIB_PATH}/libswscale.a)
 
 # ========Google-gflags========
 set(GFLAGS_INCLUDE_DIRS ${THIRD_PARTY_LIBS}/gflags/include)
@@ -140,6 +154,10 @@ target_link_libraries(test_any ${RK_LIBS} dl ${OPENCV_LIBS})
 #视频读写推理测试
 add_executable(test_video test_video.cpp)
 target_link_libraries(test_video ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
+
+#yolo检测模型单帧测试
+add_executable(test_loop test_loop.cpp)
+target_link_libraries(test_loop ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
 
 
 message("=========END=========")

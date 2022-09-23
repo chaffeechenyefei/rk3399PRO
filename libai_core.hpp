@@ -426,7 +426,7 @@ public:
     Clocker();
     ~Clocker();
     void start();
-    double end(std::string title);//return seconds
+    double end(std::string title, bool display=true);//return seconds
 private:
     void* ctx;
 };

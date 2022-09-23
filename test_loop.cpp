@@ -113,35 +113,25 @@ int main(int argc, char **argv)
     printf("infer\n");
     auto avg_time = 0.f;
     VecObjBBox bboxes;
-    int loop_times = 2;
+    int loop_times = 10000;
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();
         ret = ptrHandle->run(tvInp, bboxes);
-        auto tm_cost = Tk.end("ptrHandle->run");
+        auto tm_cost = Tk.end("ptrHandle->run", false);
         avg_time += tm_cost;
         if(ret!=RET_CODE::SUCCESS){
             if(imgBuf) free(imgBuf);
             printf("err [%d] in ptrHandle->run(tvInp, bboxes) \n", int(ret));
             return -2;
         }
-        int cnt = 0;
-        for(auto &&box: bboxes){
-            if(cnt++ > 1) break;
-            printf("[%d]%f,%f,%f,%f,%f,%f \n",box.objtype, box.confidence, box.objectness, box.x0, box.y0, box.x1, box.y1);
-        }
-        printf("total [%d] detected\n", bboxes.size());
+        if(i%100 == 0)
+            printf("avg exec ptrHandle->run time = %f\n", avg_time/i);
+        // int cnt = 0;
+        // printf("total [%d] detected\n", bboxes.size());
     }
     printf("avg exec ptrHandle->run time = %f\n", avg_time/loop_times);
 
-    if(img_mode < 2){
-        if(tvInp.format!=TVAI_IMAGE_FORMAT_BGR){
-            free(imgBuf);
-            imgBuf = readImg_to_BGR(imagePath,width,height);
-        }
-        drawImg(imgBuf, width, height, bboxes, true, true, false, 1);
-        writeImg("result.jpg", imgBuf, width , height);
-    }
 
     if(imgBuf) free(imgBuf);
     return 0;

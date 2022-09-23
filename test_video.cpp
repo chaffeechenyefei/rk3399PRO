@@ -62,7 +62,7 @@ bool simulate_mlu220=false, bool dont_infer=false){
         }
         vidWriter w_handle_t;
         std::string savefilename = "x";
-        savefilename = filename +".mp4";//.mkv for h264
+        savefilename = filename +".avi";//.mkv for h264
         
         int ratio = (handle_t.width() > 1920) ? 2:1; // resize video if video is too large to save
         ret = w_handle_t.init( savefilename, handle_t.width()/ratio, handle_t.height()/ratio, handle_t.fps() );
