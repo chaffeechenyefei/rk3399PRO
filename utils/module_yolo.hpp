@@ -58,10 +58,13 @@ protected:
      **/    
     virtual ucloud::RET_CODE rknn_output_to_boxes_1LX3( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);  
 
+protected:
+    std::shared_ptr<TrackPoolAPI<BYTETRACKPARM>> m_track = nullptr;
+
 private:
     std::shared_ptr<BaseModel> m_net = nullptr;//推理模型的主干部分
     std::shared_ptr<ImageUtil> m_drm = nullptr;
-    std::shared_ptr<TrackPoolAPI<BYTETRACKPARM>> m_track = nullptr;
+    
     BYTETRACKPARM m_track_param;
     DATA_SHAPE m_InpSp;
     int m_InpNum = 1;//输入Tensor数量

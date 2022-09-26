@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <sys/time.h>
 #include <thread>
 
@@ -32,6 +33,7 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
 
         double tm_cost = 0;
         int num_result = 0;
+        int max_track_id = -1;
         std::cout << "yolo::loading model for thread #" << thread_id << endl;
         //Get Algo API
         AlgoAPISPtr ptrMainHandle = ucloud::AICoreFactory::getAlgoAPI(apiName);
@@ -57,7 +59,8 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         for(int i = 0; i < num_loops_each_thread; i++){
             if(i%200 == 1 ){
                 std::lock_guard<std::mutex> lk(cmutex);
-                printf("#[%02d]-[%05d][%.2f%%]: per cost = %f, for %d targets\n", thread_id, i, ((float)i)/num_loops_each_thread*100 , (float)(tm_cost/i), num_result);
+                printf("#[%02d]-[%05d][%.2f%%]: per cost = %f, for %d targets with max_track_id %d\n", \
+                thread_id, i, ((float)i)/num_loops_each_thread*100 , (float)(tm_cost/i), num_result, max_track_id);
                 fflush(stdout);
             }
             VecObjBBox bboxes; 
@@ -75,7 +78,27 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
             auto duration = chrono::duration_cast<chrono::microseconds>(end-start);
             tm_cost += double(duration.count()) * chrono::microseconds::period::num / chrono::microseconds::period::den;
             num_result += bboxes.size();
+            // { //结果输出到txt
+            //     std::string txtname = imgname + ".txt";
+            //     ofstream fd;
+            //     fd.open(txtname);
+            //     if(fd.is_open()){
+            //         ostringstream line("");
+            //         for(auto &&box: bboxes){
+            //             float x = ((float)(box.rect.x));
+            //             float y = ((float)box.rect.y);
+            //             float w = ((float)box.rect.width);
+            //             float h = ((float)box.rect.height);
+            //             line << box.objtype << " " << x << " " << y << " " << w << " " << h << " " << box.objectness <<"\n";
+            //         }
+            //         fd.write(line.str().c_str(), line.str().length());
+            //     }
+            //     fd.close();
+            // }
             // std::cout << bboxes.size() << std::endl;
+            for(auto &&box:bboxes){
+                if(box.track_id > max_track_id) max_track_id = box.track_id;
+            }
 
             free(imgBuf);
         }

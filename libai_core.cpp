@@ -21,9 +21,15 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     AlgoAPISPtr apiHandle = nullptr;
     switch (apiName)
     {
+    /**
+     * SISO模型测试
+     */
     case AlgoAPIName::UDF_JSON:
         apiHandle = std::make_shared<NaiveModel>();
         break;
+    /**
+     * 人车非通用检测 
+     */
     case AlgoAPIName::GENERAL_DETECTOR:
     {
         YOLO_DETECTION* _ptr_ = new YOLO_DETECTION();
@@ -32,6 +38,17 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_);
     }
         break;
+    /**
+     * 安全帽检测
+     */
+    case AlgoAPIName::SAFETY_HAT_DETECTOR:
+    {
+        YOLO_DETECTION* _ptr_ = new YOLO_DETECTION();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PED_SAFETY_HAT, CLS_TYPE::PED_HEAD};
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }
+        break;        
     default:
         std::cout << "ERROR: Current API is not ready yet!" << std::endl;
         break;

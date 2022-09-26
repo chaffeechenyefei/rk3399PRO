@@ -9,8 +9,6 @@ YOLO_DETECTION::YOLO_DETECTION(){
     LOGI << "-> YOLO_DETECTION";
     m_net = std::make_shared<BaseModel>();
     m_drm = std::make_shared<ImageUtil>();
-    // m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
-    // m_track = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
     m_track_param = {m_threshold, m_threshold+0.1f};
 }
 
@@ -58,6 +56,9 @@ RET_CODE YOLO_DETECTION::init(std::map<ucloud::InitParam, std::string> &modelpat
     //     printf("output dims check failed\n");
     //     return RET_CODE::ERR_MODEL_NOT_MATCH;
     // }
+    
+    // m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
+    m_track = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
     LOGI << "<- NaiveModel::init";
     return ret;
 }
@@ -562,3 +563,9 @@ RET_CODE YOLO_DETECTION::get_class_type(std::vector<CLS_TYPE> &valid_clss){
     }
     return RET_CODE::SUCCESS;
 }
+
+
+
+
+
+
