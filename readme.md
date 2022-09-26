@@ -54,3 +54,7 @@ git动态库: https://gitlab.com/firefly-linux/external/rknpu/-/tree/firefly/rkn
 
 * 时钟同步:
 ```find ./ -type f |xargs touch```
+
+## 6. 性能测试
+https://ushare.ucloudadmin.com/pages/viewpage.action?pageId=121051861
+
