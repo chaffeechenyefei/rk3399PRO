@@ -161,6 +161,10 @@ target_link_libraries(test_video ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
 add_executable(test_loop test_loop.cpp)
 target_link_libraries(test_loop ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
 
+#thread性能测试
+add_executable(test_thread test_thread.cpp)
+target_link_libraries(test_thread ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
+
 
 message("=========END=========")
 
