@@ -59,5 +59,5 @@ git动态库: https://gitlab.com/firefly-linux/external/rknpu/-/tree/firefly/rkn
 https://ushare.ucloudadmin.com/pages/viewpage.action?pageId=121051861
 
 ## 7.已同步算法
-AlgoAPIName::GENERAL_DETECTOR 人车非通用检测
-AlgoAPIName::SAFETY_HAT_DETECTOR 安全帽检测
+* AlgoAPIName::GENERAL_DETECTOR 人车非通用检测
+* AlgoAPIName::SAFETY_HAT_DETECTOR 安全帽检测
