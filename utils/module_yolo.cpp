@@ -10,6 +10,7 @@ YOLO_DETECTION::YOLO_DETECTION(){
     m_net = std::make_shared<BaseModel>();
     m_drm = std::make_shared<ImageUtil>();
     m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
+    // m_track = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
     m_track_param = {m_threshold, m_threshold+0.1f};
 }
 
