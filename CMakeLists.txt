@@ -99,7 +99,9 @@ message("common link libs: ${COMMON_LIB_PATHS}")
 
 # ========WORKSPACE_FILES========
 set(UTIL_DIRS "${PROJECT_SOURCE_DIR}/utils")
-file(GLOB_RECURSE UTIL_CPP "${UTIL_DIRS}/*.cpp" "${UTIL_DIRS}/drm/*.c" "${UTIL_DIRS}/trackor/bytetrack_no_reid/*.cpp")
+file(GLOB_RECURSE UTIL_CPP "${UTIL_DIRS}/*.cpp" 
+  "${UTIL_DIRS}/drm/*.c" "${UTIL_DIRS}/trackor/bytetrack_no_reid/*.cpp" 
+  "${UTIL_DIRS}/trackor/bytetrack_origin/*.cpp" )
 
 
 # ========CMAKE_CXX_FLAGS========

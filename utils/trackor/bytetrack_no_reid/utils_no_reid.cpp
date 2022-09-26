@@ -1,9 +1,9 @@
-#include "BYTETracker.h"
-#include "lapjv.h"
+#include "BYTETracker_no_reid.h"
+#include "lapjv_no_reid.h"
 
 #define CENTER(x,y) x/2+y/2
 
-using namespace bytetrack_no_reid;
+namespace bytetrack_no_reid{
 
 vector<STrack*> BYTETracker::joint_stracks(vector<STrack*> &tlista, vector<STrack> &tlistb)
 {
@@ -567,3 +567,4 @@ double BYTETracker::lapjv(const vector<vector<float> > &cost, vector<int> &rowso
 // 	idx += 3;
 // 	return Scalar(37 * idx % 255, 17 * idx % 255, 29 * idx % 255);
 // }
+}

@@ -1,7 +1,9 @@
 #pragma once
 
-#include "dataType.h"
+#include "dataType_no_reid.h"
 
+
+namespace bytetrack_no_reid{
 namespace byte_kalman
 {
 	class KalmanFilter
@@ -28,4 +30,5 @@ namespace byte_kalman
 		float _std_weight_position;
 		float _std_weight_velocity;
 	};
+}
 }

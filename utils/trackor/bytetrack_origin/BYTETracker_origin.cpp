@@ -1,36 +1,34 @@
-#include "BYTETracker.h"
+#include "BYTETracker_origin.h"
 #include <fstream>
 
-constexpr  const float gating_theshold = 9.4877;
-
-using namespace bytetrack_no_reid;
-
-BYTETracker::BYTETracker(float track_threshold, float high_detect_threshold,int frame_rate,int track_buffer){
+namespace bytetrack_origin{
+BYTETracker::BYTETracker(float track_threshold, float high_detect_threshold, int frame_rate, int track_buffer){
 	track_thresh = track_threshold;
-	high_thresh = high_detect_threshold;
+	high_thresh = high_detect_threshold; 
 	match_thresh = 0.8;
+
 	frame_id = 0;
-	max_time_lost = int(frame_rate/30.0*track_buffer);
+	max_time_lost = int(frame_rate / 30.0 * track_buffer);
 }
 
 void BYTETracker::reset(float track_threshold, float high_detect_threshold, int frame_rate, int track_buffer){
 	track_thresh = track_threshold;
-	high_thresh = high_detect_threshold;
+	high_thresh = high_detect_threshold; 
 	match_thresh = 0.8;
-	max_time_lost = int(frame_rate/30.0*track_buffer);
-}
 
+	// frame_id = 0;
+	max_time_lost = int(frame_rate / 30.0 * track_buffer);
+}
 
 
 BYTETracker::BYTETracker(int frame_rate, int track_buffer)
 {
 	track_thresh = 0.5;
-	high_thresh = 0.6;
+	high_thresh = 0.6; 
 	match_thresh = 0.8;
 
 	frame_id = 0;
 	max_time_lost = int(frame_rate / 30.0 * track_buffer);
-	cout << "Init ByteTrack!" << endl;
 }
 
 BYTETracker::~BYTETracker()
@@ -58,24 +56,21 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	vector<STrack*> tracked_stracks;
 	vector<STrack*> strack_pool;
 	vector<STrack*> r_tracked_stracks;
-	vector<STrack*> l_tracked_stracks;
 
 	if (objects.size() > 0)
 	{
 		for (int i = 0; i < objects.size(); i++)
 		{
 			vector<float> tlbr_;
-			vector<float> fea_;
 			tlbr_.resize(4);
 			tlbr_[0] = objects[i].rect.x;
 			tlbr_[1] = objects[i].rect.y;
 			tlbr_[2] = objects[i].rect.x + objects[i].rect.width;
 			tlbr_[3] = objects[i].rect.y + objects[i].rect.height;
-			fea_ = objects[i].fea;/// reshape(cn,rows) cn=1,rows=1
+
 			float score = objects[i].prob;
 
-
-			STrack strack(STrack::tlbr_to_tlwh(tlbr_), score, i, fea_);
+			STrack strack(STrack::tlbr_to_tlwh(tlbr_), score, i);
 			if (score >= track_thresh)
 			{
 				detections.push_back(strack);
@@ -100,11 +95,11 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	////////////////// Step 2: First association, with IoU //////////////////
 	strack_pool = joint_stracks(tracked_stracks, this->lost_stracks);
 	STrack::multi_predict(strack_pool, this->kalman_filter);
-	/***********************************************************************/
-	////////////////// remove feature embedding part keep diou part  change by lihui 0909-2022//////////////////
+
 	vector<vector<float> > dists;
 	int dist_size = 0, dist_size_size = 0;
-	dists = iou_distance(strack_pool,detections,dist_size,dist_size_size);
+	dists = iou_distance(strack_pool, detections, dist_size, dist_size_size);
+
 	vector<vector<int> > matches;
 	vector<int> u_track, u_detection;
 	linear_assignment(dists, dist_size, dist_size_size, match_thresh, matches, u_track, u_detection);
@@ -113,19 +108,17 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	{
 		STrack *track = strack_pool[matches[i][0]];
 		STrack *det = &detections[matches[i][1]];
-		float diou_score = dists[matches[i][0]][matches[i][1]];
 		if (track->state == TrackState::Tracked)
 		{
-			track->update(*det, this->frame_id, diou_score);
+			track->update(*det, this->frame_id);
 			activated_stracks.push_back(*track);
 		}
 		else
 		{
-			track->re_activate(*det, this->frame_id, diou_score, false);
+			track->re_activate(*det, this->frame_id, false);
 			refind_stracks.push_back(*track);
 		}
 	}
-	/////////////////  change  end by lihui 0909-2022/////////////////
 
 	////////////////// Step 3: Second association, using low score dets //////////////////
 	for (int i = 0; i < u_detection.size(); i++)
@@ -134,15 +127,12 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	}
 	detections.clear();
 	detections.assign(detections_low.begin(), detections_low.end());
-
+	
 	for (int i = 0; i < u_track.size(); i++)
 	{
 		if (strack_pool[u_track[i]]->state == TrackState::Tracked)
 		{
 			r_tracked_stracks.push_back(strack_pool[u_track[i]]);
-		}
-		else if (strack_pool[u_track[i]]->state == TrackState::Lost){
-			l_tracked_stracks.push_back(strack_pool[u_track[i]]);
 		}
 	}
 
@@ -158,32 +148,25 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	{
 		STrack *track = r_tracked_stracks[matches[i][0]];
 		STrack *det = &detections[matches[i][1]];
-		float diou_score = dists[matches[i][0]][matches[i][1]];
 		if (track->state == TrackState::Tracked)
 		{
-			track->update(*det, this->frame_id, diou_score);
+			track->update(*det, this->frame_id);
 			activated_stracks.push_back(*track);
 		}
 		else
 		{
-			track->re_activate(*det, this->frame_id, diou_score, false);
+			track->re_activate(*det, this->frame_id, false);
 			refind_stracks.push_back(*track);
 		}
 	}
-	//////////////////  change by lihui 0909-2022 //////////////////////
-	//// all r_tracked_stracks  state should be tracked ,so if each track///////
-	////if  diou score small than tresh,use kalman predict result instead of update////////
+
 	for (int i = 0; i < u_track.size(); i++)
 	{
 		STrack *track = r_tracked_stracks[u_track[i]];
 		if (track->state != TrackState::Lost)
-		{	
-			if (track->diou<0.05){
-				refind_stracks.push_back(*track);
-			}else{
+		{
 			track->mark_lost();
 			lost_stracks.push_back(*track);
-			}
 		}
 	}
 
@@ -192,22 +175,6 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	detections.assign(detections_cp.begin(), detections_cp.end());
 
 	dists.clear();
-	/************** refine track add by liuhui 2022-0720***********************/
-	matches.clear();
-	u_detection.clear();
-	u_track.clear();
-	if (l_tracked_stracks.size()>0){
-		for (int i=0;i<l_tracked_stracks.size();i++){
-			STrack ltrack = *l_tracked_stracks[i];
-			int lframe_id = ltrack.frame_id;
-			float lframe_iou = ltrack.diou;
-			if ((this->frame_id - lframe_id<4)&&(lframe_iou<0.05)){
-				refind_stracks.push_back(ltrack);
-			}
-		}
-	}
-	/**************** refine tracks add end by lihui 0720 2022 *******************/
-
 	dists = iou_distance(unconfirmed, detections, dist_size, dist_size_size);
 
 	matches.clear();
@@ -217,8 +184,7 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 
 	for (int i = 0; i < matches.size(); i++)
 	{
-		float diou_score = dists[matches[i][0]][matches[i][1]];
-		unconfirmed[matches[i][0]]->update(detections[matches[i][1]], this->frame_id, diou_score);
+		unconfirmed[matches[i][0]]->update(detections[matches[i][1]], this->frame_id);
 		activated_stracks.push_back(*unconfirmed[matches[i][0]]);
 	}
 
@@ -292,3 +258,5 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	}
 	return output_stracks;
 }
+}
+

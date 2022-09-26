@@ -1,7 +1,7 @@
 #ifndef _MODULE_TRACK_HPP_
 #define _MODULE_TRACK_HPP_
 #include "module_base.hpp"
-#include "trackor/bytetrack_no_reid/BYTETracker.h"
+#include "trackor/bytetrack_no_reid/BYTETracker_no_reid.h"
 
 #include <mutex>
 

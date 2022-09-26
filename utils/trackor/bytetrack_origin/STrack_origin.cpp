@@ -1,6 +1,7 @@
-#include "STrack.h"
+#include "STrack_origin.h"
 
-STrack::STrack(vector<float> tlwh_, float score, int detect_idx, vector<float> fea)
+namespace bytetrack_origin{
+STrack::STrack(vector<float> tlwh_, float score, int detect_idx)
 {
 	_tlwh.resize(4);
 	_tlwh.assign(tlwh_.begin(), tlwh_.end());
@@ -20,8 +21,6 @@ STrack::STrack(vector<float> tlwh_, float score, int detect_idx, vector<float> f
 	///20220331 add by lihui,tell the detect match which track
 	this->detect_idx = detect_idx;
 	start_frame = 0;
-	_fea=fea;
-	diou=0.0f;
 }
 
 STrack::~STrack()
@@ -32,7 +31,6 @@ void STrack::activate(byte_kalman::KalmanFilter &kalman_filter, int frame_id)
 {
 	this->kalman_filter = kalman_filter;
 	this->track_id = this->next_id();
-	
 
 	vector<float> _tlwh_tmp(4);
 	_tlwh_tmp[0] = this->_tlwh[0];
@@ -63,10 +61,8 @@ void STrack::activate(byte_kalman::KalmanFilter &kalman_filter, int frame_id)
 	this->start_frame = frame_id;
 }
 
-void STrack::re_activate(STrack &new_track, int frame_id, float diou, bool new_id)
+void STrack::re_activate(STrack &new_track, int frame_id, bool new_id)
 {
-	vector<float> old_tlbm  = this->tlbr;
-	vector<float> n_tlbm = new_track.tlwh;
 	vector<float> xyah = tlwh_to_xyah(new_track.tlwh);
 	DETECTBOX xyah_box;
 	xyah_box[0] = xyah[0];
@@ -89,10 +85,9 @@ void STrack::re_activate(STrack &new_track, int frame_id, float diou, bool new_i
 	this->detect_idx = new_track.detect_idx;
 	if (new_id)
 		this->track_id = next_id();
-	this->diou = diou;
 }
 
-void STrack::update(STrack &new_track, int frame_id, float diou)
+void STrack::update(STrack &new_track, int frame_id)
 {
 	this->frame_id = frame_id;
 	this->tracklet_len++;
@@ -117,14 +112,7 @@ void STrack::update(STrack &new_track, int frame_id, float diou)
 	this->score = new_track.score;
 	/////20220331 add by lihui,tell the detect match which track
 	this->detect_idx = new_track.detect_idx;
-	this->diou = diou;
 }
-
-Eigen::Matrix<float,1,-1>  STrack::kf_gate(vector<DETECTBOX> measurements,bool only_position){
-	Eigen::Matrix<float,1,-1> gate_thresh = this->kalman_filter.gating_distance(this->mean,this->covariance,measurements,only_position);
-	return gate_thresh;
-}
-
 
 void STrack::static_tlwh()
 {
@@ -209,3 +197,5 @@ void STrack::multi_predict(vector<STrack*> &stracks, byte_kalman::KalmanFilter &
 		kalman_filter.predict(stracks[i]->mean, stracks[i]->covariance);
 	}
 }
+}
+

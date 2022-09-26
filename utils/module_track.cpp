@@ -49,17 +49,11 @@ void ByteTrackNoReIDPool::update(TvaiImage &tvimage, VecObjBBox &bboxIN, BYTETRA
     }
     
     std::lock_guard<std::mutex> lk(m_mutex);
-    vector<STrack> vecTrackOUT = m_trackors[cam_uuid]->update(vecObjIN);
+    vector<bytetrack_no_reid::STrack> vecTrackOUT = m_trackors[cam_uuid]->update(vecObjIN);
     for(auto &&trackOUT: vecTrackOUT){
         bboxIN[trackOUT.detect_idx].track_id = trackOUT.track_id;
     }
 
-    // for(auto &&trackOUT: vecTrackOUT){
-    //     vector<float> tlwh = trackOUT.tlwh;
-    //     for(auto &&box: bboxIN){
-    //         if(isBox_tlwh_close(box, tlwh))
-    //             box.track_id = trackOUT.track_id;
-    //     }
-    // }
 }
+
 

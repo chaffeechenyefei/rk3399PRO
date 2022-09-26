@@ -1,13 +1,10 @@
 #pragma once
 
-#include "STrack.h"
-#include <Eigen/Dense>
-#include <Eigen/Core>
+#include "STrack_origin.h"
 
-namespace bytetrack_no_reid {
+namespace bytetrack_origin{
 struct Object
 {
-	vector<float> fea;
     cv::Rect_<float> rect;
     int label;
     float prob;
@@ -17,10 +14,10 @@ class BYTETracker
 {
 public:
 	BYTETracker(int frame_rate = 30, int track_buffer = 30);
-	BYTETracker(float track_threshold,float high_detect_threshold,int frame_rate=30,int track_buffer=30);
+	BYTETracker(float track_threshold, float high_detect_threshold, int frame_rate = 30, int track_buffer = 30);
 	~BYTETracker();
-	
-	void reset(float track_threshold,float high_detect_threshold,int frame_rate=30,int track_buffer=30);
+
+	void reset(float track_threshold, float high_detect_threshold, int frame_rate = 30, int track_buffer = 30);
 
 	vector<STrack> update(const vector<Object>& objects);
 	// Scalar get_color(int idx);
@@ -33,23 +30,18 @@ private:
 	void remove_duplicate_stracks(vector<STrack> &resa, vector<STrack> &resb, vector<STrack> &stracksa, vector<STrack> &stracksb);
 
 	void linear_assignment(vector<vector<float> > &cost_matrix, int cost_matrix_size, int cost_matrix_size_size, float thresh,
-	vector<vector<int> > &matches, vector<int> &unmatched_a, vector<int> &unmatched_b);
+		vector<vector<int> > &matches, vector<int> &unmatched_a, vector<int> &unmatched_b);
 	vector<vector<float> > iou_distance(vector<STrack*> &atracks, vector<STrack> &btracks, int &dist_size, int &dist_size_size);
 	vector<vector<float> > iou_distance(vector<STrack> &atracks, vector<STrack> &btracks);
 	vector<vector<float> > ious(vector<vector<float> > &atlbrs, vector<vector<float> > &btlbrs);
-	float diou_theta(vector<float> &atlbr,vector<float> &btlbr, bool diou_key);
-	vector<vector<float> > cosine_similarity(vector<vector<float> > &afea, vector<vector<float> > &bfea);
-	vector<vector<float> > embed_distance(vector<STrack*> &atracks, vector<STrack> &btracks, int &dist_size, int &dist_size_size);
-	vector<vector<float> > embed_distance(vector<STrack> &atracks, vector<STrack> &btracks);
-	vector<vector<float> > embed_distance(vector<STrack*> &atracks, vector<STrack*> &btracks, int &dist_size, int &dist_size_size);
+
 	double lapjv(const vector<vector<float> > &cost, vector<int> &rowsol, vector<int> &colsol, 
 		bool extend_cost = false, float cost_limit = LONG_MAX, bool return_cost = true);
-	
 
 private:
 
-	float track_thresh;
-	float high_thresh;
+	float track_thresh; //用于区分是否是低置信度的检测框，首先进行高置信度的匹配
+	float high_thresh;	//如果都没有命中，且置信度高于一定程度，那么进行
 	float match_thresh;
 	int frame_id;
 	int max_time_lost;
@@ -59,6 +51,5 @@ private:
 	vector<STrack> removed_stracks;
 	byte_kalman::KalmanFilter kalman_filter;
 };
+
 };
-
-

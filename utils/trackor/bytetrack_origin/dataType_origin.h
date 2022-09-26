@@ -5,11 +5,12 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+
+namespace bytetrack_origin{
 typedef Eigen::Matrix<float, 1, 4, Eigen::RowMajor> DETECTBOX;
 typedef Eigen::Matrix<float, -1, 4, Eigen::RowMajor> DETECTBOXSS;
 typedef Eigen::Matrix<float, 1, 128, Eigen::RowMajor> FEATURE;
 typedef Eigen::Matrix<float, Eigen::Dynamic, 128, Eigen::RowMajor> FEATURESS;
-typedef Eigen::Matrix<float,Eigen::Dynamic,Eigen::Dynamic, Eigen::RowMajor> MatrixXf;
 //typedef std::vector<FEATURE> FEATURESS;
 
 //Kalmanfilter
@@ -35,3 +36,4 @@ typedef struct t {
 
 //linear_assignment:
 typedef Eigen::Matrix<float, -1, -1, Eigen::RowMajor> DYNAMICM;
+};

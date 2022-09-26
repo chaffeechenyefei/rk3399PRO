@@ -1,6 +1,8 @@
-#include "kalmanFilter.h"
+#include "kalmanFilter_no_reid.h"
 #include <Eigen/Cholesky>
 
+
+namespace bytetrack_no_reid{
 namespace byte_kalman
 {
 	const double KalmanFilter::chi2inv95[10] = {
@@ -149,4 +151,5 @@ namespace byte_kalman
 		auto square_maha = zz.colwise().sum();
 		return square_maha;
 	}
+}
 }

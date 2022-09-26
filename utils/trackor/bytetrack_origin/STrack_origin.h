@@ -1,21 +1,19 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include "kalmanFilter.h"
+#include "kalmanFilter_origin.h"
 
 using namespace cv;
 using namespace std;
 
+namespace bytetrack_origin{
 enum TrackState { New = 0, Tracked, Lost, Removed };
 
 class STrack
 {
 public:
 /////20220331 add by lihui,tell the detect match which track
-//// 20220719 changed by lihui,add reid and new logic
-	STrack(vector<float> tlwh_, float score, int detect_idx,vector<float> fea);
+	STrack(vector<float> tlwh_, float score, int detect_idx);
 	~STrack();
 
 	vector<float> static tlbr_to_tlwh(vector<float> &tlbr);
@@ -30,9 +28,9 @@ public:
 	int end_frame();
 	
 	void activate(byte_kalman::KalmanFilter &kalman_filter, int frame_id);
-	void re_activate(STrack &new_track, int frame_id, float diou, bool new_id = false);
-	void update(STrack &new_track, int frame_id, float diou);
-	Eigen::Matrix<float,1,-1> kf_gate(vector<DETECTBOX> tlah,bool only_position);
+	void re_activate(STrack &new_track, int frame_id, bool new_id = false);
+	void update(STrack &new_track, int frame_id);
+
 public:
 	bool is_activated;
 	int track_id;
@@ -41,7 +39,6 @@ public:
 	vector<float> _tlwh;
 	vector<float> tlwh;
 	vector<float> tlbr;
-	vector<float> _fea;
 	int frame_id;
 	int tracklet_len;
 	int start_frame;
@@ -51,8 +48,9 @@ public:
 	KAL_MEAN mean;
 	KAL_COVA covariance;
 	float score;
-	float diou;
 
 private:
 	byte_kalman::KalmanFilter kalman_filter;
 };
+}
+
