@@ -93,7 +93,6 @@ private:
     //当传入的参数超过边界时,采用默认数值
     float m_default_threshold = 0.55;
     float m_default_nms_threshold = 0.6;
-    float m_max_track_id = 2000;
 
     // int m_fps = 25;
     // int m_nn_buf = 30;

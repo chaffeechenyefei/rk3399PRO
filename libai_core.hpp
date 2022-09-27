@@ -249,7 +249,7 @@ typedef std::vector<VecObjBBox> BatchBBoxIN;
 typedef enum _AlgoAPIName{
     FACE_DETECTOR       = 0,//人脸检测
     FACE_EXTRACTOR      = 1,//人脸特征提取
-    GENERAL_DETECTOR    = 2,//通用物体检测器即yolodetector, 可用于人车非
+    GENERAL_DETECTOR    = 2,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR
     ACTION_CLASSIFIER   = 3,//行为识别, 目前支持打斗 [需要数据更新模型] x
     MOD_DETECTOR        = 4,//高空抛物, Moving Object Detection(MOD)[需要改善后处理, 开放做多帧接口测试]
     PED_DETECTOR        = 5,//行人检测加强版, 针对摔倒进行数据增强, mAP高于人车非中的人 
@@ -258,7 +258,7 @@ typedef enum _AlgoAPIName{
     WATER_DETECTOR      = 8,//积水检测 x
     PED_FALL_DETECTOR   = 9,//行人摔倒检测, 只检测摔倒的行人
     SKELETON_DETECTOR   = 10,//人体骨架/关键点检测器--后续对接可用于摔倒检测等业务 x
-    SAFETY_HAT_DETECTOR = 11,//安全帽检测 
+    SAFETY_HAT_DETECTOR = 11,//安全帽检测 return PED_SAFETY_HAT, PED_HEAD
     TRASH_BAG_DETECTOR  = 12,//垃圾袋检测 x
     BANNER_DETECTOR     = 13,//横幅检测 x
     NONCAR_DETECTOR     = 14,//非机动车检测加强版, 针对非机动车进电梯开发 
