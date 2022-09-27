@@ -65,14 +65,18 @@ https://ushare.ucloudadmin.com/pages/viewpage.action?pageId=121051861
 
 ## 8.libai_core.so依赖项目
 * librknn_api.so (需设置LD_LIBRARY_PATH)
+
 位置: /home/firefly/venv/lib/python3.7/site-packages/rknnlite/api/lib/hardware/LION_PUMA/linux-aarch64/
 或
+
 /home/firefly/yefei/test
 
 * librga.so (通过dlopen链接绝对路径, 无需设置LD_LIBRARY_PATH)
+
 位置: /usr/lib/aarch64-linux-gnu/
 
 * libdrm.so (通过dlopen链接绝对路径, 无需设置LD_LIBRARY_PATH)
+
 位置: /usr/lib/aarch64-linux-gnu/
 
 * opencv ffmpeg等已通过静态编译包含在.so内.
