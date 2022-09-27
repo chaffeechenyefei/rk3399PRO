@@ -8,7 +8,7 @@ https://ushare.ucloudadmin.com/pages/viewpage.action?pageId=119935816
 
 rknn推理速度: 60ms
 
-cpu前处理时间: 34ms
+cpu前处理时间: 34ms | drm前处理时间: 8ms
 
 cpu后处理时间: 2ms
 
@@ -20,7 +20,7 @@ add_definitions(-DTIMING=True) 用于设定是否进行内部耗时显示
 如果不想使用, 则需要在CMakeLists.txt中注释掉.
 
 ## 4. 接口说明:
-见test.cpp中的使用方式
+见test_*.cpp中的使用方式
 
 ## 5. 编译相关:
 * 编译使用gcc: gcc-linaro-6.2.1-2016.11-x86_64_aarch64-linux-gnu.tgz
@@ -61,3 +61,18 @@ https://ushare.ucloudadmin.com/pages/viewpage.action?pageId=121051861
 ## 7.已同步算法
 * AlgoAPIName::GENERAL_DETECTOR 人车非通用检测
 * AlgoAPIName::SAFETY_HAT_DETECTOR 安全帽检测
+
+
+## 8.libai_core.so依赖项目
+* librknn_api.so (需设置LD_LIBRARY_PATH)
+位置: /home/firefly/venv/lib/python3.7/site-packages/rknnlite/api/lib/hardware/LION_PUMA/linux-aarch64/
+或
+/home/firefly/yefei/test
+
+* librga.so (通过dlopen链接绝对路径, 无需设置LD_LIBRARY_PATH)
+位置: /usr/lib/aarch64-linux-gnu/
+
+* libdrm.so (通过dlopen链接绝对路径, 无需设置LD_LIBRARY_PATH)
+位置: /usr/lib/aarch64-linux-gnu/
+
+* opencv ffmpeg等已通过静态编译包含在.so内.
