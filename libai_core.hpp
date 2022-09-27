@@ -317,11 +317,11 @@ public:
      */
     virtual RET_CODE init(std::map<InitParam, std::string> &modelpath){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
 
-    virtual RET_CODE set_param(float threshold, float nms_threshold){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
+    // virtual RET_CODE set_param(float threshold, float nms_threshold){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     /** ALL_IN_ONE 
      * general detection(including face/skeleton/ped_car_non_car detection) and face feature extraction
      * */
-    virtual RET_CODE run(TvaiImage& tvimage, VecObjBBox &bboxes){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
+    virtual RET_CODE run(TvaiImage& tvimage, VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     /**
      * 高空抛物已改单帧推理模式, 多帧推理接口仍保留可使用.
      * chaffee@2022-05-17

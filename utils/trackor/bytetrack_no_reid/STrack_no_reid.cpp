@@ -1,4 +1,5 @@
 #include "STrack_no_reid.h"
+#include <limits>
 
 
 namespace bytetrack_no_reid{
@@ -191,6 +192,7 @@ void STrack::mark_removed()
 int STrack::next_id()
 {
 	static int _count = 0;
+	if(_count >= INT_MAX) _count = 0;
 	_count++;
 	return _count;
 }

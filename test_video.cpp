@@ -47,7 +47,7 @@ bool simulate_mlu220=false, bool dont_infer=false){
         retcode = ptrMainHandle->init(init_param);
         if( retcode != RET_CODE::SUCCESS ){ std::cout << "algo initial failed" << endl; return; }
         //Set model parameters
-        ptrMainHandle->set_param(threshold, nms_threshold);
+        // ptrMainHandle->set_param(threshold, nms_threshold);
 
         ifstream infile;
         string filename = datapath;

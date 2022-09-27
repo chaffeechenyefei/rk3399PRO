@@ -102,6 +102,10 @@ unsigned char* ucloud::readImg_to_NV12(std::string filepath, int &width, int &he
 
 unsigned char* ucloud::readImg_to_NV21(std::string filepath, int w, int h,int &width, int &height, int &stride){
     Mat im = imread(filepath);
+    if(im.empty()){
+        printf("%s not found\n", filepath.c_str());
+        return nullptr;
+    }
     cv::resize(im,im, cv::Size(w,h));
     unsigned char* dst_ptr = nullptr;
     if (im.empty())

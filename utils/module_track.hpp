@@ -22,6 +22,7 @@ public:
     virtual RET_CODE init(std::string &modelpath){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     virtual void update(TvaiImage &tvimage, VecObjBBox &bboxIN, PARAM& params ){}
     virtual void set_fps(int fps){}
+    virtual void clear(){}
 protected:
     std::mutex m_mutex;//Lock should be used in those apis only
 };
@@ -31,6 +32,8 @@ typedef struct _BYTETRACKPARM{
     float track_threshold;
     float high_detect_threshold;
 }BYTETRACKPARM;
+using cam_class_uuid = std::string;
+cam_class_uuid get_cam_class_uuid(int cam_uuid, ucloud::CLS_TYPE clsType);
 /**
  * ByteTrack_No_ReID
  */
@@ -45,12 +48,13 @@ public:
 
     void set_fps(int fps){m_fps=fps;}
     void update(TvaiImage &tvimage, VecObjBBox &bboxIN, BYTETRACKPARM &params);
+    void clear();
 
 protected:
-    void add_trackor(int cam_uuid, BYTETRACKPARM params);
+    void add_trackor(cam_class_uuid uuid, BYTETRACKPARM params);
 private:
-    std::map<int, ByteTrackNoReID_Ptr> m_trackors;
-    std::map<int, BYTETRACKPARM> m_params;
+    std::map<cam_class_uuid, ByteTrackNoReID_Ptr> m_trackors;
+    std::map<cam_class_uuid, BYTETRACKPARM> m_params;
     int m_fps = 25;
     int m_nn_buf = 30;
     // std::mutex m_mutex;
@@ -70,12 +74,13 @@ public:
 
     void set_fps(int fps){m_fps=fps;}
     void update(TvaiImage &tvimage, VecObjBBox &bboxIN, BYTETRACKPARM &params);
+    void clear();
 
 protected:
-    void add_trackor(int cam_uuid, BYTETRACKPARM params);
+    void add_trackor(cam_class_uuid uuid, BYTETRACKPARM params);
 private:
-    std::map<int, ByteTrackOrigin_Ptr> m_trackors;
-    std::map<int, BYTETRACKPARM> m_params;
+    std::map<cam_class_uuid, ByteTrackOrigin_Ptr> m_trackors;
+    std::map<cam_class_uuid, BYTETRACKPARM> m_params;
     int m_fps = 25;
     int m_nn_buf = 30;
     // std::mutex m_mutex;

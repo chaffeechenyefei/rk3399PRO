@@ -2,6 +2,17 @@
 #include <fstream>
 
 namespace bytetrack_origin{
+void BYTETracker::clear(){
+	// printf("ts = %d, ls = %d, rs = %d\n", tracked_stracks.size(), lost_stracks.size(), removed_stracks.size());
+	// vector<STrack>().swap(tracked_stracks);
+	// vector<STrack>().swap(lost_stracks);
+	if(removed_stracks.size() > 50){
+		int sz = removed_stracks.size() - 50;
+		removed_stracks.erase(removed_stracks.begin(), removed_stracks.begin()+sz);
+	}
+	// vector<STrack>().swap(removed_stracks);
+}
+
 BYTETracker::BYTETracker(float track_threshold, float high_detect_threshold, int frame_rate, int track_buffer){
 	track_thresh = track_threshold;
 	high_thresh = high_detect_threshold; 
