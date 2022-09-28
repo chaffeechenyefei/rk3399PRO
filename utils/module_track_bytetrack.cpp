@@ -1,4 +1,5 @@
 #include "module_track.hpp"
+#include <stdexcept>
 
 using namespace std;
 
@@ -52,10 +53,16 @@ void ByteTrackNoReIDPool::update(TvaiImage &tvimage, VecObjBBox &bboxIN, BYTETRA
     }
     
     std::lock_guard<std::mutex> lk(m_mutex);
+    // try{
     vector<bytetrack_no_reid::STrack> vecTrackOUT = m_trackors[cam_uuid]->update(vecObjIN);
     for(auto &&trackOUT: vecTrackOUT){
         bboxIN[trackOUT.detect_idx].track_id = trackOUT.track_id;
     }
+    // }
+    // catch (exception &e){
+    //     cout<<e.what()<<endl;
+    // }
+   
 
 }
 

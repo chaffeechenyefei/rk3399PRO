@@ -57,8 +57,8 @@ RET_CODE YOLO_DETECTION::init(std::map<ucloud::InitParam, std::string> &modelpat
     //     return RET_CODE::ERR_MODEL_NOT_MATCH;
     // }
     
-    // m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
-    m_track = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
+    m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
+    // m_track = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
     LOGI << "<- NaiveModel::init";
     return ret;
 }
