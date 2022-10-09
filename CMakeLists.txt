@@ -16,7 +16,7 @@ else()
 endif()
 
 #==========全局宏定义==========
-# add_definitions(-DVERBOSE=True) #设定时 LOGI<< 触发输出, 否则不输出
+add_definitions(-DVERBOSE=True) #设定时 LOGI<< 触发输出, 否则不输出
 # add_definitions(-DTIMING=True) #是否进行内部耗时显示
 
 

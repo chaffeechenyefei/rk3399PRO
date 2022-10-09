@@ -9,10 +9,13 @@ using namespace std;
 void BaseModel::release(){
     LOGI << "-> BaseModel::release";
     if (m_ctx > 0){
+#ifdef RKNN_1_7_X        
         if(m_isMap && !m_inputAttr.empty()){
             rknn_inputs_unmap(m_ctx, m_inputAttr.size(), m_inMem);
         }
+#endif        
         rknn_destroy(m_ctx); m_ctx = 0;
+#ifdef RKNN_1_7_X        
         if(m_isMap){
             // drm_buf_destroy(&drm_ctx, drm_fd, buf_fd, drm_handle, drm_buf, drm_actual_size);
             if(drm_buf) {
@@ -22,6 +25,7 @@ void BaseModel::release(){
             drm_deinit(&drm_ctx, drm_fd);
             RGA_deinit(&rga_ctx);
         }
+#endif        
         m_ctx = 0;
     }
     m_inputShape.clear();
@@ -274,6 +278,7 @@ ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath, bool useDRM)
     //是否采用map+drm的方式进行高效推理
     m_isMap = useDRM;
     if(m_isMap){
+#ifdef RKNN_1_7_X        
         rknn_inputs_map(m_ctx, io_num.n_input , m_inMem );
         printf("input virt_addr = %p, phys_addr = 0x%llx, fd = %d, size = %d\n",
                m_inMem[0].logical_addr, m_inMem[0].physical_addr, m_inMem[0].fd,
@@ -287,6 +292,7 @@ ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath, bool useDRM)
         memset(&drm_ctx, 0, sizeof(drm_context));
         RGA_init(&rga_ctx, "/usr/lib/aarch64-linux-gnu/librga.so");
         drm_fd = drm_init(&drm_ctx, "/usr/lib/aarch64-linux-gnu/libdrm.so");
+#endif        
     }
     LOGI << "<- BaseModel::base_init";
     return RET_CODE::SUCCESS;
@@ -475,8 +481,13 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(
     
     memcpy(drm_buf, input_img.data , input_img.total() * input_img.channels());
     
-    img_resize_fast(&rga_ctx, buf_fd, input_img.cols, input_img.rows, m_inMem[0].physical_addr, m_inputShape[0].w, m_inputShape[0].h);
+    img_resize_fast(&rga_ctx, buf_fd, input_img.cols, input_img.rows, m_inMem[0].physical_addr, m_inputShape[0].w, m_inputShape[0].h);    
+#ifdef RKNN_1_7_X    
     rknn_inputs_sync(m_ctx, 1, m_inMem);
+#else
+    printf("rknn_inputs_sync not supported\n");
+    return RET_CODE::ERR_NPU_GET_OUTPUT_FAILED;   
+#endif    
 
     LOGI << "-> rknn_run";
     ret = rknn_run(m_ctx, nullptr);
