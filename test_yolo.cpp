@@ -37,6 +37,7 @@ int main(int argc, char **argv)
     string baseModelPath = argv[1];
     string imagePath = argv[2];
     int img_mode = 1;
+    float threshold = 0.5;
     ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::GENERAL_DETECTOR;
     if(argc>=4){
         algName = AlgoAPIName(std::atoi(argv[3]));
@@ -44,6 +45,10 @@ int main(int argc, char **argv)
     if(argc>=5){
         //0:RGB 1:NV21 2:NV12 3:NV21 binary file 4:NV12 binary file
         img_mode = std::atoi(argv[4]);
+    }
+    if(argc>=6){
+        threshold = std::atof(argv[5]);
+        printf("** threshold %0.3f\n",threshold);
     }
     // std::cout << baseModelPath << ", " << imagePath << std::endl;
     printf("model = %s, image = %s\n", baseModelPath.c_str(), imagePath.c_str());
@@ -122,7 +127,7 @@ int main(int argc, char **argv)
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();
-        ret = ptrHandle->run(tvInp, bboxes);
+        ret = ptrHandle->run(tvInp, bboxes, threshold);
         auto tm_cost = Tk.end("ptrHandle->run");
         avg_time += tm_cost;
         if(ret!=RET_CODE::SUCCESS){

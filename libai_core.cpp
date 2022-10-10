@@ -49,6 +49,17 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_);
     }
         break;        
+    /**
+     * 火焰检测
+     */
+    case AlgoAPIName::FIRE_DETECTOR:
+    {
+        YOLO_DETECTION* _ptr_ = new YOLO_DETECTION();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }
+        break;              
     default:
         std::cout << "ERROR: Current API is not ready yet!" << std::endl;
         break;
