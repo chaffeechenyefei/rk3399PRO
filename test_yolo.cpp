@@ -48,8 +48,8 @@ int main(int argc, char **argv)
     }
     if(argc>=6){
         threshold = std::atof(argv[5]);
-        printf("** threshold %0.3f\n",threshold);
     }
+    printf("** threshold %0.3f\n",threshold);
     // std::cout << baseModelPath << ", " << imagePath << std::endl;
     printf("model = %s, image = %s\n", baseModelPath.c_str(), imagePath.c_str());
 

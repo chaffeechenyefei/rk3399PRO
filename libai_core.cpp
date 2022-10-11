@@ -3,6 +3,7 @@
 #include "utils/basic.hpp"
 #include "utils/module_siso.hpp"
 #include "utils/module_yolo.hpp"
+#include "utils/module_retinaface.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -27,6 +28,15 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     case AlgoAPIName::UDF_JSON:
         apiHandle = std::make_shared<NaiveModel>();
         break;
+    /**
+     * 人脸检测
+     */
+    case AlgoAPIName::FACE_DETECTOR:
+    {
+        RETINAFACE_DETECTION* _ptr_ = new RETINAFACE_DETECTION();
+        apiHandle.reset(_ptr_);
+    }
+        break;            
     /**
      * 人车非通用检测 
      */

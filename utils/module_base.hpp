@@ -246,6 +246,10 @@ void base_transform_xyxy_xyhw(std::vector<T> &vecbox, float expand_ratio ,float 
         vecbox[i].rect.y = int(_y0);
         vecbox[i].rect.width = int(w);
         vecbox[i].rect.height = int(h);
+        for(int j=0;j<vecbox[i].Pts.pts.size(); j++){
+            vecbox[i].Pts.pts[j].x /= aspect_ratio;
+            vecbox[i].Pts.pts[j].y /= aspect_ratio;
+        }
     }
 };
 template<typename T>
@@ -262,6 +266,10 @@ void base_transform_xyxy_xyhw(std::vector<T> &vecbox, float expand_ratio ,float 
         vecbox[i].rect.y = int(_y0);
         vecbox[i].rect.width = int(w);
         vecbox[i].rect.height = int(h);
+        for(int j=0;j<vecbox[i].Pts.pts.size(); j++){
+            vecbox[i].Pts.pts[j].x /= aX;
+            vecbox[i].Pts.pts[j].y /= aY;
+        }
     }
 };
 

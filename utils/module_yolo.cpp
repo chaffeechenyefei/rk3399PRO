@@ -130,8 +130,11 @@ RET_CODE YOLO_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float thres
 #ifdef TIMING    
     m_Tk.start();
 #endif
-    // ret = preprocess(tvimage, input_datas, aspect_ratios);
+#ifdef USEDRM
     ret = preprocess_drm(tvimage, input_datas, aX, aY);
+#else
+    ret = preprocess_opencv(tvimage, input_datas, aspect_ratios);
+#endif
 #ifdef TIMING    
     m_Tk.end("preprocess");
 #endif
@@ -152,8 +155,11 @@ RET_CODE YOLO_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float thres
 #ifdef TIMING    
     m_Tk.start();
 #endif
-    // ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aspect_ratios);
+#ifdef USEDRM
     ret = postprocess_drm(output_datas, threshold, nms_threshold, bboxes, aX, aY);
+#else
+    ret = postprocess_opencv(output_datas, threshold, nms_threshold, bboxes, aspect_ratios);
+#endif
 #ifdef TIMING    
     m_Tk.end("postprocess");
 #endif    
