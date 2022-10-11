@@ -42,7 +42,7 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         retcode = ptrMainHandle->init(init_param);
         if( retcode != RET_CODE::SUCCESS ){ std::cout << "algo initial failed" << endl; return; }
         //Set model parameters
-        ptrMainHandle->set_param(threshold, nms_threshold);
+        // ptrMainHandle->set_param(threshold, nms_threshold);
 
         ifstream infile;
         string filename = datapath + "/list.txt";
@@ -50,7 +50,7 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         string imgname;
         vector<string> vec_imgnames;
         while(infile >> imgname){
-            std::string imgname_full = datapath + imgname;
+            std::string imgname_full = datapath + "/" + imgname;
             vec_imgnames.push_back(imgname_full);
         }
         infile.close();
@@ -73,7 +73,7 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
             TvaiImage tvimage{TVAI_IMAGE_FORMAT_NV21,width,height,stride,imgBuf, inputdata_sz};
 
             auto start = chrono::system_clock::now();
-            RET_CODE _ret_ = ptrMainHandle->run(tvimage, bboxes);
+            RET_CODE _ret_ = ptrMainHandle->run(tvimage, bboxes, threshold , nms_threshold);
             auto end = chrono::system_clock::now();
             auto duration = chrono::duration_cast<chrono::microseconds>(end-start);
             tm_cost += double(duration.count()) * chrono::microseconds::period::num / chrono::microseconds::period::den;

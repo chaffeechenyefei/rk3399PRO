@@ -35,20 +35,21 @@ int main(int argc, char **argv)
     Clocker Tk;
     printf("test_yolo execution\n");
     string baseModelPath = argv[1];
-    string imagePath = argv[2];
+    string subModelPath = argv[2];
+    string imagePath = argv[3];
     int img_mode = 1;
-    ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::GENERAL_DETECTOR;
+    ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::PHONING_DETECTOR;
     cout<<"algName "<< algName<<endl;
-    if(argc>=4){
+    if(argc>=5){
         algName = AlgoAPIName(std::atoi(argv[3]));
         cout<<"algName "<< algName<<endl;
     }    
-    if(argc>=5){
+    if(argc>=6){
         //0:RGB 1:NV21 2:NV12 3:NV21 binary file 4:NV12 binary file
         img_mode = std::atoi(argv[4]);
     }
     // std::cout << baseModelPath << ", " << imagePath << std::endl;
-    printf("model = %s, image = %s\n", baseModelPath.c_str(), imagePath.c_str());
+    printf("base model = %s, sub model = %s image = %s\n", baseModelPath.c_str(),subModelPath.c_str(), imagePath.c_str());
 
     printf("reading image\n");
     TvaiImage tvInp;
@@ -116,7 +117,8 @@ int main(int argc, char **argv)
     // ptrHandle->set_param(0.6,0.6,) 这里省略了阈值的设定, 使用默认阈值
     // ptrHandle->set_param(0.4,0.4);
     printf("init model\n");
-    std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},};
+    std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},
+                                                            {ucloud::InitParam::SUB_MODEL,subModelPath}};
     RET_CODE ret = ptrHandle->init(modelpathes);
     if(ret!=RET_CODE::SUCCESS){
         printf("err in RET_CODE ret = ptrHandle->init(modelpathes) \n");
@@ -130,7 +132,7 @@ int main(int argc, char **argv)
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();
-        ret = ptrHandle->run(tvInp, bboxes,0.4,0.4);
+        ret = ptrHandle->run(tvInp, bboxes,0.5);
         auto tm_cost = Tk.end("ptrHandle->run");
         avg_time += tm_cost;
         if(ret!=RET_CODE::SUCCESS){
@@ -141,7 +143,7 @@ int main(int argc, char **argv)
         int cnt = 0;
         for(auto &&box: bboxes){
             if(cnt++ > 1) break;
-            printf("[%d]%f,%f,%f,%f,%f,%f \n",box.objtype, box.confidence, box.objectness, box.x0, box.y0, box.x1, box.y1);
+            printf("[%d]%f,%f,%f,%f,%f,%f \n",box.objtype, box.clsscore, box.objectness, box.x0, box.y0, box.x1, box.y1);
         }
         printf("total [%d] detected\n", bboxes.size());
     }

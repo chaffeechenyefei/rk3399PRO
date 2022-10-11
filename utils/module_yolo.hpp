@@ -4,6 +4,7 @@
 #include "module_base.hpp"
 #include "basic.hpp"
 #include "module_track.hpp"
+#include <atomic>
 
 /**
  * YOLO_DETECTION
@@ -19,18 +20,18 @@ public:
     virtual ~YOLO_DETECTION();
     virtual void release();
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, std::string> &modelpath);
-    virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes);
-    virtual ucloud::RET_CODE set_param(float threshold, float nms_threshold);
+    virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6);
+    // virtual ucloud::RET_CODE set_param(float threshold, float nms_threshold);
     virtual ucloud::RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);
     virtual ucloud::RET_CODE set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss);
 /**
  * non-public API
  */
 protected:
-    virtual ucloud::RET_CODE preprocess_drm(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
-    virtual ucloud::RET_CODE postprocess_drm(std::vector<float*> &output_datas, ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
+    virtual ucloud::RET_CODE preprocess_drm(ucloud::TvaiImage& tvimage ,std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
+    virtual ucloud::RET_CODE postprocess_drm(std::vector<float*> &output_datas, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
     virtual ucloud::RET_CODE preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratios);
-    virtual ucloud::RET_CODE postprocess_opencv(std::vector<float*> &output_datas, ucloud::VecObjBBox &bboxes, std::vector<float> &aspect_ratios);
+    virtual ucloud::RET_CODE postprocess_opencv(std::vector<float*> &output_datas, float threshold ,float nms_threshold, ucloud::VecObjBBox &bboxes, std::vector<float> &aspect_ratios);
     /** mode=0: Detect Layer标准输出
      * 模型输出Tensor的维度:
      * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
@@ -39,7 +40,7 @@ protected:
      * dim2 = 1
      **/    
     virtual bool check_output_dims_1LX();
-    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);
+    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes);
     /** mode=1: Detect Layer仅进行了sigmoid
      * 模型输出Tensor的维度:
      * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1] anchors_grid [nl,na,2]
@@ -48,7 +49,7 @@ protected:
      * dim2 = 1
      **/
     virtual bool check_output_dims_1LX2(){return true;};
-    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX2( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);  
+    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX2( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes);  
     /** mode=2: Detect Layer仅进行了sigmoid, 且不进行permute
      * 模型输出Tensor的维度:
      * wywhs [1,na*no,h,w]xnl(3) anchors_grid [nl,na,2]
@@ -56,7 +57,9 @@ protected:
      * dim1 = h
      * dim2 = na*no
      **/    
-    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX3( std::vector<float*> &output_datas,std::vector<ucloud::VecObjBBox> &bboxes);  
+    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX3( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes);  
+    float clip_threshold(float x);
+    float clip_nms_threshold(float x);
 
 protected:
     std::shared_ptr<TrackPoolAPI<BYTETRACKPARM>> m_track = nullptr;
@@ -86,11 +89,15 @@ private:
 
     std::vector<ucloud::CLS_TYPE> m_clss;
     std::map<ucloud::CLS_TYPE, int> m_unique_clss_map;
-    float m_threshold = 0.4;
-    float m_nms_threshold = 0.6;
 
-    int m_fps = 25;
-    int m_nn_buf = 30;
+    //当传入的参数超过边界时,采用默认数值
+    float m_default_threshold = 0.4;
+    float m_default_nms_threshold = 0.4;
+
+    // int m_fps = 25;
+    // int m_nn_buf = 30;
+    int m_fps = 5;
+    int m_nn_buf = 10;
 
 #ifdef TIMING
     Timer m_Tk;

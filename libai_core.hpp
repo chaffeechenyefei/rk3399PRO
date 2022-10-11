@@ -76,6 +76,7 @@ typedef enum _CLS_TYPE{
     FIGHT                       = 400   ,   //打架行为
     SMOKING                     = 410   ,   //抽烟
     PHONING                     = 411   ,   //打电话或玩手机
+    PHONE_PLAY                          ,
     //安全帽
     PED_HEAD                    = 500   ,   //头
     PED_SAFETY_HAT                      ,   //安全帽
@@ -181,10 +182,12 @@ typedef struct _BBox {
     float x,y,w,h;//top left corner + width + height -> model scale
     //最终图像输出(由模型输出经过aspect_scale, feature_map缩放得到)
     TvaiRect rect; //tvai -> image scale 最终输出
+    float clsscore = 0;
     float objectness = 0; //物体概率
     float confidence = 0; //tvai 某类别的概率(由模型输出的objectness*confidence得到)或事件概率
     float quality = 0;//图像质量分0-1, 1:高质量图像
     CLS_TYPE objtype = CLS_TYPE::UNKNOWN;
+    CLS_TYPE clstype = CLS_TYPE::UNKNOWN;
     std::string objname = "unknown";//objtype的文字描述, 在objtype = OTHERS(_A)的情况下, 可以进行透传. 目的: 支持临时算法改动
     std::string desc = "";//json infomation, 目的: 预留, 用于临时情况下将信息以json字段方式输出
     LandMark Pts;//关键点位信息
@@ -249,7 +252,7 @@ typedef std::vector<VecObjBBox> BatchBBoxIN;
 typedef enum _AlgoAPIName{
     FACE_DETECTOR       = 0,//人脸检测
     FACE_EXTRACTOR      = 1,//人脸特征提取
-    GENERAL_DETECTOR    = 2,//通用物体检测器即yolodetector, 可用于人车非
+    GENERAL_DETECTOR    = 2,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR
     ACTION_CLASSIFIER   = 3,//行为识别, 目前支持打斗 [需要数据更新模型] x
     MOD_DETECTOR        = 4,//高空抛物, Moving Object Detection(MOD)[需要改善后处理, 开放做多帧接口测试]
     PED_DETECTOR        = 5,//行人检测加强版, 针对摔倒进行数据增强, mAP高于人车非中的人 
@@ -258,7 +261,7 @@ typedef enum _AlgoAPIName{
     WATER_DETECTOR      = 8,//积水检测 x
     PED_FALL_DETECTOR   = 9,//行人摔倒检测, 只检测摔倒的行人
     SKELETON_DETECTOR   = 10,//人体骨架/关键点检测器--后续对接可用于摔倒检测等业务 x
-    SAFETY_HAT_DETECTOR = 11,//安全帽检测 
+    SAFETY_HAT_DETECTOR = 11,//安全帽检测 return PED_SAFETY_HAT, PED_HEAD
     TRASH_BAG_DETECTOR  = 12,//垃圾袋检测 x
     BANNER_DETECTOR     = 13,//横幅检测 x
     NONCAR_DETECTOR     = 14,//非机动车检测加强版, 针对非机动车进电梯开发 
@@ -317,11 +320,11 @@ public:
      */
     virtual RET_CODE init(std::map<InitParam, std::string> &modelpath){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
 
-    virtual RET_CODE set_param(float threshold, float nms_threshold){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
+    // virtual RET_CODE set_param(float threshold, float nms_threshold){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     /** ALL_IN_ONE 
      * general detection(including face/skeleton/ped_car_non_car detection) and face feature extraction
      * */
-    virtual RET_CODE run(TvaiImage& tvimage, VecObjBBox &bboxes){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
+    virtual RET_CODE run(TvaiImage& tvimage, VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     /**
      * 高空抛物已改单帧推理模式, 多帧推理接口仍保留可使用.
      * chaffee@2022-05-17

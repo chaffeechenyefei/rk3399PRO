@@ -4,6 +4,20 @@
 
 
 namespace bytetrack_no_reid{
+void BYTETracker::clear(){
+	// vector<STrack> tracked_stracks;
+	// vector<STrack> lost_stracks;
+	// vector<STrack> removed_stracks;
+	// byte_kalman::KalmanFilter kalman_filter;
+	// vector<STrack>().swap(tracked_stracks);
+	// vector<STrack>().swap(lost_stracks);
+	// vector<STrack>().swap(removed_stracks);
+	if(removed_stracks.size() > 50){
+		int sz = removed_stracks.size() - 50;
+		removed_stracks.erase(removed_stracks.begin(), removed_stracks.begin()+sz);
+	}
+}
+
 constexpr  const float gating_theshold = 9.4877;
 BYTETracker::BYTETracker(float track_threshold, float high_detect_threshold,int frame_rate,int track_buffer){
 	track_thresh = track_threshold;
@@ -20,6 +34,9 @@ void BYTETracker::reset(float track_threshold, float high_detect_threshold, int 
 	max_time_lost = int(frame_rate/30.0*track_buffer);
 }
 
+// void BYTETracker::clear(){
+
+// }
 
 
 BYTETracker::BYTETracker(int frame_rate, int track_buffer)

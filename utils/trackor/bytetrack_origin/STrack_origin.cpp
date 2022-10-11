@@ -1,4 +1,5 @@
 #include "STrack_origin.h"
+#include <limits>
 
 namespace bytetrack_origin{
 STrack::STrack(vector<float> tlwh_, float score, int detect_idx)
@@ -177,6 +178,7 @@ void STrack::mark_removed()
 int STrack::next_id()
 {
 	static int _count = 0;
+	if(_count >= INT_MAX) _count = 0;
 	_count++;
 	return _count;
 }
