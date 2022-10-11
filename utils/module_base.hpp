@@ -163,7 +163,7 @@ public:
      * tvimage 支持 RGB/BGR/nv21/nv12
      * dst_fmt 支持 RGB/BGR
      */
-    ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr);
+    ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr, bool &channel_reorder);
 
 protected:
     void *drm_buf = NULL;
@@ -181,7 +181,8 @@ protected:
     std::string dl_rga_path = "/usr/lib/aarch64-linux-gnu/librga.so";
 
     void release(void);
-    RGA_MODE get_rga_mode(ucloud::TvaiImageFormat inputFMT, MODEL_INPUT_FORMAT outputFMT );
+    //仅返回支持的nv21/nv12/rgb->rgb
+    RGA_MODE get_rga_mode(ucloud::TvaiImageFormat inputFMT, MODEL_INPUT_FORMAT outputFMT, bool &channel_reorder );
 
 };
 

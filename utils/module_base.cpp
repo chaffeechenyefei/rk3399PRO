@@ -964,31 +964,40 @@ void ImageUtil::release(void) {
     initialed = false;
 }
 
-RGA_MODE ImageUtil::get_rga_mode(TvaiImageFormat inputFMT, MODEL_INPUT_FORMAT outputFMT ){
+RGA_MODE ImageUtil::get_rga_mode(TvaiImageFormat inputFMT, MODEL_INPUT_FORMAT outputFMT, bool &channel_reorder ){
     RGA_MODE ret = RGBtoRGB;
+    channel_reorder = false;
     switch (inputFMT)
     {
     case TVAI_IMAGE_FORMAT_BGR :
         if(outputFMT == MODEL_INPUT_FORMAT::BGR )
             ret = BGRtoBGR;
-        else if(outputFMT == MODEL_INPUT_FORMAT::RGB)
-            ret = BGRtoRGB;
+        else if(outputFMT == MODEL_INPUT_FORMAT::RGB){
+            ret = BGRtoBGR;
+            channel_reorder = true;
+        }
         break;
     case TVAI_IMAGE_FORMAT_RGB :
-        if(outputFMT == MODEL_INPUT_FORMAT::BGR )
-            ret = RGBtoBGR;
+        if(outputFMT == MODEL_INPUT_FORMAT::BGR ){
+            ret = RGBtoRGB;
+            channel_reorder = true;
+        }
         else if(outputFMT == MODEL_INPUT_FORMAT::RGB)
             ret = RGBtoRGB;
         break;
     case TVAI_IMAGE_FORMAT_NV21:
-        if(outputFMT == MODEL_INPUT_FORMAT::BGR )
-            ret = NV21toBGR;
+        if(outputFMT == MODEL_INPUT_FORMAT::BGR ){
+            ret = NV21toRGB;
+            channel_reorder = true;
+        }
         else if(outputFMT == MODEL_INPUT_FORMAT::RGB)
             ret = NV21toRGB;    
         break;
     case TVAI_IMAGE_FORMAT_NV12:
-        if(outputFMT == MODEL_INPUT_FORMAT::BGR )
-            ret = NV12toBGR;
+        if(outputFMT == MODEL_INPUT_FORMAT::BGR ){
+            ret = NV12toRGB;
+            channel_reorder = true;
+        }
         else if(outputFMT == MODEL_INPUT_FORMAT::RGB)
             ret = NV12toRGB;
         break;
@@ -1037,14 +1046,15 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, DATA_SHAPE size, void *ds
     else return RET_CODE::FAILED;                    
 }
 
-RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr){
+RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr, bool &channel_reorder){
     LOGI << "-> ImageUtil::resize";
     int img_width = tvimage.width;
     int img_height = tvimage.height;
     bool valid_img_format = true;
     int img_width_pad = img_width + ((img_width%2==0)?0:1);
     int ret = -1;
-    RGA_MODE mode = get_rga_mode(tvimage.format, pre_param.model_input_format);
+    RGA_MODE mode = get_rga_mode(tvimage.format, pre_param.model_input_format, channel_reorder);
+    LOGI << "RGA_MODE "<< mode << ", channel_reorder: "<< channel_reorder;
     switch (tvimage.format)
     {
     case TVAI_IMAGE_FORMAT_BGR:
@@ -1054,8 +1064,10 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void 
         //图像的宽必须是偶数才能drm resize
         cv::Mat cvimage(img_height,img_width,CV_8UC3,tvimage.pData);
         if( img_width==img_width_pad ){
+            LOGI << "no padding";
             memcpy(drm_buf, cvimage.data, img_width_pad * img_height * 3);
         } else{
+            LOGI << "padding";
             cv::Mat cvimage_padded = cv::Mat::zeros(cv::Size(img_width_pad, img_height), CV_8UC3);
             cv::Mat tmp = cvimage_padded(cv::Rect(0,0,img_width, img_height));
             cvimage.copyTo(tmp);

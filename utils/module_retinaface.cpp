@@ -163,6 +163,8 @@ RET_CODE RETINAFACE_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 #endif
     if(ret!=RET_CODE::SUCCESS) return ret;
 
+    // return ret;
+
 #ifdef TIMING    
     m_Tk.start();
 #endif
@@ -240,7 +242,14 @@ ucloud::RET_CODE RETINAFACE_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage
     RET_CODE uret = m_drm->init(tvimage);
     if(uret!=RET_CODE::SUCCESS) return uret;
     // int ret = m_drm->resize(tvimage,m_InpSp, data);
-    int ret = m_drm->resize(tvimage, m_param_img2tensor, data);
+    bool channel_reorder = false;
+    int ret = m_drm->resize(tvimage, m_param_img2tensor, data, channel_reorder);
+    if(channel_reorder){
+        cv::Mat tmp1(cv::Size(m_InpSp.w, m_InpSp.h),CV_8UC3, data);
+        cv::Mat tmp2;
+        cv::cvtColor(tmp1,tmp2,cv::COLOR_RGB2BGR);
+        memcpy(data, tmp2.data, m_InpSp.w*m_InpSp.h*3);
+    }
     input_datas.push_back(data);
     aX.push_back( (float(m_InpSp.w))/tvimage.width );
     aY.push_back( (float(m_InpSp.h))/tvimage.height );

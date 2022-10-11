@@ -29,7 +29,7 @@ using namespace ucloud;
 /*-------------------------------------------
                   Main Function
 -------------------------------------------*/
-//./test_yolo {model path} {data path} {taskid} {img_mode: 0:RGB 1:NV21 2:NV12 3:NV21 binary file 4:NV12 binary file}
+//./test_yolo {model path} {data path} {taskid} {img_mode: 0:RGB 1:RGB 2:NV21 3:NV12 4:NV21 binary file 5:NV12 binary file}
 int main(int argc, char **argv)
 {   
     Clocker Tk;
@@ -66,18 +66,24 @@ int main(int argc, char **argv)
         tvInp.dataSize = width*height*3;
         break;
     case 1:
+        printf("readImg_to_BGR\n");
+        imgBuf = ucloud::readImg_to_BGR(imagePath,width,height);
+        tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_BGR;
+        tvInp.dataSize = width*height*3;
+        break;        
+    case 2:
         printf("readImg_to_NV21\n");
         imgBuf = ucloud::readImg_to_NV21(imagePath,width,height,stride);
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
         tvInp.dataSize = 3*width*height/2;
         break;
-    case 2:
+    case 3:
         printf("readImg_to_NV12\n");
         imgBuf = ucloud::readImg_to_NV12(imagePath,width,height,stride);
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV12;
         tvInp.dataSize = 3*width*height/2;
         break;        
-    case 3:
+    case 4:
         printf("yuv_reader nv21\n");
         width = 1280;
         height = 720;
@@ -85,7 +91,7 @@ int main(int argc, char **argv)
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
         tvInp.dataSize = 3*width*height/2;
         break;
-    case 4:
+    case 5:
         printf("yuv_reader nv12\n");
         width = 1280;
         height = 720;
@@ -101,6 +107,8 @@ int main(int argc, char **argv)
         printf("no image is read\n");
         return -3;
     }
+
+    printf("image info: width %d, heights %d\n", width, height);
     
     tvInp.pData = imgBuf;
     tvInp.height = height;
@@ -123,7 +131,7 @@ int main(int argc, char **argv)
     printf("infer\n");
     auto avg_time = 0.f;
     VecObjBBox bboxes;
-    int loop_times = 2;
+    int loop_times = 1;
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();
@@ -144,7 +152,7 @@ int main(int argc, char **argv)
     }
     printf("avg exec ptrHandle->run time = %f\n", avg_time/loop_times);
 
-    if(img_mode < 2){
+    if(img_mode <= 3){
         if(tvInp.format!=TVAI_IMAGE_FORMAT_BGR){
             free(imgBuf);
             imgBuf = readImg_to_BGR(imagePath,width,height);

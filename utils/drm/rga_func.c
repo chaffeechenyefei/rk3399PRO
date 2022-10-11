@@ -140,27 +140,33 @@ int img_resize_to_dst_format_slow(rga_context *rga_ctx, void *src_virt, int src_
         {
         case RGBtoRGB: //rgb2rgb or bgr2bgr
         case BGRtoBGR:
+            // printf("RGBtoRGB/BGRtoBGR\n");
             rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, RK_FORMAT_RGB_888);
             rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, RK_FORMAT_RGB_888);
             break;
-        case RGBtoBGR: //rgb2bgr or bgr2rgb
-        case BGRtoRGB:
-            rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, RK_FORMAT_RGB_888);
-            rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, RK_FORMAT_BGR_888);
-            break;
-        case NV21toBGR: //bgr2nv21
-            rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, RK_FORMAT_YCrCb_420_SP);
-            rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, RK_FORMAT_BGR_888);
-            break;
-        case NV12toBGR: //bgr2nv12
-            rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, RK_FORMAT_YCbCr_420_SP);
-            rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, RK_FORMAT_BGR_888);
-            break;
+        // case RGBtoBGR: //rgb2bgr or bgr2rgb
+        // case BGRtoRGB:
+        //     // printf("RGBtoBGR/BGRtoRGB\n");
+        //     rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, RK_FORMAT_BGR_888);
+        //     rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, RK_FORMAT_RGB_888);
+        //     break;
+        // case NV21toBGR: //bgr2nv21
+        //     // printf("NV21toBGR\n");
+        //     rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, RK_FORMAT_YCrCb_420_SP);
+        //     rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, RK_FORMAT_BGR_888);
+        //     break;
+        // case NV12toBGR: //bgr2nv12
+        //     // printf("NV12toBGR\n");
+        //     rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, RK_FORMAT_YCbCr_420_SP);
+        //     rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, RK_FORMAT_BGR_888);
+        //     break;
         case NV21toRGB: //rgb2nv21
+            // printf("NV21toRGB\n");
             rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, RK_FORMAT_YCrCb_420_SP);
             rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, RK_FORMAT_RGB_888);
             break;
         case NV12toRGB: //rgb2nv12
+            // printf("NV12toRGB\n");
             rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, RK_FORMAT_YCbCr_420_SP);
             rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, RK_FORMAT_RGB_888);
             break;    
