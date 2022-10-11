@@ -272,7 +272,9 @@ int main(int argc, char **argv)
         // Get Output
         rknn_output outputs[io_num.n_output];
         memset(outputs, 0, sizeof(outputs));
-        outputs[0].want_float = 1; outputs[1].want_float = 1; outputs[2].want_float = 1;
+        for(auto&& output: outputs){
+            output.want_float = 1;
+        }
         ret = rknn_outputs_get(ctx, io_num.n_output, outputs, NULL);
         if (ret < 0)
         {
@@ -281,10 +283,14 @@ int main(int argc, char **argv)
         }
         int L = std::min(5, int(outputs[0].size/4));
         printf("[%d]: ",loop);
-        float *buf = (float*)(outputs[0].buf);
-        for(int k=0;k<L;k++){
-            printf("%f, ", buf[k]);
+        for(auto&& output:outputs){
+            printf("**");
+            float *buf = (float*)(output.buf);
+            for(int k=0;k<L;k++){
+                printf("%f, ", buf[k]);
+            }
         }
+
         printf("\n");
         rknn_outputs_release(ctx, io_num.n_output, outputs);
         
