@@ -3,6 +3,8 @@
 #include "utils/basic.hpp"
 #include "utils/module_siso.hpp"
 #include "utils/module_yolo.hpp"
+#include "utils/module_classify.hpp"
+#include "utils/module_phone.hpp"
 #include "utils/module_retinaface.hpp"
 #include <iostream>
 
@@ -44,6 +46,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     {
         YOLO_DETECTION* _ptr_ = new YOLO_DETECTION();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR};
+        // vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
         _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_);
     }
@@ -58,18 +61,44 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_);
     }
+<<<<<<< HEAD
         break;        
     /**
      * 火焰检测
      */
     case AlgoAPIName::FIRE_DETECTOR:
     {
+=======
+        break;    
+    /**
+     * 火焰检测
+     */
+    case AlgoAPIName::FIRE_DETECTOR:{
+>>>>>>> main
         YOLO_DETECTION* _ptr_ = new YOLO_DETECTION();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
         _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_);
+<<<<<<< HEAD
     }
         break;              
+=======
+    }    
+        break;
+    
+    /**
+     * 打电话
+     */
+    case AlgoAPIName::PHONING_DETECTOR:{
+        PhoneDetector* _ptr_ = new PhoneDetector();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::OTHERS,CLS_TYPE::PHONING,CLS_TYPE::PHONE_PLAY};
+        _ptr_->set_output_cls_order(model_output_clss,1);
+        apiHandle.reset(_ptr_); 
+    }
+    break;
+
+
+>>>>>>> main
     default:
         std::cout << "ERROR: Current API is not ready yet!" << std::endl;
         break;

@@ -80,3 +80,13 @@ https://ushare.ucloudadmin.com/pages/viewpage.action?pageId=121051861
 位置: /usr/lib/aarch64-linux-gnu/
 
 * opencv ffmpeg等已通过静态编译包含在.so内.
+
+
+classify 中默认的使用ucloud::initParam::submodel,并且根据头文件中的m_select选择对应输出的阈值
+
+scp ubuntu@106.75.109.63:/home/ubuntu/rk_test/project/rk3399PRO/build/test* ./
+scp ubuntu@106.75.109.63:/home/ubuntu/rk_test/project/rk3399PRO/build/lib* ./
+export LD_LIBRARY_PATH=/home/firefly/yefei/lihui_test:$LD_LIBRARY_PATH
+ ./test_phone data/model/yolov5s-conv-9-20211104_736x416.rknn data/model/resnet34-phone-20220302_256x256.rknn data/image/web001.jpg
+ ./test_phone data/model/yolov5s-conv-9-20211104_736x416.rknn data/model/resnet34-phone-20220302_256x256.rknn data/image/phone/12.jpg  
+ Llh@123456

@@ -57,8 +57,8 @@ RET_CODE YOLO_DETECTION::init(std::map<ucloud::InitParam, std::string> &modelpat
     //     return RET_CODE::ERR_MODEL_NOT_MATCH;
     // }
     
-    // m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
-    m_track = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
+    m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
+    // m_track = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
     LOGI << "<- NaiveModel::init";
     return ret;
 }
@@ -492,6 +492,7 @@ ucloud::RET_CODE YOLO_DETECTION::rknn_output_to_boxes_1LX( std::vector<float*> &
     int stepConf = m_nc + 1;
     int L = m_OutEleDims[0][1];
     int NC = m_nc;
+    cout<<"NC "<<NC<<endl;
     for (int i=0; i<m_unique_clss_map.size(); i++){
         bboxes.push_back(VecObjBBox());
     }

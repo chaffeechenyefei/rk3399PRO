@@ -295,6 +295,7 @@ ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath, bool useDRM)
 #endif        
     }
     LOGI << "<- BaseModel::base_init";
+    printf("BaseModel::base init success");
     return RET_CODE::SUCCESS;
 }
 
@@ -640,10 +641,11 @@ ucloud::RET_CODE PreProcessModel::preprocess_rgb_subpixel(cv::Mat &InputRGB, std
             //roi即原图大小
             sub_cvimage = InputRGB;
         } else {
-            if (use_subpixel)
+            if (use_subpixel){
+                printf("--->> STEP INTO getRectSubPix\n");
                 getRectSubPix(InputRGB, cv::Size(roi.width, roi.height), 
                     cv::Point2f(float(roi.x + (1.0*roi.width)/2), float(roi.y + (1.0*roi.height)/2)) , sub_cvimage);
-            else{
+            }else{
                 int x = clip<int>(roi.x, 0, InputRGB.cols-10);
                 int y = clip<int>(roi.y, 0, InputRGB.rows-10);
                 int w = clip<int>(roi.width,1, InputRGB.cols-x);
@@ -677,7 +679,9 @@ ucloud::RET_CODE PreProcessModel::preprocess_rgb_subpixel(cv::Mat &InputRGB, std
         }
         if(ret!=RET_CODE::SUCCESS) return ret;   
         dst.push_back(target_cvimage);
+        cv::imwrite("./patch.jpg",target_cvimage);
     }
+
     LOGI << "<- PreProcessModel::preprocess_rgb_subpixel";
     return ret;
 }
@@ -816,6 +820,7 @@ void base_nmsBBox(std::vector<VecObjBBox> &input, float threshold, int type, Vec
         VecObjBBox().swap(output);
         return;
     }
+    cout<<" nms threshold is "<< threshold<<endl;
     for (int i = 0; i < input.size(); i++ ){
         base_nmsBBox(input[i], threshold, type, output);
     }
