@@ -67,6 +67,7 @@ int main(int argc, char **argv)
         stride = width;
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB;
         tvInp.dataSize = width*height*3;
+        stride = width;
         break;
     case 1:
         printf("readImg_to_BGR\n");
@@ -74,6 +75,7 @@ int main(int argc, char **argv)
         stride = width;
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_BGR;
         tvInp.dataSize = width*height*3;
+        stride = width;
         break;        
     case 2:
         printf("readImg_to_NV21\n");
@@ -108,7 +110,14 @@ int main(int argc, char **argv)
         imgBuf = ucloud::readImg_to_NV21(imagePath,width,height,stride);
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
         tvInp.dataSize = 3*stride*height/2;
-        break;           
+        break;         
+    case 7:
+        printf("readImg_to_RGB_origin_size\n");
+        imgBuf = ucloud::readImg_to_RGB(imagePath,width,height);
+        tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB;
+        tvInp.dataSize = width*height*3;
+        stride = width;
+        break;                     
     default:
         break;
     }

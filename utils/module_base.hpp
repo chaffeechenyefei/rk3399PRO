@@ -179,6 +179,8 @@ protected:
     bool initialed = false;
     std::string dl_drm_path = "/usr/lib/aarch64-linux-gnu/libdrm.so";
     std::string dl_rga_path = "/usr/lib/aarch64-linux-gnu/librga.so";
+    const int wstep = 4;
+    const int hstep = 1;
 
     void release(void);
     //仅返回支持的nv21/nv12/rgb->rgb

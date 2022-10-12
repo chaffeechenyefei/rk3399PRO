@@ -837,8 +837,8 @@ ucloud::RET_CODE ImageUtil::init(ucloud::TvaiImage &tvimage) {
     case TVAI_IMAGE_FORMAT_RGB:
         texW = tvimage.width;
         texH = tvimage.height;
-        if(texW%2!=0) texW += 2 - texW%2;
-        if(texH%2!=0) texH += 2 - texH%2;
+        if(texW%wstep!=0) texW += wstep - texW%wstep;
+        if(texH%hstep!=0) texH += hstep - texH%hstep;
         bpp = 3*8;//bit per pixel
         channels = 3;
         break;
@@ -1074,9 +1074,8 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void 
         //图像的宽必须是偶数才能drm resize
         cv::Mat cvimage(img_height,img_width,CV_8UC3,tvimage.pData);
         // cv::imwrite("x.jpg", cvimage); //check正常
-        if(img_width%2!=0) img_width_pad = img_width + 2 - img_width%2;
-        if(img_height%2!=0) img_height_pad = img_height + 2 - img_height%2;
-        else
+        if(img_width%wstep!=0) img_width_pad = img_width + wstep - img_width%wstep;
+        if(img_height%hstep!=0) img_height_pad = img_height + hstep - img_height%hstep;
         if( img_width==img_width_pad && img_height == img_height_pad ){
             LOGI << "no padding";
             memcpy(drm_buf, cvimage.data, img_width_pad * img_height_pad * 3);
@@ -1086,6 +1085,7 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void 
             cv::Mat tmp = cvimage_padded(cv::Rect(0,0,img_width, img_height));
             cvimage.copyTo(tmp);
             memcpy(drm_buf, cvimage_padded.data, img_width_pad * img_height_pad * 3);
+            // cv::imwrite("y.jpg", cvimage_padded); //check正常
         }
         ret = img_resize_to_dst_format_slow(&rga_ctx, drm_buf, img_width_pad, img_height_pad, dstPtr, 
             pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
