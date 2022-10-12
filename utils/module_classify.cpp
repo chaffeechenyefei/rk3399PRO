@@ -140,6 +140,16 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
     printf("-->>classify input num %d\n",input_datas.size());
     printf("--->> classify proccess image finished!\n");
     if(ret!=ucloud::RET_CODE::SUCCESS) return ret;
+
+    //开始 单个图像进行推理
+    for (int i=0;i<input_datas.size();i++){
+        
+    }
+
+
+
+
+    //结束
     ret = m_net->general_infer_uint8_nhwc_to_float(input_datas,output_datas);
     printf("--->> classify infer finished!\n");
     if (ret!=ucloud::RET_CODE::SUCCESS) return ret;
@@ -161,8 +171,8 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
             // printf("m_select: %d,threshold: %f,buf select score:%f\n",m_select,threshold,m_score);
             if (m_score>threshold){
                 printf("-->>classify step into threshold select!");
-                bboxes[j].clsscore = m_score;
-                bboxes[j].clstype = m_clss[m_select];
+                // bboxes[j]. = m_score;
+                bboxes[j].objtype= m_clss[m_select];
             }
         }
     }
