@@ -229,6 +229,7 @@ ucloud::RET_CODE RETINAFACE_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage
     aX.push_back( (float(m_InpSp.w))/tvimage.width );
     aY.push_back( (float(m_InpSp.h))/tvimage.height );
 
+
 #ifdef VISUAL
     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
     cv::imwrite("preprocess_drm.jpg", cvimage_show);

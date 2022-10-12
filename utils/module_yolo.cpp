@@ -83,8 +83,8 @@ RET_CODE YOLO_DETECTION::init(std::map<ucloud::InitParam, std::string> &modelpat
     //     return RET_CODE::ERR_MODEL_NOT_MATCH;
     // }
     
-    // m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
-    m_track = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
+    m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
+    // m_track = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
     LOGI << "<- NaiveModel::init";
     return ret;
 }
@@ -276,6 +276,7 @@ ucloud::RET_CODE YOLO_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage, std:
     input_datas.push_back(data);
     aX.push_back( (float(m_InpSp.w))/tvimage.width );
     aY.push_back( (float(m_InpSp.h))/tvimage.height );
+
 
 #ifdef VISUAL
     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);

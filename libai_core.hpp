@@ -137,6 +137,7 @@ typedef enum _CLS_TYPE{
     FIGHT                       = 400   ,   //打架行为
     SMOKING                     = 410   ,   //抽烟
     PHONING                     = 411   ,   //打电话或玩手机
+    PHONE_PLAY                          ,
     //安全帽
     PED_HEAD                    = 500   ,   //头
     PED_SAFETY_HAT                      ,   //安全帽
@@ -242,10 +243,12 @@ typedef struct _BBox {
     float x,y,w,h;//top left corner + width + height -> model scale
     //最终图像输出(由模型输出经过aspect_scale, feature_map缩放得到)
     TvaiRect rect; //tvai -> image scale 最终输出
+    // float clsscore = 0;
     float objectness = 0; //物体概率
     float confidence = 0; //tvai 某类别的概率(由模型输出的objectness*confidence得到)或事件概率
     float quality = 0;//图像质量分0-1, 1:高质量图像
     CLS_TYPE objtype = CLS_TYPE::UNKNOWN;
+    // CLS_TYPE clstype = CLS_TYPE::UNKNOWN;
     std::string objname = "unknown";//objtype的文字描述, 在objtype = OTHERS(_A)的情况下, 可以进行透传. 目的: 支持临时算法改动
     std::string desc = "";//json infomation, 目的: 预留, 用于临时情况下将信息以json字段方式输出
     LandMark Pts;//关键点位信息

@@ -40,8 +40,10 @@ int main(int argc, char **argv)
     float threshold = 0.5;
     int fmt_w = 1080; int fmt_h = 720;
     ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::GENERAL_DETECTOR;
+    cout<<"algName "<< algName<<endl;
     if(argc>=4){
         algName = AlgoAPIName(std::atoi(argv[3]));
+        cout<<"algName "<< algName<<endl;
     }    
     if(argc>=5){
         //0:RGB 1:NV21 2:NV12 3:NV21 binary file 4:NV12 binary file
@@ -58,6 +60,8 @@ int main(int argc, char **argv)
     TvaiImage tvInp;
     unsigned char* imgBuf = nullptr;
     int height,width,stride;
+    // height = 416;
+    // width = 736;
     switch (img_mode)
     {
     case 0:
@@ -139,6 +143,7 @@ int main(int argc, char **argv)
     ucloud::AlgoAPISPtr ptrHandle = nullptr;
     ptrHandle = ucloud::AICoreFactory::getAlgoAPI(algName);
     // ptrHandle->set_param(0.6,0.6,) 这里省略了阈值的设定, 使用默认阈值
+    // ptrHandle->set_param(0.4,0.4);
     printf("init model\n");
     std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},};
     RET_CODE ret = ptrHandle->init(modelpathes);
@@ -154,7 +159,7 @@ int main(int argc, char **argv)
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();
-        ret = ptrHandle->run(tvInp, bboxes, threshold);
+        ret = ptrHandle->run(tvInp, bboxes,0.4,0.4);
         auto tm_cost = Tk.end("ptrHandle->run");
         avg_time += tm_cost;
         if(ret!=RET_CODE::SUCCESS){
