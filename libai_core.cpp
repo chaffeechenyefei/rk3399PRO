@@ -103,6 +103,35 @@ unsigned char* ucloud::readImg_to_BGR(std::string filepath, int &width, int &hei
     return dst_ptr;
 }
 
+unsigned char* ucloud::readImg_to_RGB(std::string filepath, int w, int h,int &width, int &height){
+    Mat im = imread(filepath);
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    cv::cvtColor(im, im, cv::COLOR_BGR2RGB);
+    float ar = 1.0;
+    im = resize(im,Size(w,h), false, ar );         
+    dst_ptr = (unsigned char*)malloc(im.total()*3);
+    memcpy(dst_ptr, im.data, im.total()*3);
+    width = im.cols;
+    height = im.rows;
+    return dst_ptr;
+}
+
+unsigned char* ucloud::readImg_to_BGR(std::string filepath, int w, int h, int &width, int &height){
+    Mat im = imread(filepath);
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    float ar = 1.0;
+    im = resize(im,Size(w,h), false, ar );        
+    dst_ptr = (unsigned char*)malloc(im.total()*3);
+    memcpy(dst_ptr, im.data, im.total()*3);
+    width = im.cols;
+    height = im.rows;
+    return dst_ptr;
+}
+
 unsigned char* ucloud::readImg_to_NV21(std::string filepath, int &width, int &height, int &stride){
     Mat im = imread(filepath);
     unsigned char* dst_ptr = nullptr;
@@ -127,7 +156,8 @@ unsigned char* ucloud::readImg_to_NV21(std::string filepath, int w, int h,int &w
         printf("%s not found\n", filepath.c_str());
         return nullptr;
     }
-    cv::resize(im,im, cv::Size(w,h));
+    float ar = 1.0;
+    im = resize(im,Size(w,h), false, ar );
     unsigned char* dst_ptr = nullptr;
     if (im.empty())
         return dst_ptr;
@@ -137,7 +167,8 @@ unsigned char* ucloud::readImg_to_NV21(std::string filepath, int w, int h,int &w
 
 unsigned char* ucloud::readImg_to_NV12(std::string filepath, int w, int h,int &width, int &height, int &stride){
     Mat im = imread(filepath);
-    cv::resize(im,im, cv::Size(w,h));
+    float ar = 1.0;
+    im = resize(im,Size(w,h), false, ar );
     unsigned char* dst_ptr = nullptr;
     if (im.empty())
         return dst_ptr;

@@ -38,6 +38,7 @@ int main(int argc, char **argv)
     string imagePath = argv[2];
     int img_mode = 1;
     float threshold = 0.5;
+    int fmt_w = 1080; int fmt_h = 720;
     ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::GENERAL_DETECTOR;
     if(argc>=4){
         algName = AlgoAPIName(std::atoi(argv[3]));
@@ -61,31 +62,34 @@ int main(int argc, char **argv)
     {
     case 0:
         printf("readImg_to_RGB\n");
-        imgBuf = ucloud::readImg_to_RGB(imagePath,width,height);
+        
+        imgBuf = ucloud::readImg_to_RGB(imagePath,fmt_w, fmt_h, width,height);
+        stride = width;
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB;
         tvInp.dataSize = width*height*3;
         break;
     case 1:
         printf("readImg_to_BGR\n");
-        imgBuf = ucloud::readImg_to_BGR(imagePath,width,height);
+        imgBuf = ucloud::readImg_to_BGR(imagePath, fmt_w, fmt_h, width,height);
+        stride = width;
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_BGR;
         tvInp.dataSize = width*height*3;
         break;        
     case 2:
         printf("readImg_to_NV21\n");
-        imgBuf = ucloud::readImg_to_NV21(imagePath,width,height,stride);
+        imgBuf = ucloud::readImg_to_NV21(imagePath,fmt_w, fmt_h, width,height,stride);
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
-        tvInp.dataSize = 3*width*height/2;
+        tvInp.dataSize = 3*stride*height/2;
         break;
     case 3:
         printf("readImg_to_NV12\n");
-        imgBuf = ucloud::readImg_to_NV12(imagePath,width,height,stride);
+        imgBuf = ucloud::readImg_to_NV12(imagePath,fmt_w, fmt_h, width,height,stride);
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV12;
-        tvInp.dataSize = 3*width*height/2;
+        tvInp.dataSize = 3*stride*height/2;
         break;        
     case 4:
         printf("yuv_reader nv21\n");
-        width = 1280;
+        width = 1080;
         height = 720;
         imgBuf = ucloud::yuv_reader(imagePath,width,height);
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
@@ -93,12 +97,18 @@ int main(int argc, char **argv)
         break;
     case 5:
         printf("yuv_reader nv12\n");
-        width = 1280;
+        width = 1080;
         height = 720;
         imgBuf = ucloud::yuv_reader(imagePath,width,height);
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV12;
         tvInp.dataSize = 3*width*height/2;  
-        break;      
+        break;   
+    case 6:
+        printf("readImg_to_NV21_origin_size\n");
+        imgBuf = ucloud::readImg_to_NV21(imagePath,width,height,stride);
+        tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
+        tvInp.dataSize = 3*stride*height/2;
+        break;           
     default:
         break;
     }
@@ -108,12 +118,12 @@ int main(int argc, char **argv)
         return -3;
     }
 
-    printf("image info: width %d, heights %d\n", width, height);
+    printf("image info: width %d, heights %d, stride %d\n", width, height, stride);
     
     tvInp.pData = imgBuf;
     tvInp.height = height;
     tvInp.width = width;
-    tvInp.stride = width;
+    tvInp.stride = stride;
     
 
     printf("get algo api\n");
@@ -155,7 +165,7 @@ int main(int argc, char **argv)
     if(img_mode <= 3){
         if(tvInp.format!=TVAI_IMAGE_FORMAT_BGR){
             free(imgBuf);
-            imgBuf = readImg_to_BGR(imagePath,width,height);
+            imgBuf = readImg_to_BGR(imagePath,fmt_w, fmt_h, width,height);
         }
         drawImg(imgBuf, width, height, bboxes, true, true, false, 1);
         writeImg("result.jpg", imgBuf, width , height);

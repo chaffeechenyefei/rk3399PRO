@@ -150,14 +150,14 @@ class ImageUtil{
 public:
     ImageUtil(){};
     virtual ~ImageUtil() { release(); };
-    ucloud::RET_CODE init(int w, int h, int channels);
+    // ucloud::RET_CODE init(int w, int h, int channels);
     ucloud::RET_CODE init(ucloud::TvaiImage &tvimage);
     /**
      * dstPtr需要在外部实现开辟
      * src必须是RGB或者BGR 输出同样format
      */
-    ucloud::RET_CODE resize(const cv::Mat &src, const cv::Size &size, void *dstPtr);
-    ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, DATA_SHAPE dst_size,void *dstPtr);
+    // ucloud::RET_CODE resize(const cv::Mat &src, const cv::Size &size, void *dstPtr);
+    // ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, DATA_SHAPE dst_size,void *dstPtr);
     /**
      * dstPtr需要在外部实现开辟
      * tvimage 支持 RGB/BGR/nv21/nv12

@@ -140,6 +140,8 @@ int img_resize_to_dst_format_slow(rga_context *rga_ctx, void *src_virt, int src_
         {
         case RGBtoRGB: //rgb2rgb or bgr2bgr
         case BGRtoBGR:
+        case RGBtoBGR:
+        case BGRtoRGB:
             // printf("RGBtoRGB/BGRtoBGR\n");
             rga_set_rect(&src.rect, 0, 0, src_w, src_h, src_w, src_h, RK_FORMAT_RGB_888);
             rga_set_rect(&dst.rect, 0, 0, dst_w, dst_h, dst_w, dst_h, RK_FORMAT_RGB_888);

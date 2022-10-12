@@ -369,6 +369,8 @@ UCLOUD_API_PUBLIC unsigned char* readImg_to_NV12(std::string filepath, int &widt
  * width :yuv能适配的尺寸
  * height :yuv能适配的尺寸
  */
+UCLOUD_API_PUBLIC unsigned char* readImg_to_RGB(std::string filepath, int w, int h, int &width, int &height);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_BGR(std::string filepath, int w, int h, int &width, int &height);
 UCLOUD_API_PUBLIC unsigned char* readImg_to_NV21(std::string filepath, int w, int h,int &width, int &height, int &stride);
 UCLOUD_API_PUBLIC unsigned char* readImg_to_NV12(std::string filepath, int w, int h,int &width, int &height, int &stride);
 //写图像, 是否采用覆盖式写入

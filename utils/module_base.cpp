@@ -837,13 +837,14 @@ ucloud::RET_CODE ImageUtil::init(ucloud::TvaiImage &tvimage) {
     case TVAI_IMAGE_FORMAT_RGB:
         texW = tvimage.width;
         texH = tvimage.height;
-        texW += (texW%2==0)?0:1;
+        if(texW%2!=0) texW += 2 - texW%2;
+        if(texH%2!=0) texH += 2 - texH%2;
         bpp = 3*8;//bit per pixel
         channels = 3;
         break;
     case TVAI_IMAGE_FORMAT_NV12:
     case TVAI_IMAGE_FORMAT_NV21:
-        texW = tvimage.width;
+        texW = tvimage.stride;
         texH = 3*tvimage.height/2;
         bpp = 8;
         channels = 1;
@@ -902,58 +903,61 @@ ucloud::RET_CODE ImageUtil::init(ucloud::TvaiImage &tvimage) {
     return RET_CODE::SUCCESS;
 }
 
-ucloud::RET_CODE ImageUtil::init(int w, int h, int channels) {
-    LOGI << "-> ImageUtil::init";
-    //w,h需要偶数
-    if(channels == 3) w += (w%2==0)?0:1;
-    if(!initialed){
-        // LOGI << "memset";
-        memset(&rga_ctx, 0, sizeof(rga_context));
-        memset(&drm_ctx, 0, sizeof(drm_context));
-        LOGI << "drm_init";
-        if(exists_file(dl_drm_path))
-            drm_fd = drm_init(&drm_ctx, dl_drm_path.c_str());
-        else{
-            printf("drm_init failed, because %s not found\n", dl_drm_path.c_str());
-            return RET_CODE::FAILED;
-        }
-        if(drm_fd < 0){
-            printf("drm_init failed\n");
-            return RET_CODE::FAILED;
-        }
-        LOGI << "drm_buf_alloc";
-        if(exists_file(dl_drm_path)){
-            if(channels==3)
-                drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, w, h, channels*8, &buf_fd, &handle,
-                                &actual_size);
-            else
-                drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, w, 3*h/2, channels*8, &buf_fd, &handle,
-                                &actual_size);
-            W = w; H = h; C = channels;                            
-        }
-        else{
-            printf("rga_init failed, because %s not found\n", dl_rga_path.c_str());
-            return RET_CODE::FAILED;
-        }
-        LOGI << "RGA_init";
-        int ret = RGA_init(&rga_ctx, dl_rga_path.c_str());
-        if(ret<0){
-            printf("rga_init failed\n");
-            return RET_CODE::FAILED;
-        }
-        initialed = true;
-    } else {
-        if(w!=W || h!=H || channels!=C){
-            LOGI << "reinitial";
-            drm_buf_destroy(&drm_ctx, drm_fd, buf_fd, handle, drm_buf, actual_size);
-            drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, w, h, channels*8, &buf_fd, &handle,
-                            &actual_size);
-            W = w; H = h; C = channels;
-        }
-    }    
-    LOGI << "<- ImageUtil::init";
-    return RET_CODE::SUCCESS;
-}
+// ucloud::RET_CODE ImageUtil::init(int w, int h, int channels) {
+//     LOGI << "-> ImageUtil::init";
+//     //w,h需要偶数
+//     if(channels == 3){
+//         if( w%2 != 0)
+//             w += 2 - w%2;
+//     }
+//     if(!initialed){
+//         // LOGI << "memset";
+//         memset(&rga_ctx, 0, sizeof(rga_context));
+//         memset(&drm_ctx, 0, sizeof(drm_context));
+//         LOGI << "drm_init";
+//         if(exists_file(dl_drm_path))
+//             drm_fd = drm_init(&drm_ctx, dl_drm_path.c_str());
+//         else{
+//             printf("drm_init failed, because %s not found\n", dl_drm_path.c_str());
+//             return RET_CODE::FAILED;
+//         }
+//         if(drm_fd < 0){
+//             printf("drm_init failed\n");
+//             return RET_CODE::FAILED;
+//         }
+//         LOGI << "drm_buf_alloc";
+//         if(exists_file(dl_drm_path)){
+//             if(channels==3)
+//                 drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, w, h, channels*8, &buf_fd, &handle,
+//                                 &actual_size);
+//             else
+//                 drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, w, 3*h/2, channels*8, &buf_fd, &handle,
+//                                 &actual_size);
+//             W = w; H = h; C = channels;                            
+//         }
+//         else{
+//             printf("rga_init failed, because %s not found\n", dl_rga_path.c_str());
+//             return RET_CODE::FAILED;
+//         }
+//         LOGI << "RGA_init";
+//         int ret = RGA_init(&rga_ctx, dl_rga_path.c_str());
+//         if(ret<0){
+//             printf("rga_init failed\n");
+//             return RET_CODE::FAILED;
+//         }
+//         initialed = true;
+//     } else {
+//         if(w!=W || h!=H || channels!=C){
+//             LOGI << "reinitial";
+//             drm_buf_destroy(&drm_ctx, drm_fd, buf_fd, handle, drm_buf, actual_size);
+//             drm_buf = drm_buf_alloc(&drm_ctx, drm_fd, w, h, channels*8, &buf_fd, &handle,
+//                             &actual_size);
+//             W = w; H = h; C = channels;
+//         }
+//     }    
+//     LOGI << "<- ImageUtil::init";
+//     return RET_CODE::SUCCESS;
+// }
 
 void ImageUtil::release(void) {
     if(initialed){
@@ -1011,52 +1015,53 @@ RGA_MODE ImageUtil::get_rga_mode(TvaiImageFormat inputFMT, MODEL_INPUT_FORMAT ou
     return ret;
 };
 
-RET_CODE ImageUtil::resize(const cv::Mat& src, const cv::Size& size, void* dstPtr) {
-    if (src.empty()) {
-        printf("[ImageUtil::resize()] src is empty!\n");
-        return RET_CODE::FAILED;
-    }
-    assert(src.channels()==3);
-    int img_width = src.cols;
-    int img_height = src.rows;
-    memcpy(drm_buf, src.data, img_width * img_height * 3);
-    int ret = img_resize_slow(&rga_ctx, drm_buf, img_width, img_height, dstPtr, size.width,
-                    size.height);
-    if(ret >= 0) return RET_CODE::SUCCESS;
-    else return RET_CODE::FAILED;
-}
+// RET_CODE ImageUtil::resize(const cv::Mat& src, const cv::Size& size, void* dstPtr) {
+//     if (src.empty()) {
+//         printf("[ImageUtil::resize()] src is empty!\n");
+//         return RET_CODE::FAILED;
+//     }
+//     assert(src.channels()==3);
+//     int img_width = src.cols;
+//     int img_height = src.rows;
+//     memcpy(drm_buf, src.data, img_width * img_height * 3);
+//     int ret = img_resize_slow(&rga_ctx, drm_buf, img_width, img_height, dstPtr, size.width,
+//                     size.height);
+//     if(ret >= 0) return RET_CODE::SUCCESS;
+//     else return RET_CODE::FAILED;
+// }
 
-RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, DATA_SHAPE size, void *dstPtr){
-    LOGI << "-> ImageUtil::resize";
-    assert(tvimage.format == TVAI_IMAGE_FORMAT_RGB || tvimage.format == TVAI_IMAGE_FORMAT_BGR );
-    int img_width = tvimage.width;
-    int img_height = tvimage.height;
-    //图像的宽必须是偶数才能drm resize
-    int img_width_pad = img_width + ((img_width%2==0)?0:1);
-    int img_height_pad = img_height + ((img_height%2==0)?0:1);
-    cv::Mat cvimage(img_height,img_width,CV_8UC3,tvimage.pData);
-    cv::Mat cvimage_padded = cv::Mat::zeros(cv::Size(img_width_pad, img_height_pad), CV_8UC3);
-    // printf("%d,%d,%d,%d\n",cvimage_padded.cols, cvimage_padded.rows, img_width, img_height);
-    cv::Mat tmp = cvimage_padded(cv::Rect(0,0,img_width, img_height));
-    cvimage.copyTo(tmp);
+// RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, DATA_SHAPE size, void *dstPtr){
+//     LOGI << "-> ImageUtil::resize";
+//     assert(tvimage.format == TVAI_IMAGE_FORMAT_RGB || tvimage.format == TVAI_IMAGE_FORMAT_BGR );
+//     int img_width = tvimage.width;
+//     int img_height = tvimage.height;
+//     //图像的宽必须是偶数才能drm resize
+//     int img_width_pad = img_width + ((img_width%2==0)?0:1);
+//     int img_height_pad = img_height + ((img_height%2==0)?0:1);
+//     cv::Mat cvimage(img_height,img_width,CV_8UC3,tvimage.pData);
+//     cv::Mat cvimage_padded = cv::Mat::zeros(cv::Size(img_width_pad, img_height_pad), CV_8UC3);
+//     // printf("%d,%d,%d,%d\n",cvimage_padded.cols, cvimage_padded.rows, img_width, img_height);
+//     cv::Mat tmp = cvimage_padded(cv::Rect(0,0,img_width, img_height));
+//     cvimage.copyTo(tmp);
 
-    memcpy(drm_buf, cvimage_padded.data, img_width_pad * img_height_pad * 3);
-    int ret = img_resize_slow(&rga_ctx, drm_buf, img_width_pad, img_height_pad, dstPtr, size.w,
-                    size.h);
-    LOGI << "<- ImageUtil::resize";
-    // cv::Mat cvimage_show(size.h, size.w, CV_8UC3, dstPtr);
-    // cv::imwrite("resized.jpg", cvimage_show);
-    if(ret >= 0) return RET_CODE::SUCCESS;
-    else return RET_CODE::FAILED;                    
-}
+//     memcpy(drm_buf, cvimage_padded.data, img_width_pad * img_height_pad * 3);
+//     int ret = img_resize_slow(&rga_ctx, drm_buf, img_width_pad, img_height_pad, dstPtr, size.w,
+//                     size.h);
+//     LOGI << "<- ImageUtil::resize";
+//     // cv::Mat cvimage_show(size.h, size.w, CV_8UC3, dstPtr);
+//     // cv::imwrite("resized.jpg", cvimage_show);
+//     if(ret >= 0) return RET_CODE::SUCCESS;
+//     else return RET_CODE::FAILED;                    
+// }
 
 RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr){
     LOGI << "-> ImageUtil::resize";
     bool channel_reorder = false;
     int img_width = tvimage.width;
     int img_height = tvimage.height;
+    int img_width_pad = img_width;
+    int img_height_pad = img_height;
     bool valid_img_format = true;
-    int img_width_pad = img_width + ((img_width%2==0)?0:1);
     int ret = -1;
     RGA_MODE mode = get_rga_mode(tvimage.format, pre_param.model_input_format, channel_reorder);
     LOGI << "RGA_MODE "<< mode << ", channel_reorder: "<< channel_reorder;
@@ -1068,25 +1073,29 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void 
         LOGI << "TVAI_IMAGE_FORMAT_BGR/TVAI_IMAGE_FORMAT_RGB";
         //图像的宽必须是偶数才能drm resize
         cv::Mat cvimage(img_height,img_width,CV_8UC3,tvimage.pData);
-        if( img_width==img_width_pad ){
+        // cv::imwrite("x.jpg", cvimage); //check正常
+        if(img_width%2!=0) img_width_pad = img_width + 2 - img_width%2;
+        if(img_height%2!=0) img_height_pad = img_height + 2 - img_height%2;
+        else
+        if( img_width==img_width_pad && img_height == img_height_pad ){
             LOGI << "no padding";
-            memcpy(drm_buf, cvimage.data, img_width_pad * img_height * 3);
+            memcpy(drm_buf, cvimage.data, img_width_pad * img_height_pad * 3);
         } else{
             LOGI << "padding";
-            cv::Mat cvimage_padded = cv::Mat::zeros(cv::Size(img_width_pad, img_height), CV_8UC3);
+            cv::Mat cvimage_padded = cv::Mat::zeros(cv::Size(img_width_pad, img_height_pad), CV_8UC3);
             cv::Mat tmp = cvimage_padded(cv::Rect(0,0,img_width, img_height));
             cvimage.copyTo(tmp);
-            memcpy(drm_buf, cvimage_padded.data, img_width_pad * img_height * 3);
-            ret = img_resize_to_dst_format_slow(&rga_ctx, drm_buf, img_width_pad, img_height, dstPtr, 
-                pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
+            memcpy(drm_buf, cvimage_padded.data, img_width_pad * img_height_pad * 3);
         }
+        ret = img_resize_to_dst_format_slow(&rga_ctx, drm_buf, img_width_pad, img_height_pad, dstPtr, 
+            pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
         }    
         break;
     case TVAI_IMAGE_FORMAT_NV21:
     case TVAI_IMAGE_FORMAT_NV12:
         {
         LOGI << "TVAI_IMAGE_FORMAT_NV21/TVAI_IMAGE_FORMAT_NV12";
-        memcpy(drm_buf, tvimage.pData, 3*img_width * img_height/2);
+        memcpy(drm_buf, tvimage.pData, 3*tvimage.stride * img_height/2);
         ret = img_resize_to_dst_format_slow(&rga_ctx, drm_buf, img_width, img_height, dstPtr, 
             pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
         }
