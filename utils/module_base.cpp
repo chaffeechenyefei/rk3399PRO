@@ -679,7 +679,7 @@ ucloud::RET_CODE PreProcessModel::preprocess_rgb_subpixel(cv::Mat &InputRGB, std
         }
         if(ret!=RET_CODE::SUCCESS) return ret;   
         dst.push_back(target_cvimage);
-        cv::imwrite("./patch.jpg",target_cvimage);
+//         cv::imwrite("./patch.jpg",target_cvimage);
     }
 
     LOGI << "<- PreProcessModel::preprocess_rgb_subpixel";
