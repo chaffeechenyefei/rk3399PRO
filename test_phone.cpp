@@ -128,7 +128,7 @@ int main(int argc, char **argv)
     printf("infer\n");
     auto avg_time = 0.f;
     VecObjBBox bboxes;
-    int loop_times = 2;
+    int loop_times = 1000;
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();

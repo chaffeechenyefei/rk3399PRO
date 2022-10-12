@@ -72,7 +72,18 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_);
     }
-        break;              
+        break;        
+    /*
+    * 打电话
+    */
+    case AlgoAPIName::PHONING_DETECTOR:{
+        PhoneDetector* _ptr_ = new PhoneDetector();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::OTHERS,CLS_TYPE::PHONING,CLS_TYPE::PHONE_PLAY};
+        _ptr_->set_output_cls_order(model_output_clss,1);
+        apiHandle.reset(_ptr_); 
+    }
+    break;   
+
     default:
         std::cout << "ERROR: Current API is not ready yet!" << std::endl;
         break;

@@ -34,14 +34,15 @@ int main(int argc, char **argv)
     Clocker Tk;
     printf("test_yolo execution\n");
     string baseModelPath = argv[1];
-    string imagePath = argv[2];
+    string subModelPath = argv[2];
+    string imagePath = argv[3];
     int img_mode = 0;
-    if(argc>=4){
+    if(argc>=5){
         //0:RGB 1:NV21 2:NV12 3:NV21 binary file 4:NV12 binary file
-        img_mode = std::atoi(argv[3]);
+        img_mode = std::atoi(argv[4]);
     }
     // std::cout << baseModelPath << ", " << imagePath << std::endl;
-    printf("model = %s, image = %s\n", baseModelPath.c_str(), imagePath.c_str());
+    printf("base model = %s, sub model = %s image = %s\n", baseModelPath.c_str(),subModelPath.c_str(), imagePath.c_str());
 
     printf("reading image\n");
     TvaiImage tvInp;
@@ -100,10 +101,10 @@ int main(int argc, char **argv)
 
     printf("get algo api\n");
     ucloud::AlgoAPISPtr ptrHandle = nullptr;
-    ptrHandle = ucloud::AICoreFactory::getAlgoAPI(ucloud::AlgoAPIName::GENERAL_DETECTOR);
+    ptrHandle = ucloud::AICoreFactory::getAlgoAPI(ucloud::AlgoAPIName::PHONING_DETECTOR);
     // ptrHandle->set_param(0.6,0.6,) 这里省略了阈值的设定, 使用默认阈值
     printf("init model\n");
-    std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},};
+    std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},{ucloud::InitParam::SUB_MODEL,subModelPath}};
     RET_CODE ret = ptrHandle->init(modelpathes);
     if(ret!=RET_CODE::SUCCESS){
         printf("err in RET_CODE ret = ptrHandle->init(modelpathes) \n");
