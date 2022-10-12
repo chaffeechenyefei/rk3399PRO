@@ -1128,3 +1128,21 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void 
     if(ret >= 0) return RET_CODE::SUCCESS;
     else return RET_CODE::FAILED;      
 }
+
+
+
+TvaiRect globalscaleTvaiRect(TvaiRect &rect, float scale, int W, int H){
+    /**
+     * H,W is the border of image 
+     */
+    TvaiRect output;
+    float cx = rect.x + rect.width/2;
+    float cy = rect.y + rect.height/2;
+    output.width = rect.width*scale;
+    output.height = rect.height*scale;
+    output.x = std::max(cx - output.width/2,  0.f);
+    output.y = std::max(cy - output.height/2, 0.f);
+    output.width = std::min(W - output.x, output.width);
+    output.height = std::min(H - output.y, output.height);
+    return output;
+}
