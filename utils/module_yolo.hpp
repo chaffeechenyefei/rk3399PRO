@@ -129,11 +129,21 @@ public:
 /**
  * non-public API
  */
+//对roi区域进行检测
+    virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::TvaiRect roi ,ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6);
 protected:
+    /***whole image preprocess with drm**/
     virtual ucloud::RET_CODE preprocess_drm(ucloud::TvaiImage& tvimage ,std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
-    virtual ucloud::RET_CODE postprocess_drm(std::vector<float*> &output_datas, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
+    /***whole image preprocess with opencv**/
     virtual ucloud::RET_CODE preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratios);
-    virtual ucloud::RET_CODE postprocess_opencv(std::vector<float*> &output_datas, float threshold ,float nms_threshold, ucloud::VecObjBBox &bboxes, std::vector<float> &aspect_ratios);
+    /***image with preprocess with roi+drm**/
+    virtual ucloud::RET_CODE preprocess_drm(ucloud::TvaiImage& tvimage , ucloud::TvaiRect roi,std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
+    /***image preprocess with roi+opencv**/
+    virtual ucloud::RET_CODE preprocess_opencv(ucloud::TvaiImage& tvimage, ucloud::TvaiRect roi, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratios);
+    
+    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
+    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, ucloud::TvaiRect roi, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
+
     /** mode=0: Detect Layer标准输出
      * 模型输出Tensor的维度:
      * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]

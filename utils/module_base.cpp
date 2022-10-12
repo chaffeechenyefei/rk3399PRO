@@ -1015,45 +1015,6 @@ RGA_MODE ImageUtil::get_rga_mode(TvaiImageFormat inputFMT, MODEL_INPUT_FORMAT ou
     return ret;
 };
 
-// RET_CODE ImageUtil::resize(const cv::Mat& src, const cv::Size& size, void* dstPtr) {
-//     if (src.empty()) {
-//         printf("[ImageUtil::resize()] src is empty!\n");
-//         return RET_CODE::FAILED;
-//     }
-//     assert(src.channels()==3);
-//     int img_width = src.cols;
-//     int img_height = src.rows;
-//     memcpy(drm_buf, src.data, img_width * img_height * 3);
-//     int ret = img_resize_slow(&rga_ctx, drm_buf, img_width, img_height, dstPtr, size.width,
-//                     size.height);
-//     if(ret >= 0) return RET_CODE::SUCCESS;
-//     else return RET_CODE::FAILED;
-// }
-
-// RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, DATA_SHAPE size, void *dstPtr){
-//     LOGI << "-> ImageUtil::resize";
-//     assert(tvimage.format == TVAI_IMAGE_FORMAT_RGB || tvimage.format == TVAI_IMAGE_FORMAT_BGR );
-//     int img_width = tvimage.width;
-//     int img_height = tvimage.height;
-//     //图像的宽必须是偶数才能drm resize
-//     int img_width_pad = img_width + ((img_width%2==0)?0:1);
-//     int img_height_pad = img_height + ((img_height%2==0)?0:1);
-//     cv::Mat cvimage(img_height,img_width,CV_8UC3,tvimage.pData);
-//     cv::Mat cvimage_padded = cv::Mat::zeros(cv::Size(img_width_pad, img_height_pad), CV_8UC3);
-//     // printf("%d,%d,%d,%d\n",cvimage_padded.cols, cvimage_padded.rows, img_width, img_height);
-//     cv::Mat tmp = cvimage_padded(cv::Rect(0,0,img_width, img_height));
-//     cvimage.copyTo(tmp);
-
-//     memcpy(drm_buf, cvimage_padded.data, img_width_pad * img_height_pad * 3);
-//     int ret = img_resize_slow(&rga_ctx, drm_buf, img_width_pad, img_height_pad, dstPtr, size.w,
-//                     size.h);
-//     LOGI << "<- ImageUtil::resize";
-//     // cv::Mat cvimage_show(size.h, size.w, CV_8UC3, dstPtr);
-//     // cv::imwrite("resized.jpg", cvimage_show);
-//     if(ret >= 0) return RET_CODE::SUCCESS;
-//     else return RET_CODE::FAILED;                    
-// }
-
 RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr){
     LOGI << "-> ImageUtil::resize";
     bool channel_reorder = false;
@@ -1125,6 +1086,77 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void 
 }
 
 
+RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi, PRE_PARAM pre_param, void *dstPtr){
+    LOGI << "-> ImageUtil::resize";
+    bool channel_reorder = false;
+    int img_width = tvimage.width;
+    int img_height = tvimage.height;
+    int img_width_pad = img_width;
+    int img_height_pad = img_height;
+    bool valid_img_format = true;
+    int ret = -1;
+    RGA_MODE mode = get_rga_mode(tvimage.format, pre_param.model_input_format, channel_reorder);
+    LOGI << "RGA_MODE "<< mode << ", channel_reorder: "<< channel_reorder;
+    switch (tvimage.format)
+    {
+    case TVAI_IMAGE_FORMAT_BGR:
+    case TVAI_IMAGE_FORMAT_RGB:
+        {
+        LOGI << "TVAI_IMAGE_FORMAT_BGR/TVAI_IMAGE_FORMAT_RGB";
+        //图像的宽必须是偶数才能drm resize
+        cv::Mat cvimage(img_height,img_width,CV_8UC3,tvimage.pData);
+        // cv::imwrite("x.jpg", cvimage); //check正常
+        if(img_width%wstep!=0) img_width_pad = img_width + wstep - img_width%wstep;
+        if(img_height%hstep!=0) img_height_pad = img_height + hstep - img_height%hstep;
+        if( img_width==img_width_pad && img_height == img_height_pad ){
+            LOGI << "no padding";
+            memcpy(drm_buf, cvimage.data, img_width_pad * img_height_pad * 3);
+        } else{
+            LOGI << "padding";
+            cv::Mat cvimage_padded = cv::Mat::zeros(cv::Size(img_width_pad, img_height_pad), CV_8UC3);
+            cv::Mat tmp = cvimage_padded(cv::Rect(0,0,img_width, img_height));
+            cvimage.copyTo(tmp);
+            memcpy(drm_buf, cvimage_padded.data, img_width_pad * img_height_pad * 3);
+            // cv::imwrite("y.jpg", cvimage_padded); //check正常
+        }
+        ret = img_roi_resize_to_dst_format_slow(&rga_ctx, drm_buf, roi.x, roi.y, roi.width, roi.height, dstPtr, 
+            pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
+        }    
+        break;
+    case TVAI_IMAGE_FORMAT_NV21:
+    case TVAI_IMAGE_FORMAT_NV12:
+        {
+        LOGI << "TVAI_IMAGE_FORMAT_NV21/TVAI_IMAGE_FORMAT_NV12";
+        memcpy(drm_buf, tvimage.pData, 3*tvimage.stride * img_height/2);
+        ret = img_roi_resize_to_dst_format_slow(&rga_ctx, drm_buf, roi.x, roi.y, roi.width, roi.height, dstPtr, 
+            pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
+        }
+        break;
+    default:
+        valid_img_format = false;
+        break;
+    }
+    if(!valid_img_format){
+        printf("invalid image format for ImageUtil::resize\n");
+        return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+    }
+    //人为反转
+    if(channel_reorder){
+        int _w = pre_param.model_input_shape.w;
+        int _h = pre_param.model_input_shape.h;
+        cv::Mat tmp1(cv::Size(_w,_h),CV_8UC3, dstPtr);
+        cv::Mat tmp2;
+        cv::cvtColor(tmp1,tmp2,cv::COLOR_RGB2BGR);
+        memcpy(dstPtr, tmp2.data, _w*_h*3);
+    }    
+    LOGI << "<- ImageUtil::resize";
+    // cv::Mat cvimage_show(size.h, size.w, CV_8UC3, dstPtr);
+    // cv::imwrite("resized.jpg", cvimage_show);
+    if(ret >= 0) return RET_CODE::SUCCESS;
+    else return RET_CODE::FAILED;      
+}
+
+
 
 TvaiRect globalscaleTvaiRect(TvaiRect &rect, float scale, int W, int H){
     /**
@@ -1140,4 +1172,15 @@ TvaiRect globalscaleTvaiRect(TvaiRect &rect, float scale, int W, int H){
     output.width = std::min(W - output.x, output.width);
     output.height = std::min(H - output.y, output.height);
     return output;
+}
+
+void shift_box_from_roi_to_org(ucloud::VecObjBBox &bboxes, ucloud::TvaiRect &roirect){
+    for(auto &&bbox: bboxes){
+        bbox.rect.x += roirect.x;
+        bbox.rect.y += roirect.y;
+        for(auto &&pt: bbox.Pts.pts){
+            pt.x += roirect.x;
+            pt.y += roirect.y;
+        }
+    }
 }

@@ -45,7 +45,7 @@ RET_CODE SMOKE_CIG_DETECTION::run(TvaiImage &tvimage, VecObjBBox &bboxes, float 
     for(auto &&face_bbox: face_bboxes){
         VecObjBBox target_bboxes;
         ucloud::TvaiRect scaled_face_rect = globalscaleTvaiRect(face_bbox.rect, expand_scale, tvimage.width, tvimage.height);
-        // ret = m_cig_detectHandle->run(tvimage, face_bbox.rect, target_bboxes, threshold, nms_threshold);
+        ret = m_cig_detectHandle->run(tvimage, face_bbox.rect, target_bboxes, threshold, nms_threshold);
         if(!target_bboxes.empty()){
             face_bbox.confidence = target_bboxes[0].confidence;
             face_bbox.objectness = target_bboxes[0].objectness;

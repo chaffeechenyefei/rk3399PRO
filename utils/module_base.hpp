@@ -164,6 +164,7 @@ public:
      * dst_fmt 支持 RGB/BGR
      */
     ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr);
+    ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi,PRE_PARAM pre_param,void *dstPtr);
 
 protected:
     void *drm_buf = NULL;
@@ -276,8 +277,25 @@ void base_transform_xyxy_xyhw(std::vector<T> &vecbox, float expand_ratio ,float 
     }
 };
 
-ucloud::TvaiRect globalscaleTvaiRect(ucloud::TvaiRect &rect, float scale, int W, int H);
+template<typename T>
+inline T get_valid_rect(T rect, int W, int H){
+    if(rect.x<0)
+        rect.x = 0;
+    if(rect.y<0)
+        rect.y = 0;
+    if(rect.width<0)
+        rect.width = 0;
+    if(rect.height<0)
+        rect.height = 0;
+    if(rect.x+rect.width>=W)
+        rect.width = W - rect.x - 1;
+    if(rect.y+rect.height>=H)
+        rect.height = H - rect.y - 1;
+    return rect;
+};
 
+ucloud::TvaiRect globalscaleTvaiRect(ucloud::TvaiRect &rect, float scale, int W, int H);
+void shift_box_from_roi_to_org(ucloud::VecObjBBox &bboxes, ucloud::TvaiRect &roirect);
 
 
 #endif

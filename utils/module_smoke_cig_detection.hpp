@@ -26,7 +26,7 @@ private:
     float m_face_threshold = 0.7;
 
     ucloud::AlgoAPISPtr m_face_detectHandle = nullptr;
-    std::shared_ptr<ucloud::AlgoAPI> m_cig_detectHandle = nullptr;
+    ucloud::AlgoAPISPtr m_cig_detectHandle = nullptr;
     
     ucloud::CLS_TYPE m_cls = ucloud::CLS_TYPE::SMOKING;
 

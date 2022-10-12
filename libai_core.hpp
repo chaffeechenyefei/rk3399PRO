@@ -328,8 +328,10 @@ public:
         return init(config);
         }
     virtual RET_CODE set_output_cls_order(std::vector<CLS_TYPE> &output_clss){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
+    //支持roi区域内检测
+    virtual RET_CODE run(TvaiImage& tvimage, TvaiRect roi ,ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
+    //接口兼容:兼容单帧输入的情况@2022-02-17
     virtual RET_CODE run(BatchImageIN &batch_tvimages, VecObjBBox &bboxes){
-        //接口兼容:兼容单帧输入的情况@2022-02-17
         if(batch_tvimages.empty()) return RET_CODE::SUCCESS;
         else return run(batch_tvimages[0], bboxes);
     }                         
