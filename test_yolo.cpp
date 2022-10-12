@@ -135,11 +135,7 @@ int main(int argc, char **argv)
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();
-<<<<<<< HEAD
-        ret = ptrHandle->run(tvInp, bboxes, threshold);
-=======
         ret = ptrHandle->run(tvInp, bboxes,0.4,0.4);
->>>>>>> main
         auto tm_cost = Tk.end("ptrHandle->run");
         avg_time += tm_cost;
         if(ret!=RET_CODE::SUCCESS){

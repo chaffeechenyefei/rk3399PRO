@@ -143,7 +143,7 @@ int main(int argc, char **argv)
         int cnt = 0;
         for(auto &&box: bboxes){
             if(cnt++ > 1) break;
-            printf("[%d]%f,%f,%f,%f,%f,%f \n",box.objtype, box.clsscore, box.objectness, box.x0, box.y0, box.x1, box.y1);
+            printf("[%d]%f,%f,%f,%f,%f \n",box.objtype, box.objectness, box.x0, box.y0, box.x1, box.y1);
         }
         printf("total [%d] detected\n", bboxes.size());
     }
