@@ -167,6 +167,10 @@ target_link_libraries(test_loop ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
 add_executable(test_thread test_thread.cpp)
 target_link_libraries(test_thread ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
 
+#phone双模型测试
+add_executable(test_phone test_phone.cpp)
+target_link_libraries(test_phone ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
+
 
 message("=========END=========")
 

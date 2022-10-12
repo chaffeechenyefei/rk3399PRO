@@ -195,12 +195,12 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 		STrack *track = r_tracked_stracks[u_track[i]];
 		if (track->state != TrackState::Lost)
 		{	
-			if (track->diou<0.05){
-				refind_stracks.push_back(*track);
-			}else{
+			// if (track->diou<0.05){
+			// 	refind_stracks.push_back(*track);
+			// }else{
 			track->mark_lost();
 			lost_stracks.push_back(*track);
-			}
+			// }
 		}
 	}
 
