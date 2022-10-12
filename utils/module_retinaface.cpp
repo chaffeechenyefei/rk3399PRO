@@ -163,6 +163,8 @@ RET_CODE RETINAFACE_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 #endif
     if(ret!=RET_CODE::SUCCESS) return ret;
 
+    // return ret;
+
 #ifdef TIMING    
     m_Tk.start();
 #endif
@@ -245,9 +247,10 @@ ucloud::RET_CODE RETINAFACE_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage
     aX.push_back( (float(m_InpSp.w))/tvimage.width );
     aY.push_back( (float(m_InpSp.h))/tvimage.height );
 
+#ifdef VERBOSE
     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    // cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
     cv::imwrite("preprocess_drm.jpg", cvimage_show);
+#endif
 
     LOGI << "<- RETINAFACE_DETECTION::preprocess_drm";
     return RET_CODE::SUCCESS;

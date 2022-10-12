@@ -57,6 +57,7 @@ int main(int argc, char **argv)
     int height,width,stride;
     // height = 416;
     // width = 736;
+    int fmt_w = 1080; int fmt_h = 720;
     switch (img_mode)
     {
     case 0:
@@ -69,7 +70,7 @@ int main(int argc, char **argv)
         break;
     case 1:
         printf("readImg_to_NV21\n");
-        imgBuf = ucloud::readImg_to_NV21(imagePath,width,height,stride);
+        imgBuf = ucloud::readImg_to_NV21(imagePath,fmt_w, fmt_h, width,height,stride);;
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
         cout<<"image height width"<<height<<" "<<width<<endl;
         tvInp.dataSize = 3*width*height/2;
@@ -128,7 +129,7 @@ int main(int argc, char **argv)
     printf("infer\n");
     auto avg_time = 0.f;
     VecObjBBox bboxes;
-    int loop_times = 1000;
+    int loop_times = 2;
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();

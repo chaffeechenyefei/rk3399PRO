@@ -251,9 +251,11 @@ ucloud::RET_CODE YOLO_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage, std:
     aX.push_back( (float(m_InpSp.w))/tvimage.width );
     aY.push_back( (float(m_InpSp.h))/tvimage.height );
 
-    // cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    // cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
-    // cv::imwrite("preprocess_drm.jpg", cvimage_show);
+#ifdef VERBOSE
+    cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
+    cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
+    cv::imwrite("preprocess_drm.jpg", cvimage_show);
+#endif
 
     LOGI << "<- YOLO_DETECTION::preprocess_drm";
     return RET_CODE::SUCCESS;

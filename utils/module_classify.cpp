@@ -163,11 +163,12 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
             float m_score = buf[m_select];
             // printf("ROI %d,buf select score:%f\n",i,m_score);
             // printf("m_select: %d,threshold: %f,buf select score:%f\n",m_select,threshold,m_score);
+            printf("--->> classify %d target score is %f class type is phone",i,m_score);
             if (m_score>threshold){
                     printf("-->>classify step into threshold select!");
                     // bboxes[j]. = m_score;
                     bboxes[i].objtype= m_clss[m_select];
-                    printf("--->> classify %d target score is %f class type is phone",i,m_score);
+                    
             }
         }
         single_data.clear();

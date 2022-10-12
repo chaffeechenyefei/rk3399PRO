@@ -16,7 +16,7 @@ private:
     void transform_box_to_ped_box(ucloud::VecObjBBox &in_boxes, ucloud::VecObjBBox &out_boxes,int &imheight,int &imwidth);
     std::shared_ptr<YOLO_DETECTION> m_ped_detectHandle=nullptr;
     std::shared_ptr<Classification> m_clsHandle = nullptr;
-    float m_ped_threshold = 0.6;
+    float m_ped_threshold = 0.4;
     float m_phone_theshold = 0.5;
     int m_select = 1;
     std::vector<ucloud::CLS_TYPE> m_clss;
