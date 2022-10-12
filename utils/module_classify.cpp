@@ -125,8 +125,15 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
     }
     if (ret!=ucloud::RET_CODE::SUCCESS) return ret;
     std::vector<unsigned char*> input_datas;
+    std::vector<unsigned char*> single_data;
     std::vector<float*> output_datas;
     std::vector<cv::Rect> rois;
+    std::vector<int> output_nums = m_net->get_output_elem_num();
+    printf("--->> classify get output_nums %d finished!\n",output_nums.size());
+    int roi_nums = input_datas.size();
+    int num_cls = m_clss.size();
+    printf("--->> classify num cls is : %d, select_idx is: %d",num_cls,m_select);
+    
     printf("step into phone classify ! \n");
     if (!bboxes.empty()){
         printf("bboxes size is %d\n",bboxes.size());
@@ -140,16 +147,46 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
     printf("-->>classify input num %d\n",input_datas.size());
     printf("--->> classify proccess image finished!\n");
     if(ret!=ucloud::RET_CODE::SUCCESS) return ret;
-
-    //开始 单个图像进行推理
     for (int i=0;i<input_datas.size();i++){
-        
+        single_data.push_back(input_datas[i]);
+        ret  = m_net->general_infer_uint8_nhwc_to_float(single_data,output_datas);
+        printf("--->> classify single infer finished!\n");
+        if (ret!=ucloud::RET_CODE::SUCCESS) {
+             break;
+             printf("-->>classify %d target failed!\n",i);
+            //return ret;
+            }    
+        // printf("--->> classify output_datas nums: %d !\n",output_datas.size()); 
+        for (int j=0;j<output_nums.size();j++){
+            printf("--->> classify get result!\n");
+            float* buf = output_datas[j];
+            float m_score = buf[m_select];
+            printf("ROI %d,buf select score:%f\n",i,m_score);
+                // printf("m_select: %d,threshold: %f,buf select score:%f\n",m_select,threshold,m_score);
+            if (m_score>threshold){
+                    printf("-->>classify step into threshold select!");
+                    // bboxes[j]. = m_score;
+                    bboxes[i].objtype= m_clss[m_select];
+                    printf("--->> classify %d target score is %f class type is phone",i,m_score);
+            }
+        }
+        single_data.clear();
+        output_datas.clear();
+    } 
+    if(ret!=ucloud::RET_CODE::SUCCESS) {
+        for(auto &&t: input_datas) free(t);
+        for(auto &&t: output_datas) free(t);
+        for(auto &&t: single_data) free(t);
+        return ret;
     }
+    for(auto &&t: input_datas) free(t);
+    for(auto &&t: output_datas) free(t);
+    for(auto &&t: single_data) free(t);
 
-
-
-
-    //结束
+    /// 错误使用了genral_infer-unit8_nhwc_to_float的接口，该接口是针对
+    /// 单个模型多个输入的一个输出的情况；因此针对分类模型多个输入多个输出，
+    /// 只能选择for循环
+    /************
     ret = m_net->general_infer_uint8_nhwc_to_float(input_datas,output_datas);
     printf("--->> classify infer finished!\n");
     if (ret!=ucloud::RET_CODE::SUCCESS) return ret;
@@ -176,6 +213,7 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
             }
         }
     }
+    **********/
     return ret;
 }
     
