@@ -1,15 +1,18 @@
 #ifndef _MODULE_RETINAFACE_HPP_
 #define _MODULE_RETINAFACE_HPP_
-
+#include "framework_detection.hpp"
 #include "module_base.hpp"
 #include "basic.hpp"
 #include "module_track.hpp"
 #include <atomic>
 
-/**
+class RETINAFACE_DETECTION; //人脸检测无跟踪
+class RETINAFACE_DETECTION_BYTETRACK;//人脸检测+跟踪
+
+/*******************************************************************************
  * RETINAFACE_DETECTION
  * chaffee.chen@ucloud.cn 2022-10-11
- */
+*******************************************************************************/
 class RETINAFACE_DETECTION: public ucloud::AlgoAPI{
 public:
 /**
@@ -21,6 +24,8 @@ public:
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, std::string> &modelpath);
     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6);
     virtual ucloud::RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);
+
+    static float get_box_expand_ratio(){return m_expand_ratio;}
 /**
  * non-public API
  */
@@ -35,9 +40,6 @@ protected:
     float clip_nms_threshold(float x);
 
     void gen_prior_box();
-
-protected:
-    std::shared_ptr<TrackPoolAPI<BYTETRACKPARM>> m_track = nullptr;
 
 private:
     std::shared_ptr<BaseModel> m_net = nullptr;//推理模型的主干部分
@@ -65,15 +67,24 @@ private:
     float m_default_threshold = 0.55;
     float m_default_nms_threshold = 0.6;
 
-    // int m_fps = 25;
-    // int m_nn_buf = 30;
-    int m_fps = 5;
-    int m_nn_buf = 10;
+    static constexpr float m_expand_ratio = 1.3;//返回的人脸检测框扩大比例
+
 
 #ifdef TIMING
     Timer m_Tk;
 #endif    
 };
 
+/*******************************************************************************
+ * RETINAFACE_DETECTION_BYTETRACK
+ * chaffee.chen@ucloud.cn 2022-10-11
+*******************************************************************************/
+class RETINAFACE_DETECTION_BYTETRACK:public AnyDetectionV4ByteTrack{
+public:
+    RETINAFACE_DETECTION_BYTETRACK(){
+        m_detector = std::make_shared<RETINAFACE_DETECTION>();
+    }
+    virtual ~RETINAFACE_DETECTION_BYTETRACK(){}
+};
 
 #endif

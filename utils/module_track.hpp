@@ -11,6 +11,15 @@ using ucloud::VecObjBBox;
 using ucloud::RET_CODE;
 using ucloud::TvaiImage;
 
+enum class TRACKMETHOD{
+    BYTETRACK_ORIGIN           = 0,
+    BYTETRACK_NO_REID,
+    DEEPSORT,
+};
+
+using cam_class_uuid = std::string;
+cam_class_uuid get_cam_class_uuid(int cam_uuid, ucloud::CLS_TYPE clsType);
+
 /**
  * 跟踪器通用接口
  */
@@ -28,12 +37,14 @@ protected:
 };
 
 
+/******************************************************************************
+ * BYTETRACK
+ *******************************************************************************/
 typedef struct _BYTETRACKPARM{
     float track_threshold;
     float high_detect_threshold;
 }BYTETRACKPARM;
-using cam_class_uuid = std::string;
-cam_class_uuid get_cam_class_uuid(int cam_uuid, ucloud::CLS_TYPE clsType);
+
 /**
  * ByteTrack_No_ReID
  */

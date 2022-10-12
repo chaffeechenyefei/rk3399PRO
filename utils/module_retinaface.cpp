@@ -105,9 +105,6 @@ RET_CODE RETINAFACE_DETECTION::init(std::map<ucloud::InitParam, std::string> &mo
     //     printf("output dims check failed\n");
     //     return RET_CODE::ERR_MODEL_NOT_MATCH;
     // }
-    
-    // m_track = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
-    m_track = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
     gen_prior_box();//m_Anchors
     LOGI << "<- RETINAFACE_DETECTION::init";
     return ret;
@@ -130,7 +127,6 @@ RET_CODE RETINAFACE_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
     RET_CODE ret = RET_CODE::SUCCESS;
     threshold = clip_threshold(threshold);
     nms_threshold = clip_threshold(nms_threshold);
-    BYTETRACKPARM track_param = {threshold, threshold+0.1f};
 
     switch (tvimage.format)
     {
@@ -193,21 +189,7 @@ RET_CODE RETINAFACE_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
         for(auto &&t: output_datas) free(t);
         return ret;
     }
-
-#ifdef TIMING    
-    m_Tk.start();
-#endif
-    if(m_track){
-        m_track->update(tvimage, bboxes, track_param);
-        m_track->clear();
-    }
-        
-
-#ifdef TIMING    
-    m_Tk.end("tracking");
-#endif  
     
-
     for(auto &&t: output_datas){
         free(t);
     }
@@ -247,7 +229,7 @@ ucloud::RET_CODE RETINAFACE_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage
     aX.push_back( (float(m_InpSp.w))/tvimage.width );
     aY.push_back( (float(m_InpSp.h))/tvimage.height );
 
-#ifdef VERBOSE
+#ifdef VISUAL
     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
     cv::imwrite("preprocess_drm.jpg", cvimage_show);
 #endif
@@ -269,7 +251,7 @@ ucloud::RET_CODE RETINAFACE_DETECTION::postprocess_drm(std::vector<float*> &outp
     LOGI << "rknn_output_to_boxes " << n;
     base_nmsBBox(vecBox, nms_threshold , NMS_MIN ,vecBox_after_nms );
     LOGI << "after nms " << vecBox_after_nms.size() << std::endl;
-    base_transform_xyxy_xyhw(vecBox_after_nms, 1.0, aX[0], aY[0]);
+    base_transform_xyxy_xyhw(vecBox_after_nms, m_expand_ratio, aX[0], aY[0]);
     bboxes = vecBox_after_nms;
     // LOGI << "after filter " << bboxes.size() << std::endl;
     VecObjBBox().swap(vecBox);
@@ -417,7 +399,7 @@ ucloud::RET_CODE RETINAFACE_DETECTION::postprocess_opencv(std::vector<float*> &o
     LOGI << "rknn_output_to_boxes " << n;
     base_nmsBBox(vecBox,nms_threshold, NMS_MIN ,vecBox_after_nms );
     LOGI << "after nms " << vecBox_after_nms.size() << std::endl;
-    base_transform_xyxy_xyhw(vecBox_after_nms, 1.0, aspect_ratios[0]);
+    base_transform_xyxy_xyhw(vecBox_after_nms, m_expand_ratio, aspect_ratios[0]);
     bboxes = vecBox_after_nms;
     VecObjBBox().swap(vecBox);
     VecObjBBox().swap(vecBox_after_nms);

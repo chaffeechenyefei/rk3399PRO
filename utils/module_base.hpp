@@ -276,6 +276,8 @@ void base_transform_xyxy_xyhw(std::vector<T> &vecbox, float expand_ratio ,float 
     }
 };
 
+ucloud::TvaiRect globalscaleTvaiRect(ucloud::TvaiRect &rect, float scale, int W, int H);
+
 
 
 #endif
