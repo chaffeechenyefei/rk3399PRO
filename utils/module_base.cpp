@@ -964,6 +964,10 @@ void ImageUtil::release(void) {
     initialed = false;
 }
 
+/**
+ * 因为RK_BGR模式存在问题, 所以遇到需要输出BGR则统一转RGB后再转BGR;
+ * 如果输入是BGR, 则假装是RGB.
+ */
 RGA_MODE ImageUtil::get_rga_mode(TvaiImageFormat inputFMT, MODEL_INPUT_FORMAT outputFMT, bool &channel_reorder ){
     RGA_MODE ret = RGBtoRGB;
     channel_reorder = false;
@@ -1046,8 +1050,9 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, DATA_SHAPE size, void *ds
     else return RET_CODE::FAILED;                    
 }
 
-RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr, bool &channel_reorder){
+RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr){
     LOGI << "-> ImageUtil::resize";
+    bool channel_reorder = false;
     int img_width = tvimage.width;
     int img_height = tvimage.height;
     bool valid_img_format = true;
@@ -1094,11 +1099,15 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void 
         printf("invalid image format for ImageUtil::resize\n");
         return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
     }
-
-
-
-
-    
+    //人为反转
+    if(channel_reorder){
+        int _w = pre_param.model_input_shape.w;
+        int _h = pre_param.model_input_shape.h;
+        cv::Mat tmp1(cv::Size(_w,_h),CV_8UC3, dstPtr);
+        cv::Mat tmp2;
+        cv::cvtColor(tmp1,tmp2,cv::COLOR_RGB2BGR);
+        memcpy(dstPtr, tmp2.data, _w*_h*3);
+    }    
     LOGI << "<- ImageUtil::resize";
     // cv::Mat cvimage_show(size.h, size.w, CV_8UC3, dstPtr);
     // cv::imwrite("resized.jpg", cvimage_show);

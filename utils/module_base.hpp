@@ -163,7 +163,7 @@ public:
      * tvimage 支持 RGB/BGR/nv21/nv12
      * dst_fmt 支持 RGB/BGR
      */
-    ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr, bool &channel_reorder);
+    ucloud::RET_CODE resize(ucloud::TvaiImage &tvimage, PRE_PARAM pre_param,void *dstPtr);
 
 protected:
     void *drm_buf = NULL;
