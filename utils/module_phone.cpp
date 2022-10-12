@@ -93,38 +93,40 @@ ucloud::RET_CODE PhoneDetector::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBBo
     ucloud::VecObjBBox detBboxes,clsBboxes,ped_bboxes;
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
     ret = m_ped_detectHandle->run(tvimage,bboxes,m_ped_threshold);
-    printf("person detect success! \n");
+    // printf("person detect success! \n");
     if(ret!=RET_CODE::SUCCESS){
-        printf("err [%d] in ptrHandle->run(tvInp, bboxes) \n", int(ret));
+        LOGI<<"->PhoneDetector detect person failed!\n";
+        // printf("err [%d] in ptrHandle->run(tvInp, bboxes) \n", int(ret));
         return ret;
     }
     for(auto &&box: bboxes){
         if(box.objtype == ucloud::CLS_TYPE::PEDESTRIAN){
             ped_bboxes.push_back(box);
-            printf("ped bboxes is topx:%f,topy:%f,bottomx:%f,bottomy:%f\n",box.x0,box.y0,box.x1,box.y1);
+            // printf("ped bboxes is topx:%f,topy:%f,bottomx:%f,bottomy:%f\n",box.x0,box.y0,box.x1,box.y1);
         }
     }
-    printf("select person box success! \n");
-    // int im_width = 736;
-    // int im_height =416;
+    // printf("select person box success! \n");
+    if (ped_bboxes.empty()){
+        LOGI<<"->PhoneDetector person box is None!\n";
+        return ucloud::RET_CODE::ERR_EMPTY_BOX; 
+    }
     transform_box_to_ped_box(ped_bboxes,clsBboxes,tvimage.width,tvimage.height);
-    printf("transform box success! \n");
+    // printf("transform box success! \n");
     if (clsBboxes.empty()){
-        printf("clsBboxes is empty!\n");
+        // printf("clsBboxes is empty!\n");
         return ucloud::RET_CODE::ERR_EMPTY_BOX;
     }
     bboxes.clear();
     bboxes.assign(clsBboxes.begin(),clsBboxes.end());
-    printf("reassign bboxes success!");
+    // printf("reassign bboxes success!");
 
 
     ret = m_clsHandle->run(tvimage,bboxes,threshold);
     if(ret!=RET_CODE::SUCCESS){
-    printf("err [%d] in ptrHandle->run(tvInp, bboxes) \n", int(ret));
-    return ret;
+        LOGI<<"->PhoneDetector phone classify  images failed!\n";
+        // printf("err [%d] in ptrHandle->run(tvInp, bboxes) \n", int(ret));
+        return ret;
     } 
-
-
     return ret;
 }
 
@@ -167,7 +169,7 @@ ucloud::RET_CODE PhoneDetector::set_output_cls_order(std::vector<ucloud::CLS_TYP
     m_nc = output_clss.size();
     m_clss = output_clss;
     m_select = select_idx;
-    printf("---->>> PhoneDetector set output cls m_clss size :%d ,m_select :%d\n",m_clss.size(),m_select);
+    // printf("---->>> PhoneDetector set output cls m_clss size :%d ,m_select :%d\n",m_clss.size(),m_select);
     get_unique_cls_num(output_clss, m_unique_clss_map);
     return ucloud::RET_CODE::SUCCESS;
 }
