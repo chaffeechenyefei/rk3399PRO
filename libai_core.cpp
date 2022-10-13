@@ -84,7 +84,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     case AlgoAPIName::PHONING_DETECTOR:{
         PhoneDetector* _ptr_ = new PhoneDetector();
         //LS_TYPE::OTHERS,CLS_TYPE::PHONING,CLS_TYPE::PHONE_PLAY
-        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::OTHERS, CLS_TYPE::PHONING, CLS_TYPE::OTHERS};
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::OTHERS, CLS_TYPE::PHONING, CLS_TYPE::PHONE_PLAY};
         _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_); 
     }

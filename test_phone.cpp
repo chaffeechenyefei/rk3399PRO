@@ -37,7 +37,7 @@ int main(int argc, char **argv)
     string baseModelPath = argv[1];
     string subModelPath = argv[2];
     string imagePath = argv[3];
-    int img_mode = 1;
+    int img_mode = 2;
     ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::PHONING_DETECTOR;
     cout<<"algName "<< algName<<endl;
     if(argc>=5){
@@ -62,41 +62,62 @@ int main(int argc, char **argv)
     {
     case 0:
         printf("readImg_to_RGB\n");
-        // height=416;
-        // width=736;
-        imgBuf = ucloud::readImg_to_RGB(imagePath,width,height);
+        
+        imgBuf = ucloud::readImg_to_RGB(imagePath,fmt_w, fmt_h, width,height);
+        stride = width;
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB;
         tvInp.dataSize = width*height*3;
+        stride = width;
         break;
     case 1:
-        printf("readImg_to_NV21\n");
-        imgBuf = ucloud::readImg_to_NV21(imagePath,fmt_w, fmt_h, width,height,stride);;
-        tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
-        cout<<"image height width"<<height<<" "<<width<<endl;
-        tvInp.dataSize = 3*width*height/2;
-        break;
-    case 2:
-        printf("readImg_to_NV12\n");
-        imgBuf = ucloud::readImg_to_NV12(imagePath,width,height,stride);
-        tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV12;
-        tvInp.dataSize = 3*width*height/2;
+        printf("readImg_to_BGR\n");
+        imgBuf = ucloud::readImg_to_BGR(imagePath, fmt_w, fmt_h, width,height);
+        stride = width;
+        tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_BGR;
+        tvInp.dataSize = width*height*3;
+        stride = width;
         break;        
+    case 2:
+        printf("readImg_to_NV21\n");
+        imgBuf = ucloud::readImg_to_NV21(imagePath,fmt_w, fmt_h, width,height,stride);
+        tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
+        tvInp.dataSize = 3*stride*height/2;
+        break;
     case 3:
+        printf("readImg_to_NV12\n");
+        imgBuf = ucloud::readImg_to_NV12(imagePath,fmt_w, fmt_h, width,height,stride);
+        tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV12;
+        tvInp.dataSize = 3*stride*height/2;
+        break;        
+    case 4:
         printf("yuv_reader nv21\n");
-        width = 1280;
+        width = 1080;
         height = 720;
         imgBuf = ucloud::yuv_reader(imagePath,width,height);
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
         tvInp.dataSize = 3*width*height/2;
         break;
-    case 4:
+    case 5:
         printf("yuv_reader nv12\n");
-        width = 1280;
+        width = 1080;
         height = 720;
         imgBuf = ucloud::yuv_reader(imagePath,width,height);
         tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV12;
         tvInp.dataSize = 3*width*height/2;  
-        break;      
+        break;   
+    case 6:
+        printf("readImg_to_NV21_origin_size\n");
+        imgBuf = ucloud::readImg_to_NV21(imagePath,width,height,stride);
+        tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_NV21;
+        tvInp.dataSize = 3*stride*height/2;
+        break;         
+    case 7:
+        printf("readImg_to_RGB_origin_size\n");
+        imgBuf = ucloud::readImg_to_RGB(imagePath,width,height);
+        tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB;
+        tvInp.dataSize = width*height*3;
+        stride = width;
+        break;                     
     default:
         break;
     }
@@ -105,18 +126,18 @@ int main(int argc, char **argv)
         printf("no image is read\n");
         return -3;
     }
+
+    printf("image info: width %d, heights %d, stride %d\n", width, height, stride);
     
     tvInp.pData = imgBuf;
     tvInp.height = height;
     tvInp.width = width;
-    tvInp.stride = width;
+    tvInp.stride = stride;
     
 
     printf("get algo api\n");
     ucloud::AlgoAPISPtr ptrHandle = nullptr;
     ptrHandle = ucloud::AICoreFactory::getAlgoAPI(algName);
-    // ptrHandle->set_param(0.6,0.6,) 这里省略了阈值的设定, 使用默认阈值
-    // ptrHandle->set_param(0.4,0.4);
     printf("init model\n");
     std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},
                                                             {ucloud::InitParam::SUB_MODEL,subModelPath}};
@@ -129,7 +150,7 @@ int main(int argc, char **argv)
     printf("infer\n");
     auto avg_time = 0.f;
     VecObjBBox bboxes;
-    int loop_times = 2;
+    int loop_times = 1;
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();
@@ -150,10 +171,19 @@ int main(int argc, char **argv)
     }
     printf("avg exec ptrHandle->run time = %f\n", avg_time/loop_times);
 
-    if(img_mode < 2){
+    // if(img_mode < 4){
+    //     if(tvInp.format!=TVAI_IMAGE_FORMAT_BGR){
+    //         free(imgBuf);
+    //         imgBuf = readImg_to_BGR(imagePath,width,height);
+    //     }
+    //     drawImg(imgBuf, width, height, bboxes, true, true, false, 1);
+    //     writeImg("result.jpg", imgBuf, width , height);
+    // }
+
+    if(img_mode <= 3){
         if(tvInp.format!=TVAI_IMAGE_FORMAT_BGR){
             free(imgBuf);
-            imgBuf = readImg_to_BGR(imagePath,width,height);
+            imgBuf = readImg_to_BGR(imagePath,fmt_w, fmt_h, width,height);
         }
         drawImg(imgBuf, width, height, bboxes, true, true, false, 1);
         writeImg("result.jpg", imgBuf, width , height);

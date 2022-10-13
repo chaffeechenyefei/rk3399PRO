@@ -31,7 +31,7 @@ ucloud::RET_CODE Classification::init(std::map<ucloud::InitParam,std::string> &m
         printf("** dims err m_InpuNum[%d] != m_net->get_input_shape().size()[%d]\n", m_InpNum, m_net->get_input_shape().size());
         return RET_CODE::FAILED;
     }
-    if(m_OutNum == m_net->get_output_shape().size()){
+    if(m_OutNum != m_net->get_output_shape().size()){
         printf("** dims err m_OutNum[%d] != m_net->get_output_shape().size()[%d]\n", m_OutNum, m_net->get_output_shape().size());
         return RET_CODE::FAILED;
     }
@@ -179,6 +179,7 @@ ucloud::RET_CODE Classification::postprocess(std::vector<float*> &output_datas, 
             max_score_type = m_clss[i];
         } 
     }
+    LOGI << "max_score: " << max_score << ", cls_type: " << max_score_type;
     if(max_score > threshold){
         bbox.objtype = max_score_type;
         bbox.confidence = max_score;
@@ -220,7 +221,9 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
         std::vector<float*> output_datas;
         TvaiRect roi = box.rect;
         vector<float> aX,aY;
+        
     #ifdef USEDRM  
+        roi = get_valid_rect(roi, tvimage.width, tvimage.height);
         ret = preprocess_drm(tvimage, roi, input_datas, aX, aY);
     #else
         ret = preprocess_opencv(tvimage, roi, input_datas, aX, aY);

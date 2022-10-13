@@ -325,7 +325,8 @@ public:
     virtual RET_CODE get_class_type(std::vector<CLS_TYPE> &valid_clss){return RET_CODE::ERR_VIRTUAL_FUNCTION;};
     /*****************************内部使用**************************************/
     virtual int get_batchsize(){return 1;}
-    virtual RET_CODE init(){return RET_CODE::ERR_VIRTUAL_FUNCTION;}   
+    virtual RET_CODE init(){return RET_CODE::ERR_VIRTUAL_FUNCTION;} 
+    //默认情况下, 输入一个模型地址则用于BASE_MODEL 
     virtual RET_CODE init(const std::string &modelpath){
         std::map<InitParam, std::string> config = {{InitParam::BASE_MODEL, modelpath}};
         return init(config);

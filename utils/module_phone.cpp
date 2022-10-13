@@ -21,15 +21,15 @@ void PhoneDetector::transform_box_to_ped_box(VecObjBBox &in_boxes){
 ucloud::RET_CODE PhoneDetector::init(std::map<ucloud::InitParam,std::string> &modelpath){
     LOGI<<"->PhoneDetector init";
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
-    std::map<ucloud::InitParam,std::string>  dnetPath,cnetPath;
+    std::string dnetPath,cnetPath;
     if (modelpath.find(ucloud::InitParam::BASE_MODEL)==modelpath.end()||
     modelpath.find(ucloud::InitParam::SUB_MODEL)==modelpath.end()){
         LOGI<<"PhoneDetector fail to search detector and classify model";
         ret = ucloud::RET_CODE::ERR_INIT_PARAM_FAILED;
         return ret;
     }
-    dnetPath = {{ucloud::InitParam::BASE_MODEL,modelpath[ucloud::InitParam::BASE_MODEL]}};
-    cnetPath = {{ucloud::InitParam::SUB_MODEL,modelpath[ucloud::InitParam::SUB_MODEL]}};
+    dnetPath = modelpath[ucloud::InitParam::BASE_MODEL];
+    cnetPath = modelpath[ucloud::InitParam::SUB_MODEL];
 
 
     vector<CLS_TYPE> yolov5s_conv_9 = {CLS_TYPE::PEDESTRIAN, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR};
