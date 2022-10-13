@@ -261,7 +261,7 @@ void ucloud::drawImg(unsigned char* img, int width, int height, VecObjBBox &bbox
                 if(bboxs[i].track_id >= 0 )
                     track_id = ": " + std::to_string(bboxs[i].track_id);
                 std::stringstream stream;
-                stream << std::fixed << std::setprecision(2) << bboxs[i].objectness;
+                stream << std::fixed << std::setprecision(2) << bboxs[i].confidence;
                 std::string score = " ," + stream.str();
                 putText(im, std::to_string(bboxs[i].objtype)+track_id+score, Point(_rect.x, _rect.y+25), FONT_ITALIC, 0.8, color, thickness-1);
             }

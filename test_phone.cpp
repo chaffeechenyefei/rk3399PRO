@@ -41,12 +41,12 @@ int main(int argc, char **argv)
     ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::PHONING_DETECTOR;
     cout<<"algName "<< algName<<endl;
     if(argc>=5){
-        algName = AlgoAPIName(std::atoi(argv[3]));
+        algName = AlgoAPIName(std::atoi(argv[4]));
         cout<<"algName "<< algName<<endl;
     }    
     if(argc>=6){
         //0:RGB 1:NV21 2:NV12 3:NV21 binary file 4:NV12 binary file
-        img_mode = std::atoi(argv[4]);
+        img_mode = std::atoi(argv[5]);
     }
     // std::cout << baseModelPath << ", " << imagePath << std::endl;
     printf("base model = %s, sub model = %s image = %s\n", baseModelPath.c_str(),subModelPath.c_str(), imagePath.c_str());

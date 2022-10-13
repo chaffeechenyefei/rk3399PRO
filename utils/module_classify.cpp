@@ -170,6 +170,7 @@ ucloud::RET_CODE Classification::postprocess(std::vector<float*> &output_datas, 
         return RET_CODE::FAILED;
     }
     float *ptr = output_datas[0];
+    LOGI << "output_datas[0][0-2]" << ptr[0] << ", " << ptr[1] << ", " << ptr[2];
     float max_score = -1;
     CLS_TYPE max_score_type = CLS_TYPE::OTHERS;
     for(int i = 0; i < m_clss.size(); i++ ){
