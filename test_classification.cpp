@@ -1,3 +1,4 @@
+
 // Copyright (c) 2021 by Rockchip Electronics Co., Ltd. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,35 +30,32 @@ using namespace ucloud;
 /*-------------------------------------------
                   Main Function
 -------------------------------------------*/
-//./test_yolo {model path} {data path} {taskid} {img_mode: 0:RGB 1:NV21 2:NV12 3:NV21 binary file 4:NV12 binary file}
+//./test_yolo {data path} {img_mode: 0:RGB 1:RGB 2:NV21 3:NV12 4:NV21 binary file 5:NV12 binary file}
 int main(int argc, char **argv)
 {   
     Clocker Tk;
-    printf("test_yolo execution\n");
-    string baseModelPath = argv[1];
-    string subModelPath = argv[2];
-    string imagePath = argv[3];
-    int img_mode = 2;
-    ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::PHONING_DETECTOR;
-    cout<<"algName "<< algName<<endl;
-    if(argc>=5){
-        algName = AlgoAPIName(std::atoi(argv[4]));
-        cout<<"algName "<< algName<<endl;
-    }    
-    if(argc>=6){
+    printf("test_classification execution\n");
+    string baseModelPath = "data/model/resnet34-phone-20220302_256x256.rknn";
+    string imagePath = argv[1];
+    int img_mode = 1;
+    float threshold = 0.5;
+    int fmt_w = 256; int fmt_h = 256;
+    bool use_roi = false;
+    ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::RESERVED1;
+    
+    printf("** algName %d\n", algName);    
+    if(argc>=3){
         //0:RGB 1:NV21 2:NV12 3:NV21 binary file 4:NV12 binary file
-        img_mode = std::atoi(argv[5]);
+        img_mode = std::atoi(argv[2]);
     }
-    // std::cout << baseModelPath << ", " << imagePath << std::endl;
-    printf("base model = %s, sub model = %s image = %s\n", baseModelPath.c_str(),subModelPath.c_str(), imagePath.c_str());
-
+    printf("** threshold %0.3f\n",threshold);
+    printf("model = %s, image = %s\n", baseModelPath.c_str(), imagePath.c_str());
     printf("reading image\n");
     TvaiImage tvInp;
     unsigned char* imgBuf = nullptr;
     int height,width,stride;
     // height = 416;
     // width = 736;
-    int fmt_w = 1080; int fmt_h = 720;
     switch (img_mode)
     {
     case 0:
@@ -138,23 +136,23 @@ int main(int argc, char **argv)
     printf("get algo api\n");
     ucloud::AlgoAPISPtr ptrHandle = nullptr;
     ptrHandle = ucloud::AICoreFactory::getAlgoAPI(algName);
-    printf("init model\n");
-    std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},
-                                                            {ucloud::InitParam::SUB_MODEL,subModelPath}};
+    printf("** main init model\n");
+    std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},};
     RET_CODE ret = ptrHandle->init(modelpathes);
     if(ret!=RET_CODE::SUCCESS){
         printf("err in RET_CODE ret = ptrHandle->init(modelpathes) \n");
         return -1;
     }
 
-    printf("infer\n");
+    printf("** main infer\n");
     auto avg_time = 0.f;
-    VecObjBBox bboxes;
+    BBox _box_;
+    _box_.rect = {0,0,fmt_w,fmt_h};
+    VecObjBBox bboxes = {_box_};
     int loop_times = 1;
     for(int i = 0; i < loop_times; i++){
-        bboxes.clear();
         Tk.start();
-        ret = ptrHandle->run(tvInp, bboxes,0.5);
+        ret = ptrHandle->run(tvInp, bboxes, threshold);
         auto tm_cost = Tk.end("ptrHandle->run");
         avg_time += tm_cost;
         if(ret!=RET_CODE::SUCCESS){
@@ -165,30 +163,11 @@ int main(int argc, char **argv)
         int cnt = 0;
         for(auto &&box: bboxes){
             if(cnt++ > 1) break;
-            printf("[%d]%f,%f,%f,%f,%f \n",box.objtype, box.confidence, box.x0, box.y0, box.x1, box.y1);
+            printf("[%d]%f,%f,%f,%f,%f,%f \n",box.objtype, box.confidence, box.objectness, box.x0, box.y0, box.x1, box.y1);
         }
         printf("total [%d] detected\n", bboxes.size());
     }
     printf("avg exec ptrHandle->run time = %f\n", avg_time/loop_times);
-
-    // if(img_mode < 4){
-    //     if(tvInp.format!=TVAI_IMAGE_FORMAT_BGR){
-    //         free(imgBuf);
-    //         imgBuf = readImg_to_BGR(imagePath,width,height);
-    //     }
-    //     drawImg(imgBuf, width, height, bboxes, true, true, false, 1);
-    //     writeImg("result.jpg", imgBuf, width , height);
-    // }
-
-    if(img_mode <= 3){
-        if(tvInp.format!=TVAI_IMAGE_FORMAT_BGR){
-            free(imgBuf);
-            imgBuf = readImg_to_BGR(imagePath,fmt_w, fmt_h, width,height);
-        }
-        drawImg(imgBuf, width, height, bboxes, true, true, false, 1);
-        writeImg("result.jpg", imgBuf, width , height);
-    }
-
     if(imgBuf) free(imgBuf);
     return 0;
 }

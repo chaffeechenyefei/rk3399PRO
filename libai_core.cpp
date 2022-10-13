@@ -24,9 +24,9 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     AlgoAPISPtr apiHandle = nullptr;
     switch (apiName)
     {
-    /**
-     * SISO模型测试
-     */
+/*******************************************************************************
+内部测试
+*******************************************************************************/
     case AlgoAPIName::UDF_JSON:
     {
         YOLO_DETECTION_NAIVE* _ptr_ = new YOLO_DETECTION_NAIVE();
@@ -35,6 +35,17 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_);
     }
         break;
+    case AlgoAPIName::RESERVED1://classification单独测试
+    {
+        Classification* _ptr_ = new Classification();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::OTHERS, CLS_TYPE::PHONING, CLS_TYPE::OTHERS};
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }
+        break;    
+/*******************************************************************************
+正式接口
+*******************************************************************************/           
     /**
      * 人脸检测
      */
@@ -84,7 +95,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     case AlgoAPIName::PHONING_DETECTOR:{
         PhoneDetector* _ptr_ = new PhoneDetector();
         //LS_TYPE::OTHERS,CLS_TYPE::PHONING,CLS_TYPE::PHONE_PLAY
-        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::OTHERS, CLS_TYPE::PHONING, CLS_TYPE::PHONE_PLAY};
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::OTHERS, CLS_TYPE::PHONING, CLS_TYPE::OTHERS};
         _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_); 
     }

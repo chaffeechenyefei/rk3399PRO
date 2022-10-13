@@ -144,7 +144,7 @@ set_target_properties(ai_core PROPERTIES PUBLIC_HEADER "libai_core.hpp" )
 include_directories( ${CMAKE_SOURCE_DIR}/3rdparty/ )
 #yolo检测模型单帧测试
 add_executable(test_yolo test_yolo.cpp)
-target_link_libraries(test_yolo ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
+target_link_libraries(test_yolo ai_core ${RK_LIBS} dl)
 
 add_executable(test_resnet test_resnet.cpp)
 target_include_directories(test_resnet PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
@@ -157,19 +157,23 @@ target_link_libraries(test_any ${RK_LIBS} dl ${OPENCV_LIBS})
 
 #视频读写推理测试
 add_executable(test_video test_video.cpp)
-target_link_libraries(test_video ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
+target_link_libraries(test_video ai_core ${RK_LIBS} dl )
 
 #yolo检测模型单帧测试
 add_executable(test_loop test_loop.cpp)
-target_link_libraries(test_loop ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
+target_link_libraries(test_loop ai_core ${RK_LIBS} dl)
 
 #thread性能测试
 add_executable(test_thread test_thread.cpp)
-target_link_libraries(test_thread ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
+target_link_libraries(test_thread ai_core ${RK_LIBS} dl)
 
 #phone双模型测试
 add_executable(test_phone test_phone.cpp)
-target_link_libraries(test_phone ai_core ${RK_LIBS} dl ${OPENCV_LIBS})
+target_link_libraries(test_phone ai_core ${RK_LIBS} dl)
+
+#classification模型测试
+add_executable(test_classification test_classification.cpp)
+target_link_libraries(test_classification ai_core ${RK_LIBS} dl )
 
 
 message("=========END=========")

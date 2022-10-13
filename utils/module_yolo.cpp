@@ -268,7 +268,7 @@ ucloud::RET_CODE YOLO_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage, std:
     }
     if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
 
-    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.w);
+    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.h);
     RET_CODE uret = m_drm->init(tvimage);
     if(uret!=RET_CODE::SUCCESS) return uret;
     // int ret = m_drm->resize(tvimage,m_InpSp, data);
@@ -280,7 +280,6 @@ ucloud::RET_CODE YOLO_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage, std:
 
 #ifdef VISUAL
     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
     cv::imwrite("preprocess_drm.jpg", cvimage_show);
 #endif
 
@@ -902,7 +901,7 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_drm(ucloud::TvaiImage& tvimage
     }
     if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
 
-    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.w);
+    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.h);
     RET_CODE uret = m_drm->init(tvimage);
     if(uret!=RET_CODE::SUCCESS) return uret;
     // int ret = m_drm->resize(tvimage,m_InpSp, data);
@@ -913,7 +912,6 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_drm(ucloud::TvaiImage& tvimage
 
 #ifdef VISUAL
     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
     cv::imwrite("preprocess_drm.jpg", cvimage_show);
 #endif
 
@@ -940,7 +938,7 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_drm(ucloud::TvaiImage& tvimage
     }
     if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
 
-    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.w);
+    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.h);
     RET_CODE uret = m_drm->init(tvimage);
     if(uret!=RET_CODE::SUCCESS) return uret;
     // int ret = m_drm->resize(tvimage,m_InpSp, data);
@@ -951,7 +949,6 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_drm(ucloud::TvaiImage& tvimage
 
 #ifdef VISUAL
     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
     cv::imwrite("preprocess_drm.jpg", cvimage_show);
 #endif
 

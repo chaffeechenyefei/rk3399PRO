@@ -85,7 +85,7 @@ ucloud::RET_CODE Classification::preprocess_drm(ucloud::TvaiImage& tvimage, uclo
     }
     if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
 
-    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.w);
+    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.h);
     RET_CODE uret = m_drm->init(tvimage);
     if(uret!=RET_CODE::SUCCESS) return uret;
     // int ret = m_drm->resize(tvimage,m_InpSp, data);
@@ -96,7 +96,6 @@ ucloud::RET_CODE Classification::preprocess_drm(ucloud::TvaiImage& tvimage, uclo
 
 #ifdef VISUAL
     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
     cv::imwrite("preprocess_drm.jpg", cvimage_show);
 #endif
 
@@ -134,7 +133,6 @@ ucloud::RET_CODE Classification::preprocess_drm(ucloud::TvaiImage& tvimage, std:
 
 #ifdef VISUAL
     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
     cv::imwrite("preprocess_drm.jpg", cvimage_show);
 #endif
 
@@ -152,7 +150,9 @@ ucloud::RET_CODE Classification::preprocess_opencv(ucloud::TvaiImage& tvimage, T
         dst, m_param_img2tensor, aX, aY, use_subpixel);
     if(ret!=RET_CODE::SUCCESS) return ret;
     for(auto &&ele: dst){
-        // cv::imwrite("preprocess_img.png", ele);
+        #ifdef VISUAL
+        cv::imwrite("preprocess_opencv.jpg", ele);
+        #endif
         unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
         memcpy(data, ele.data, ele.total()*3);
         input_datas.push_back(data);
@@ -184,6 +184,7 @@ ucloud::RET_CODE Classification::postprocess(std::vector<float*> &output_datas, 
     if(max_score > threshold){
         bbox.objtype = max_score_type;
         bbox.confidence = max_score;
+        bbox.objectness = max_score;
     }
     return ret;
     LOGI << "<- Classification::postprocess";
@@ -233,6 +234,14 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
             printf("**[%s][%d] Classification preprocess return [%d]\n", __FILE__, __LINE__, ret);
             return ret;
         }
+
+// #ifdef VISUAL
+//         cv::Mat cvimage_show;
+//         cv::Mat cvimage_show2( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, input_datas[0]);
+//         cv::cvtColor(cvimage_show2, cvimage_show, cv::COLOR_RGB2BGR);
+//         cv::imwrite("inner.jpg", cvimage_show);
+// #endif        
+
         ret  = m_net->general_infer_uint8_nhwc_to_float(input_datas,output_datas);
         if(ret!=RET_CODE::SUCCESS) {
             for(auto &&t: input_datas) free(t);
