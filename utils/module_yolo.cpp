@@ -713,7 +713,7 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
     if(ret!=RET_CODE::SUCCESS) return ret;
 
     std::vector<unsigned char*> input_datas;
-    std::vector<float> aspect_ratios, aX, aY;
+    std::vector<float> aX, aY;
     std::vector<float*> output_datas;
 
 #ifdef TIMING    
@@ -722,7 +722,7 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 #ifdef USEDRM
     ret = preprocess_drm(tvimage, input_datas, aX, aY);
 #else
-    ret = preprocess_opencv(tvimage, input_datas, aspect_ratios);
+    ret = preprocess_opencv(tvimage, input_datas, aX, aY);
 #endif
 #ifdef TIMING    
     m_Tk.end("preprocess");
@@ -789,7 +789,7 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox
     if(ret!=RET_CODE::SUCCESS) return ret;
 
     std::vector<unsigned char*> input_datas;
-    std::vector<float> aspect_ratios, aX, aY;
+    std::vector<float> aX, aY;
     std::vector<float*> output_datas;
 
 #ifdef TIMING    
@@ -798,7 +798,7 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox
 #ifdef USEDRM
     ret = preprocess_drm(tvimage, roi, input_datas, aX, aY);
 #else
-    ret = preprocess_opencv(tvimage, input_datas, aspect_ratios);
+    ret = preprocess_opencv(tvimage, input_datas, aX, aY);
 #endif
 #ifdef TIMING    
     m_Tk.end("preprocess");
@@ -841,11 +841,10 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox
     return RET_CODE::SUCCESS;
 }
 
-ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratio  ){
+ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY  ){
     LOGI << "-> YOLO_DETECTION_NAIVE::preprocess_opencv";
     bool use_subpixel = false;
     std::vector<cv::Mat> dst;
-    std::vector<float> aX,aY;
     std::vector<cv::Rect> roi = {cv::Rect(0,0,tvimage.width,tvimage.height)};
     RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, roi, 
         dst, m_param_img2tensor, aX, aY, use_subpixel);
@@ -859,17 +858,15 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_opencv(ucloud::TvaiImage& tvim
         //     data[i] = 255;
         input_datas.push_back(data);
     }
-    aspect_ratio = aX;
     LOGI << "<- YOLO_DETECTION_NAIVE::preprocess_opencv";
     return ret;
 }
 
 
-ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_opencv(ucloud::TvaiImage& tvimage, TvaiRect roi, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratio  ){
+ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_opencv(ucloud::TvaiImage& tvimage, TvaiRect roi, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY  ){
     LOGI << "-> YOLO_DETECTION_NAIVE::preprocess_opencv";
     bool use_subpixel = false;
     std::vector<cv::Mat> dst;
-    std::vector<float> aX,aY;
     std::vector<cv::Rect> _roi_ = {cv::Rect(roi.x,roi.y,roi.width,roi.height)};
     RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, _roi_, 
         dst, m_param_img2tensor, aX, aY, use_subpixel);
@@ -883,7 +880,6 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_opencv(ucloud::TvaiImage& tvim
         //     data[i] = 255;
         input_datas.push_back(data);
     }
-    aspect_ratio = aX;
     LOGI << "<- YOLO_DETECTION_NAIVE::preprocess_opencv";
     return ret;
 }

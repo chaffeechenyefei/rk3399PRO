@@ -1,114 +1,195 @@
 #include "module_classify.hpp"
 #include <opencv2/opencv.hpp>
 using namespace std;
+using namespace ucloud;
 
 Classification::Classification(){
-    LOGI<<"->Classify";
+    LOGI<<"-> Classification";
     m_net = std::make_shared<BaseModel>();
     m_drm = std::make_shared<ImageUtil>();
 }
 
 Classification::~Classification(){
-    LOGI<<"->~Classify";
+    LOGI<<"-> ~Classification";
 }
 
 
 ucloud::RET_CODE Classification::init(std::map<ucloud::InitParam,std::string> &modelpath){
-    LOGI<<"->Classify init";
+    LOGI<<"-> Classification::init";
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
-    printf("-->step into classification init");
-    if (modelpath.find(ucloud::InitParam::SUB_MODEL)== modelpath.end()){
-        LOGI << "base model not found in modelpath";
+
+    if (modelpath.find(ucloud::InitParam::BASE_MODEL)== modelpath.end()){
+        printf("**[%s][%d] base model not found in modelpath\n", __FILE__, __LINE__);
         return ucloud::RET_CODE::ERR_INIT_PARAM_FAILED;
     }
     bool useDRM = false;
-    ret = m_net->base_init(modelpath[ucloud::InitParam::SUB_MODEL],useDRM);
+    ret = m_net->base_init(modelpath[ucloud::InitParam::BASE_MODEL],useDRM);
     if (ret!=ucloud::RET_CODE::SUCCESS){
         return ret;
     }
-    assert(m_InpNum == m_net->get_input_shape().size());
-    assert(m_OtpNum == m_net->get_output_shape().size());
+    if(m_InpNum != m_net->get_input_shape().size()){
+        printf("** dims err m_InpuNum[%d] != m_net->get_input_shape().size()[%d]\n", m_InpNum, m_net->get_input_shape().size());
+        return RET_CODE::FAILED;
+    }
+    if(m_OutNum == m_net->get_output_shape().size()){
+        printf("** dims err m_OutNum[%d] != m_net->get_output_shape().size()[%d]\n", m_OutNum, m_net->get_output_shape().size());
+        return RET_CODE::FAILED;
+    }
 
     m_InpSp = m_net->get_input_shape()[0];
     m_OutEleDims = m_net->get_output_dims();
     m_OutEleNums = m_net->get_output_elem_num();
     m_param_img2tensor.keep_aspect_ratio = false;
     m_param_img2tensor.pad_both_side = false;
-    m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;
+    m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;//confirm??
     m_param_img2tensor.model_input_shape = m_InpSp;
-    LOGI << "<- Classfication::init";
+    LOGI << "<- Classification::init";
     return ret;
 }
 
+/***whole image preprocess with opencv**/
+ucloud::RET_CODE Classification::preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY ){
+    LOGI << "-> Classification::preprocess_opencv";
+    bool use_subpixel = false;
+    std::vector<cv::Mat> dst;
+    std::vector<cv::Rect> roi = {cv::Rect(0,0,tvimage.width,tvimage.height)};
+    RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, roi, 
+        dst, m_param_img2tensor, aX, aY, use_subpixel);
+    if(ret!=RET_CODE::SUCCESS) return ret;
+    for(auto &&ele: dst){
+        // cv::imwrite("preprocess_img.png", ele);
+        unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
+        memcpy(data, ele.data, ele.total()*3);
+        input_datas.push_back(data);
+    }
+    LOGI << "<- Classification::preprocess_opencv";
+    return ret;
+}
 
-
-ucloud::RET_CODE Classification::preprocess_drm(ucloud::TvaiImage &tvimg,std::vector<unsigned char*> &input_datas){
-
-  LOGI << "-> Classification::preprocess_drm";
+/***image with preprocess with roi+drm**/
+ucloud::RET_CODE Classification::preprocess_drm(ucloud::TvaiImage& tvimage, ucloud::TvaiRect roi, std::vector<unsigned char*> &input_datas, 
+    std::vector<float> &aX, std::vector<float> &aY)
+{
+    LOGI << "-> Classification::preprocess_drm with roi";
     bool valid_input_format = true;
-    std::vector<float> ax,ay;
-    switch (tvimg.format)
+    switch (tvimage.format)
     {
-    case ucloud::TVAI_IMAGE_FORMAT_RGB:
-    case ucloud::TVAI_IMAGE_FORMAT_BGR:
-    case ucloud::TVAI_IMAGE_FORMAT_NV12:
-    case ucloud::TVAI_IMAGE_FORMAT_NV21:
+    case TVAI_IMAGE_FORMAT_RGB:
+    case TVAI_IMAGE_FORMAT_BGR:
+    case TVAI_IMAGE_FORMAT_NV12:
+    case TVAI_IMAGE_FORMAT_NV21:
         break;
     default:
         valid_input_format = false;
         break;
     }
-    if(!valid_input_format) return ucloud::RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+    if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
 
     unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.w);
-    ucloud::RET_CODE uret = m_drm->init(tvimg);
-    if(uret!=ucloud::RET_CODE::SUCCESS) return uret;
+    RET_CODE uret = m_drm->init(tvimage);
+    if(uret!=RET_CODE::SUCCESS) return uret;
     // int ret = m_drm->resize(tvimage,m_InpSp, data);
-    int ret = m_drm->resize(tvimg, m_param_img2tensor, data);
+    int ret = m_drm->resize(tvimage, roi, m_param_img2tensor, data);
     input_datas.push_back(data);
-    ax.push_back( (float(m_InpSp.w))/tvimg.width );
-    ay.push_back( (float(m_InpSp.h))/tvimg.height );
+    aX.push_back( (float(m_InpSp.w))/roi.width );
+    aY.push_back( (float(m_InpSp.h))/roi.height );
 
-    // cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    // cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
-    // cv::imwrite("preprocess_drm.jpg", cvimage_show);
+#ifdef VISUAL
+    cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
+    cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
+    cv::imwrite("preprocess_drm.jpg", cvimage_show);
+#endif
 
-    LOGI << "<- Classification::preprocess_drm";
-    return ucloud::RET_CODE::SUCCESS;
-
-
+    LOGI << "<- Classification::preprocess_drm with roi";
+    return RET_CODE::SUCCESS;
 }
 
-ucloud::RET_CODE Classification::preprocess_opencv(ucloud::TvaiImage &tvimg,std::vector<unsigned char*> &input_datas,std::vector<cv::Rect> &rois){
-    LOGI<<"->Classification preprocess opencv";
+/***whole image preprocess with drm**/
+ucloud::RET_CODE Classification::preprocess_drm(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, 
+    std::vector<float> &aX, std::vector<float> &aY)
+{
+    LOGI << "-> Classification::preprocess_drm";
+    bool valid_input_format = true;
+    switch (tvimage.format)
+    {
+    case TVAI_IMAGE_FORMAT_RGB:
+    case TVAI_IMAGE_FORMAT_BGR:
+    case TVAI_IMAGE_FORMAT_NV12:
+    case TVAI_IMAGE_FORMAT_NV21:
+        break;
+    default:
+        valid_input_format = false;
+        break;
+    }
+    if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+
+    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.w);
+    RET_CODE uret = m_drm->init(tvimage);
+    if(uret!=RET_CODE::SUCCESS) return uret;
+    // int ret = m_drm->resize(tvimage,m_InpSp, data);
+    int ret = m_drm->resize(tvimage, m_param_img2tensor, data);
+    input_datas.push_back(data);
+    aX.push_back( (float(m_InpSp.w))/tvimage.width );
+    aY.push_back( (float(m_InpSp.h))/tvimage.height );
+
+#ifdef VISUAL
+    cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
+    cv::cvtColor(cvimage_show, cvimage_show, cv::COLOR_RGB2BGR);
+    cv::imwrite("preprocess_drm.jpg", cvimage_show);
+#endif
+
+    LOGI << "<- Classification::preprocess_drm";
+    return RET_CODE::SUCCESS;
+}
+
+/***image preprocess with roi+opencv**/
+ucloud::RET_CODE Classification::preprocess_opencv(ucloud::TvaiImage& tvimage, TvaiRect roi, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY  ){
+    LOGI << "-> Classification::preprocess_opencv with roi";
     bool use_subpixel = false;
     std::vector<cv::Mat> dst;
-    std::vector<float> ax,ay;
-    if (rois.empty()){
-        rois = {cv::Rect(0,0,tvimg.width,tvimg.height)}; 
-    }
-    // std::vector<cv::Rect> roi ={cv::Rect(0,0,tvimg.width,tvimg.height)};
-    // printf("tvimg shape  width: %d ,height: %d \n",tvimg.width,tvimg.height);
-    
-    ucloud::RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimg,rois,dst,m_param_img2tensor,
-                                                                ax,ay);
-    if (ret!=ucloud::RET_CODE::SUCCESS){
-        return ret;
-    }
-    for (auto &&ele:dst){
-        unsigned char *data = (unsigned char*)std::malloc(ele.total()*3);
-        std::memcpy(data,ele.data,ele.total()*3);
+    std::vector<cv::Rect> _roi_ = {cv::Rect(roi.x,roi.y,roi.width,roi.height)};
+    RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, _roi_, 
+        dst, m_param_img2tensor, aX, aY, use_subpixel);
+    if(ret!=RET_CODE::SUCCESS) return ret;
+    for(auto &&ele: dst){
+        // cv::imwrite("preprocess_img.png", ele);
+        unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
+        memcpy(data, ele.data, ele.total()*3);
         input_datas.push_back(data);
     }
-    printf("-->>classifcation::preprocess_opencv finish!\n");
-    LOGI << "<- Classification::preprocess_opencv";
+    LOGI << "<- Classification::preprocess_opencv with roi";
     return ret;
 }
 
+ucloud::RET_CODE Classification::postprocess(std::vector<float*> &output_datas, float threshold,BBox &bbox){
+    LOGI << "-> Classification::postprocess";
+    RET_CODE ret = RET_CODE::SUCCESS;
+    if(output_datas.empty()) return RET_CODE::FAILED;
+    if(m_net->get_output_elem_num()[0]!=m_clss.size()){
+        printf("**[%s][%d] m_clss[%d]!=output_dim0[%d]\n",__FILE__, __LINE__, m_clss.size(), m_net->get_output_elem_num()[0] );
+        return RET_CODE::FAILED;
+    }
+    float *ptr = output_datas[0];
+    float max_score = -1;
+    CLS_TYPE max_score_type = CLS_TYPE::OTHERS;
+    for(int i = 0; i < m_clss.size(); i++ ){
+        if(m_clss[i]==CLS_TYPE::OTHERS) continue;
+        if(ptr[i] > max_score){
+            max_score = ptr[i];
+            max_score_type = m_clss[i];
+        } 
+    }
+    if(max_score > threshold){
+        bbox.objtype = max_score_type;
+        bbox.confidence = max_score;
+    }
+    return ret;
+    LOGI << "<- Classification::postprocess";
+}
 
 
 ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBBox &bboxes,float threshold, float nms_threshold){
-    LOGI<<"->Classfication run";
+    LOGI<<"-> Classification::run";
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
     switch (tvimage.format)
     {
@@ -124,146 +205,68 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
         break;
     }
     if (ret!=ucloud::RET_CODE::SUCCESS) return ret;
-    std::vector<unsigned char*> input_datas;
-    std::vector<unsigned char*> single_data;
-    std::vector<float*> output_datas;
-    std::vector<cv::Rect> rois;
-    std::vector<int> output_nums = m_net->get_output_elem_num();
-    // printf("--->> classify get output_nums %d finished!\n",output_nums.size());
-    int roi_nums = input_datas.size();
-    int num_cls = m_clss.size();
-    // printf("--->> classify num cls is : %d, select_idx is: %d",num_cls,m_select);
     
-    printf("step into phone classify ! \n");
-    if (!bboxes.empty()){
-        printf("bboxes size is %d\n",bboxes.size());
-        for (auto box:bboxes){
-            rois.push_back(cv::Rect(box.rect.x,box.rect.y,box.rect.width,box.rect.height));
-        }
-    }
-
-    // printf("--->> classify process image !\n");
-    ret = preprocess_opencv(tvimage,input_datas,rois);
-    // printf("-->>classify input num %d\n",input_datas.size());
-    // printf("--->> classify proccess image finished!\n");
-    if(ret!=ucloud::RET_CODE::SUCCESS) return ret;
-    for (int i=0;i<input_datas.size();i++){
-        single_data.push_back(input_datas[i]);
-        ret  = m_net->general_infer_uint8_nhwc_to_float(single_data,output_datas);
-        printf("--->> classify single infer finished!\n");
-        if (ret!=ucloud::RET_CODE::SUCCESS) {
-             break;
-             printf("-->>classify %d target failed!\n",i);
-            //return ret;
-            }    
-        // printf("--->> classify output_datas nums: %d !\n",output_datas.size()); 
-        for (int j=0;j<output_nums.size();j++){
-            // printf("--->> classify get result!\n");
-            float* buf = output_datas[j];
-            float m_score = buf[m_select];
-            // printf("ROI %d,buf select score:%f\n",i,m_score);
-            // printf("m_select: %d,threshold: %f,buf select score:%f\n",m_select,threshold,m_score);
-            printf("--->> classify %d target score is %f class type is phone",i,m_score);
-            if (m_score>threshold){
-                    printf("-->>classify step into threshold select!");
-                    // bboxes[j]. = m_score;
-                    bboxes[i].objtype= m_clss[m_select];
-                    
-            }
-        }
-        single_data.clear();
-        output_datas.clear();
-    } 
-    if(ret!=ucloud::RET_CODE::SUCCESS) {
-        for(auto &&t: input_datas) free(t);
-        for(auto &&t: output_datas) free(t);
-        for(auto &&t: single_data) free(t);
-        return ret;
-    }
-    for(auto &&t: input_datas) free(t);
-    for(auto &&t: output_datas) free(t);
-    for(auto &&t: single_data) free(t);
-
-    /// 错误使用了genral_infer-unit8_nhwc_to_float的接口，该接口是针对
-    /// 单个模型多个输入的一个输出的情况；因此针对分类模型多个输入多个输出，
-    /// 只能选择for循环
-    /************
-    ret = m_net->general_infer_uint8_nhwc_to_float(input_datas,output_datas);
-    printf("--->> classify infer finished!\n");
-    if (ret!=ucloud::RET_CODE::SUCCESS) return ret;
     std::vector<int> output_nums = m_net->get_output_elem_num();
-    printf("--->> classify get output_nums %d finished!\n",output_nums.size());
-    printf("--->> classify output_datas nums: %d !\n",output_datas.size()); 
-    // ucloud::VecObjBBox sbbox;
-    int roi_nums = input_datas.size();
     int num_cls = m_clss.size();
-    printf("--->> classify num cls is : %d, select_idx is: %d",num_cls,m_select);
-    for (int i=0;i<output_nums.size();i++){
-        printf("--->> classify get result!\n");
-        float* buf = output_datas[i];
-        for (int j=0;j<roi_nums;j++){
-            int s_idx = j*num_cls + m_select;
-            // printf("i %d buf:0 is %f,1:%f,2:%f\n",i,buf[0],buf[1],buf[2]);
-            float m_score = buf[s_idx];
-            printf("ROI %d,buf select score:%f\n",j,m_score);
-            // printf("m_select: %d,threshold: %f,buf select score:%f\n",m_select,threshold,m_score);
-            if (m_score>threshold){
-                printf("-->>classify step into threshold select!");
-                // bboxes[j]. = m_score;
-                bboxes[j].objtype= m_clss[m_select];
-            }
+    if(output_nums[0]!=num_cls){
+        printf("**[%s][%d] output_nums[0][%d] != num_cls[%d]\n",__FILE__,__LINE__,output_nums[0], num_cls);
+        return RET_CODE::FAILED;
+    }
+    
+    if(bboxes.empty()) return RET_CODE::SUCCESS;//没有目标直接返回
+
+    for(auto &&box: bboxes){
+        std::vector<unsigned char*> input_datas;
+        std::vector<float*> output_datas;
+        TvaiRect roi = box.rect;
+        vector<float> aX,aY;
+    #ifdef USEDRM  
+        ret = preprocess_drm(tvimage, roi, input_datas, aX, aY);
+    #else
+        ret = preprocess_opencv(tvimage, roi, input_datas, aX, aY);
+    #endif
+        if(ret!=ucloud::RET_CODE::SUCCESS){
+            printf("**[%s][%d] Classification preprocess return [%d]\n", __FILE__, __LINE__, ret);
+            return ret;
+        }
+        ret  = m_net->general_infer_uint8_nhwc_to_float(input_datas,output_datas);
+        if(ret!=RET_CODE::SUCCESS) {
+            for(auto &&t: input_datas) free(t);
+            return ret;
+        }
+
+        ret = postprocess(output_datas, threshold, box);
+
+        if(ret!=RET_CODE::SUCCESS) {
+            for(auto &&t: input_datas) free(t);
+            for(auto &&t: output_datas) free(t);
+            return ret;
+        }
+
+        for(auto &&t: output_datas){
+            free(t);
+        }
+        for(auto &&t: input_datas){
+            free(t);
         }
     }
-    **********/
     return ret;
 }
     
 
-
 ucloud::RET_CODE Classification::get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss){
     LOGI << "-> get_class_type: inner_class_num = " << m_clss.size();
     if(m_clss.empty()) return ucloud::RET_CODE::ERR_MODEL_NOT_INIT;
-    for(auto &&m: m_clss){
-        bool FLAG_exsit_class = false;
-        for( auto &&n:valid_clss){
-            if( m==n){
-                FLAG_exsit_class = true;
-                break;
-            }
-        }
-        if(!FLAG_exsit_class) valid_clss.push_back(m);
-    }
+    std::set<CLS_TYPE> unique_vec;
+    unique_vec.insert(m_clss.begin(), m_clss.end());
+    // unique_vec = unique_vec - std::set<CLS_TYPE>{CLS_TYPE::OTHERS};
+    valid_clss.insert(valid_clss.end(), unique_vec.begin(), unique_vec.end());
     return ucloud::RET_CODE::SUCCESS;
 }
 
-
-static inline int get_unique_cls_num(std::vector<ucloud::CLS_TYPE>& output_clss, std::map<ucloud::CLS_TYPE,int> &unique_cls_order ){
-    unique_cls_order.clear();
-    std::vector<ucloud::CLS_TYPE> unique_cls;
-    for(auto i=output_clss.begin(); i !=output_clss.end(); i++){
-        bool conflict = false;
-        for(auto iter=unique_cls.begin(); iter!=unique_cls.end(); iter++){
-            if( *i == *iter ){
-                conflict = true;
-                break;
-            }
-        }
-        if(!conflict) unique_cls.push_back(*i);
-    }
-    for(int i=0; i < unique_cls.size(); i++ ){
-        unique_cls_order.insert(std::pair<ucloud::CLS_TYPE,int>(unique_cls[i],i));
-    }
-    return unique_cls.size();
-}
-
-ucloud::RET_CODE Classification::set_output_cls_order(std::vector<ucloud::CLS_TYPE>& output_clss,int select_idx){
-    printf("--->> Classification set output cls oder output_clss size:%d, select_idx :%d",output_clss,select_idx);
-    m_nc = output_clss.size();
-    m_select = select_idx;
-    // printf("m_nc is %d\n",m_nc);
+ucloud::RET_CODE Classification::set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss){
     m_clss = output_clss;
-    get_unique_cls_num(output_clss, m_unique_clss_map);
-    return ucloud::RET_CODE::SUCCESS;
+    return RET_CODE::SUCCESS;
 }
 
 
