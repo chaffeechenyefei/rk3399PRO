@@ -28,7 +28,12 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
      * SISO模型测试
      */
     case AlgoAPIName::UDF_JSON:
-        apiHandle = std::make_shared<NaiveModel>();
+    {
+        YOLO_DETECTION_NAIVE* _ptr_ = new YOLO_DETECTION_NAIVE();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR};
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }
         break;
     /**
      * 人脸检测

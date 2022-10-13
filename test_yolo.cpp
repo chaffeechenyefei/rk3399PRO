@@ -39,12 +39,14 @@ int main(int argc, char **argv)
     int img_mode = 1;
     float threshold = 0.5;
     int fmt_w = 1080; int fmt_h = 720;
+    ucloud::TvaiRect roi = {0,0,fmt_w/2, fmt_h};
+    bool use_roi = false;
     ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::GENERAL_DETECTOR;
-    cout<<"algName "<< algName<<endl;
+    
     if(argc>=4){
         algName = AlgoAPIName(std::atoi(argv[3]));
-        cout<<"algName "<< algName<<endl;
-    }    
+    }
+    printf("** algName %d\n", algName);    
     if(argc>=5){
         //0:RGB 1:NV21 2:NV12 3:NV21 binary file 4:NV12 binary file
         img_mode = std::atoi(argv[4]);
@@ -52,6 +54,16 @@ int main(int argc, char **argv)
     if(argc>=6){
         threshold = std::atof(argv[5]);
     }
+    if(argc>=7){
+        int _use_roi = std::atoi(argv[6]);
+        if(_use_roi<=0) use_roi = false;
+        else {
+            use_roi = true;
+            float crop_ratio = ((float)_use_roi)/fmt_w;
+            roi = {0,0,_use_roi, int(crop_ratio*fmt_h)};
+        }
+    }
+    printf("** use roi %d\n", use_roi);
     printf("** threshold %0.3f\n",threshold);
     // std::cout << baseModelPath << ", " << imagePath << std::endl;
     printf("model = %s, image = %s\n", baseModelPath.c_str(), imagePath.c_str());
@@ -144,7 +156,7 @@ int main(int argc, char **argv)
     ptrHandle = ucloud::AICoreFactory::getAlgoAPI(algName);
     // ptrHandle->set_param(0.6,0.6,) 这里省略了阈值的设定, 使用默认阈值
     // ptrHandle->set_param(0.4,0.4);
-    printf("init model\n");
+    printf("** main init model\n");
     std::map<ucloud::InitParam,std::string> modelpathes = { {ucloud::InitParam::BASE_MODEL, baseModelPath},};
     RET_CODE ret = ptrHandle->init(modelpathes);
     if(ret!=RET_CODE::SUCCESS){
@@ -152,14 +164,17 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    printf("infer\n");
+    printf("** main infer\n");
     auto avg_time = 0.f;
     VecObjBBox bboxes;
     int loop_times = 1;
     for(int i = 0; i < loop_times; i++){
         bboxes.clear();
         Tk.start();
-        ret = ptrHandle->run(tvInp, bboxes, threshold);
+        if(use_roi)
+            ret = ptrHandle->run(tvInp, roi ,bboxes, threshold);
+        else
+            ret = ptrHandle->run(tvInp, bboxes, threshold);
         auto tm_cost = Tk.end("ptrHandle->run");
         avg_time += tm_cost;
         if(ret!=RET_CODE::SUCCESS){

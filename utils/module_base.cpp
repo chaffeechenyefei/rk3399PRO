@@ -1122,7 +1122,8 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi, PRE
             memcpy(drm_buf, cvimage_padded.data, img_width_pad * img_height_pad * 3);
             // cv::imwrite("y.jpg", cvimage_padded); //check正常
         }
-        ret = img_roi_resize_to_dst_format_slow(&rga_ctx, drm_buf, roi.x, roi.y, roi.width, roi.height, dstPtr, 
+        LOGI << "roi: " << roi.x << ", " << roi.y << ", " << roi.width << ", " << roi.height;
+        ret = img_roi_resize_to_dst_format_slow(&rga_ctx, drm_buf, roi.x, roi.y, roi.width, roi.height, img_width_pad, img_height_pad ,dstPtr, 
             pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
         }    
         break;
@@ -1130,9 +1131,9 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi, PRE
     case TVAI_IMAGE_FORMAT_NV12:
         {
         LOGI << "TVAI_IMAGE_FORMAT_NV21/TVAI_IMAGE_FORMAT_NV12";
-        memcpy(drm_buf, tvimage.pData, 3*tvimage.stride * img_height/2);
-        ret = img_roi_resize_to_dst_format_slow(&rga_ctx, drm_buf, roi.x, roi.y, roi.width, roi.height, dstPtr, 
-            pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
+        memcpy(drm_buf, tvimage.pData, 3*tvimage.stride * tvimage.height/2);
+        ret = img_roi_resize_to_dst_format_slow(&rga_ctx, drm_buf, roi.x, roi.y, roi.width, roi.height, tvimage.stride , tvimage.height,
+        dstPtr, pre_param.model_input_shape.w, pre_param.model_input_shape.h, mode);
         }
         break;
     default:

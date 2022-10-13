@@ -1,6 +1,11 @@
 #include "module_smoke_cig_detection.hpp"
 
 using namespace ucloud;
+
+static bool box_sort_confidence_max(const BBox& a, const BBox& b){
+    return a.confidence > b.confidence;
+}
+
 /*******************************************************************************
  * SMOKE_CIG_DETECTION
  * chaffee.chen@ucloud.cn 2022-10-12
@@ -47,6 +52,7 @@ RET_CODE SMOKE_CIG_DETECTION::run(TvaiImage &tvimage, VecObjBBox &bboxes, float 
         ucloud::TvaiRect scaled_face_rect = globalscaleTvaiRect(face_bbox.rect, expand_scale, tvimage.width, tvimage.height);
         ret = m_cig_detectHandle->run(tvimage, face_bbox.rect, target_bboxes, threshold, nms_threshold);
         if(!target_bboxes.empty()){
+            std::sort(target_bboxes.begin(), target_bboxes.end(), box_sort_confidence_max );
             face_bbox.confidence = target_bboxes[0].confidence;
             face_bbox.objectness = target_bboxes[0].objectness;
             face_bbox.rect = scaled_face_rect;

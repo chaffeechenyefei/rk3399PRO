@@ -768,7 +768,7 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 
 RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox &bboxes, float threshold, float nms_threshold){
     // return run_drm(tvimage, bboxes);
-    LOGI << "-> YOLO_DETECTION_NAIVE::run";
+    LOGI << "-> YOLO_DETECTION_NAIVE::run with roi";
     RET_CODE ret = RET_CODE::SUCCESS;
     threshold = clip_threshold(threshold);
     nms_threshold = clip_threshold(nms_threshold);
@@ -837,7 +837,7 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox
         free(t);
     }
 
-    LOGI << "<- YOLO_DETECTION_NAIVE::run";
+    LOGI << "<- YOLO_DETECTION_NAIVE::run with roi";
     return RET_CODE::SUCCESS;
 }
 
@@ -948,10 +948,10 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::preprocess_drm(ucloud::TvaiImage& tvimage
     RET_CODE uret = m_drm->init(tvimage);
     if(uret!=RET_CODE::SUCCESS) return uret;
     // int ret = m_drm->resize(tvimage,m_InpSp, data);
-    int ret = m_drm->resize(tvimage, m_param_img2tensor, data);
+    int ret = m_drm->resize(tvimage, roi, m_param_img2tensor, data);
     input_datas.push_back(data);
-    aX.push_back( (float(m_InpSp.w))/tvimage.width );
-    aY.push_back( (float(m_InpSp.h))/tvimage.height );
+    aX.push_back( (float(m_InpSp.w))/roi.width );
+    aY.push_back( (float(m_InpSp.h))/roi.height );
 
 #ifdef VISUAL
     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);

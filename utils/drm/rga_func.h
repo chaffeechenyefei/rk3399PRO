@@ -40,7 +40,7 @@ int img_resize_slow(rga_context *rga_ctx, void *src_virt, int src_w, int src_h, 
  */
 int img_resize_to_dst_format_slow(rga_context *rga_ctx, void *src_virt, int src_w, int src_h, void *dst_virt, int dst_w, int dst_h, RGA_MODE mode);
 //将src的roi区域([src_x,src_y,src_w,src_h])resize到dst区域
-int img_roi_resize_to_dst_format_slow(rga_context *rga_ctx, void *src_virt, int src_x, int src_y, int src_w, int src_h, void *dst_virt, int dst_w, int dst_h, RGA_MODE mode);
+int img_roi_resize_to_dst_format_slow(rga_context *rga_ctx, void *src_virt, int roi_x, int roi_y, int roi_w, int roi_h, int src_w, int src_h, void *dst_virt, int dst_w, int dst_h, RGA_MODE mode);
 int RGA_deinit(rga_context* rga_ctx);
 
 #ifdef __cplusplus
