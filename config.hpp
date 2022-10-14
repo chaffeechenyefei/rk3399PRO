@@ -87,11 +87,11 @@ typedef enum _MODELFILENAME{
  */
 std::string rknn_model_path = "/home/firefly/yefei/test/data/model/";
 std::map<MODELFILENAME,string> cambricon_model_file = {
-    {MODELFILENAME::FACE_DET,           "retinaface_736x416_mlu220.cambricon"},
+    {MODELFILENAME::FACE_DET,           rknn_model_path + "retinaface_int8_2022xx_736x416_slow.rknn"},
     {MODELFILENAME::FACE_EXT,           "resnet101-wbf-20220107_112x112_mlu220_fp16.cambricon"},
     {MODELFILENAME::SKELETON_DET_R50,   "pose_resnet_50_256x192_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::SKELETON_DET_R18,   "posenet-r18_20220225_192x256_mlu220_bs1c1_fp16.cambricon"},
-    {MODELFILENAME::FIRE_CLS,           "resnet34fire_62_224x224_mlu220_bs1c1_fp16.cambricon"},
+    {MODELFILENAME::FIRE_CLS,           rknn_model_path + "rknn_int8_fire-r34_20220302_224x224_fast.rknn"},
     {MODELFILENAME::WATER_DET_UNET,     "unetwater_393_224x224_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::WATER_DET_PSP,      "pspwater_20211119_736x416_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::GENERAL_TRK_MLU,    "feature_extract_4c4b_argb_270_v1.5.0.cambricon"},
