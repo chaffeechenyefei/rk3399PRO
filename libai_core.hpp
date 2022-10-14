@@ -32,13 +32,13 @@ class UCLOUD_API_PUBLIC AlgoAPI;//算法对外接口前置声明, 方便索引
 
 //算法功能的枚举
 typedef enum _AlgoAPIName{
-    FACE_DETECTOR       = 0,//人脸检测
+    FACE_DETECTOR       = 0,//人脸检测 return FACE
     FACE_EXTRACTOR      = 1,//人脸特征提取
     GENERAL_DETECTOR    = 2,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR
     ACTION_CLASSIFIER   = 3,//行为识别, 目前支持打斗 [需要数据更新模型] x
     MOD_DETECTOR        = 4,//高空抛物, Moving Object Detection(MOD)[需要改善后处理, 开放做多帧接口测试]
     PED_DETECTOR        = 5,//行人检测加强版, 针对摔倒进行数据增强, mAP高于人车非中的人 
-    FIRE_DETECTOR       = 6,//火焰检测
+    FIRE_DETECTOR       = 6,//火焰检测 return FIRE
     FIRE_DETECTOR_X     = 7,//火焰检测加强版, 带火焰分类器
     WATER_DETECTOR      = 8,//积水检测 x
     PED_FALL_DETECTOR   = 9,//行人摔倒检测, 只检测摔倒的行人
@@ -48,7 +48,7 @@ typedef enum _AlgoAPIName{
     BANNER_DETECTOR     = 13,//横幅检测 x
     NONCAR_DETECTOR     = 14,//非机动车检测加强版, 针对非机动车进电梯开发 
     SMOKING_DETECTOR    = 15,//抽烟行为检测 x
-    PHONING_DETECTOR    = 16,//打电话/玩手机行为检测 x
+    PHONING_DETECTOR    = 16,//打电话/玩手机行为检测 return PHONING
     HEAD_DETECTOR       = 17,//人头检测, 检测画面中人头数量, 用于密集场景人数统计
 // #ifndef MLU220 //新增内容2022-03-03
     SOS_DETECTOR        = 18,//SOS举手求救
@@ -58,11 +58,11 @@ typedef enum _AlgoAPIName{
     LICPLATE_DETECTOR   = 22, //车牌检测
     LICPLATE_RECOGNIZER = 23, //车牌识别
 // #endif
+    //=========内部使用======================================================================
     RESERVED1           = 41,//yingxun保留
     RESERVED2           = 42,
     RESERVED3           = 43,
     UDF_JSON            = 5000, //用户自定义json输入
-    //=========内部使用======================================================================
     GENERAL_TRACKOR     = 50,//通用跟踪模块, 不能实例化, 但可以在内部使用
     MOD_MOG2_DETECTOR   = 51,//高空抛物, Moving Object Detection(MOD)[MoG2版本]
     HAND_DETECTOR       = 52,//人手检测 224x320, 一般用于内部, 不单独使用
@@ -181,29 +181,6 @@ typedef struct TvaiRect_S
     int     height;     /* 区域高度 */
 }TvaiRect;
 
-//骨架关键点
-typedef struct _SkeletonLandmark{
-    float x[17];
-    float y[17];
-} SkLandmark;
-
-//人脸五官关键点坐标
-typedef struct _FaceLandmark { //Left eye, Right eye, Nose, Left mouth, Right mouth
-  float x[5];
-  float y[5];
-} FaceLandmark;
-
-//人脸检测返回的检测框信息
-typedef struct _FaceInfo {
-    float x0;
-    float y0;
-    float x1;
-    float y1;
-    TvaiRect rect; //tvai
-    float confidence; //tvai
-    FaceLandmark landmark;
-} FaceInfo;
-
 //通用关键点类型
 typedef enum _LandMarkType{
     FACE_5PTS            =   0, //人脸五点
@@ -296,10 +273,10 @@ typedef struct TvaiImage_S
 
 //自定义简称
 typedef std::vector<TvaiRect> VecRect;
-typedef std::vector<FaceInfo> VecFaceBBox;
 typedef std::vector<TvaiFeature> VecFeat;
 typedef std::vector<BBox> VecObjBBox;
-typedef std::vector<SkLandmark> VecSkLandmark;
+typedef std::vector<BBox> VecBBoxIN;
+typedef std::vector<BBox> VecBBoxOUT;
 typedef std::vector<TvaiImage> BatchImageIN;
 typedef std::vector<VecObjBBox> BatchBBoxOUT;
 typedef std::vector<VecObjBBox> BatchBBoxIN;
@@ -324,6 +301,7 @@ public:
      */
     virtual RET_CODE get_class_type(std::vector<CLS_TYPE> &valid_clss){return RET_CODE::ERR_VIRTUAL_FUNCTION;};
     /*****************************内部使用**************************************/
+    /*****************************后期转入内部接口类**************************************/
     virtual int get_batchsize(){return 1;}
     virtual RET_CODE init(){return RET_CODE::ERR_VIRTUAL_FUNCTION;} 
     //默认情况下, 输入一个模型地址则用于BASE_MODEL 

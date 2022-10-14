@@ -4,10 +4,13 @@
 #ifndef _FRAMEWORK_DETECTION_HPP_
 #define _FRAMEWORK_DETECTION_HPP_
 
-#include "../libai_core.hpp"
+// #include "../libai_core.hpp"
 #include "module_track.hpp"
 #include <mutex>
 #include "basic.hpp"
+#include "module_base.hpp"
+#include <functional>
+
 
 
 /*******************************************************************************
@@ -16,6 +19,7 @@
 // class AnyDetectionV4DeepSort;//任意检测模型+DeepSort
 class AnyDetectionV4ByteTrack;//任意检测模型+ByteTrack
 class PipelineNaive;//任意模型管道式组合
+
 
 
 /*******************************************************************************
@@ -55,6 +59,7 @@ protected:
 PipelineNaive
 chaffee.chen@2022-10-09
 *******************************************************************************/
+typedef std::function<ucloud::RET_CODE(ucloud::VecBBoxIN&, ucloud::VecBBoxOUT&)> FilterFuncPtr;
 class PipelineNaive: public ucloud::AlgoAPI{
 public:
     PipelineNaive(){}
@@ -62,15 +67,16 @@ public:
 
     virtual RET_CODE run(TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.55, float nms_threshold=0.6);
     virtual RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);
-
-    /**push_back 
+    /*******************************************************************************
+     * push_back
      * handles, threshold, nms_threshold and 是否使用run传入的阈值参数 fixed_threshold=true表示不使用
      * 需要放入成熟的AlgoAPISPtr
-     * **/
-    virtual RET_CODE push_back(ucloud::AlgoAPISPtr apihandle, bool fixed_threshold=true, float threshold=0.55, float nms_threshold=0.6){
+    *******************************************************************************/
+    virtual RET_CODE push_back(ucloud::AlgoAPISPtr apihandle, bool fixed_threshold=true, float threshold=0.55, float nms_threshold=0.6, FilterFuncPtr filter_func=nullptr ){
         m_handles.push_back(apihandle);
         m_thresholds.push_back(threshold);
         m_nms_thresholds.push_back(nms_threshold);
+        m_filter_funcs.push_back(filter_func);
         if(!fixed_threshold) unfixed_thresholds_index = m_handles.size()-1;
     }
 
@@ -78,6 +84,7 @@ protected:
     std::vector<ucloud::AlgoAPISPtr> m_handles;
     std::vector<float> m_thresholds;
     std::vector<float> m_nms_thresholds;
+    std::vector<FilterFuncPtr> m_filter_funcs;
     int unfixed_thresholds_index = -1;
 
 };

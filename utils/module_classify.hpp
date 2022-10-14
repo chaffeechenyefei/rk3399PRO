@@ -4,20 +4,32 @@
 #include "module_base.hpp"
 #include "basic.hpp"
 
-
+/*******************************************************************************
+ * Classification
+ * 通用分类器
+ * lihui.liu@2022-10-13
+*******************************************************************************/
 class Classification: public ucloud::AlgoAPI{
 public:
     Classification();
     virtual ~Classification();
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam,std::string> &modelpath);
+    /*******************************************************************************
+     * run 对bboxes中的每个区域进行分类, 并将结果更新到bboxes中(objtype, objectness, confidence)
+     * PARAM:
+     *  threshold只有超过阈值的分类结果才会更新到bboxes中
+    *******************************************************************************/
     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.5);
+    /*******************************************************************************
+     * get_class_type 返回剔除占位类型OTHERS后的有效分类类别
+    *******************************************************************************/    
     virtual ucloud::RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);
-    /**
+    /*******************************************************************************
      * set_output_cls_order
-     * 例如 {OTHERS, FIRE, OTHERS}
+     * 例如 {OTHERS, FIRE, OTHERS} 长度必须与模型输出一致 否则后续运行会FAILED
      * 表示输出的 dim0 = OTHERS, dim1 = FIRE, dim2 = OTHERS
      * OTHERS仅表示占位, 仅dim1会被输出
-     */
+     *******************************************************************************/
     virtual ucloud::RET_CODE set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss);
 
 protected:

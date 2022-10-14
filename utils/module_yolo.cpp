@@ -66,8 +66,14 @@ RET_CODE YOLO_DETECTION_NAIVE::init(std::map<ucloud::InitParam, std::string> &mo
     #endif
     if(ret!=RET_CODE::SUCCESS) return ret;
     //SISO的体现, 都只取index0的数据
-    assert(m_InpNum == m_net->get_input_shape().size());
-    assert(m_OtpNum == m_net->get_output_shape().size());
+    if(m_InpNum != m_net->get_input_shape().size()){
+        printf("**[%s][%d], m_InpNum[%d]!=m_net->get_input_shape().size()[%d]\n", __FILE__, __LINE__, m_InpNum, m_net->get_input_shape().size());
+        return RET_CODE::FAILED;
+    }
+    if(m_OtpNum != m_net->get_output_shape().size()){
+        printf("**[%s][%d], m_OtpNum[%d]!=m_net->get_output_shape().size()[%d]\n", __FILE__, __LINE__, m_OtpNum, m_net->get_output_shape().size());
+        return RET_CODE::FAILED;
+    }
     m_InpSp = m_net->get_input_shape()[0];
     m_OutEleDims = m_net->get_output_dims();
     m_OutEleNums = m_net->get_output_elem_num();

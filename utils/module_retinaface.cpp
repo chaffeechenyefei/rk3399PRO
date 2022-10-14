@@ -143,7 +143,7 @@ RET_CODE RETINAFACE_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
     if(ret!=RET_CODE::SUCCESS) return ret;
 
     std::vector<unsigned char*> input_datas;
-    std::vector<float> aspect_ratios, aX, aY;
+    std::vector<float> aX, aY;
     std::vector<float*> output_datas;
 
 #ifdef TIMING    

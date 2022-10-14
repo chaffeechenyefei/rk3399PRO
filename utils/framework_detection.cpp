@@ -2,6 +2,7 @@
 
 using namespace ucloud;
 
+
 /*******************************************************************************
 AnyDetection + ByteTrack
 use set_trackor to switch differenct version of ByteTrack
@@ -103,15 +104,28 @@ RET_CODE PipelineNaive::get_class_type(std::vector<CLS_TYPE> &valid_clss){
 
 RET_CODE PipelineNaive::run(TvaiImage& tvimage, VecObjBBox &bboxes, float threshold, float nms_threshold){
     RET_CODE ret = RET_CODE::SUCCESS;
+    VecObjBBox bboxes_filtered;
     for(int i=0; i < m_handles.size(); i++){
+        //run
         if(i==unfixed_thresholds_index)
-            ret = m_handles[i]->run(tvimage,bboxes,threshold, nms_threshold);
+            ret = m_handles[i]->run(tvimage,bboxes_filtered,threshold, nms_threshold);
         else
-            ret = m_handles[i]->run(tvimage,bboxes,m_thresholds[i], m_nms_thresholds[i]);
+            ret = m_handles[i]->run(tvimage,bboxes_filtered,m_thresholds[i], m_nms_thresholds[i]);
         if(ret!=RET_CODE::SUCCESS){
             printf("ERR[%s][%d]::PipelineNaive::run [%d]th handle return [%d]\n",__FILE__, __LINE__, i, ret);
             return ret;
         }
+        //filter
+        VecObjBBox tmp;
+        if(m_filter_funcs[i]!=nullptr){
+            ret = m_filter_funcs[i](bboxes_filtered, tmp);
+            if(ret!=RET_CODE::SUCCESS){
+                printf("ERR[%s][%d]::PipelineNaive::filter [%d]th handle return [%d]\n",__FILE__, __LINE__, i, ret);
+                return ret;
+            }
+        }
+        bboxes_filtered.swap(tmp);
     }
+    bboxes = bboxes_filtered;
     return ret;
 }

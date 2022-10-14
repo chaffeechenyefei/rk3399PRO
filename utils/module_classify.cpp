@@ -76,7 +76,9 @@ ucloud::RET_CODE Classification::postprocess(std::vector<float*> &output_datas, 
     LOGI << "<- Classification::postprocess";
 }
 
-
+/*******************************************************************************
+ * run 对bboxes中的每个区域进行分类, 并将结果更新到bboxes中(objtype, objectness, confidence)
+*******************************************************************************/
 ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBBox &bboxes,float threshold, float nms_threshold){
     LOGI<<"-> Classification::run";
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
@@ -159,6 +161,7 @@ ucloud::RET_CODE Classification::get_class_type(std::vector<ucloud::CLS_TYPE> &v
     std::set<CLS_TYPE> unique_vec;
     unique_vec.insert(m_clss.begin(), m_clss.end());
     // unique_vec = unique_vec - std::set<CLS_TYPE>{CLS_TYPE::OTHERS};
+    unique_vec.erase(CLS_TYPE::OTHERS);
     valid_clss.insert(valid_clss.end(), unique_vec.begin(), unique_vec.end());
     return ucloud::RET_CODE::SUCCESS;
 }
