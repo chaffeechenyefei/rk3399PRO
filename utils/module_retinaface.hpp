@@ -30,12 +30,9 @@ public:
  * non-public API
  */
 protected:
-    virtual ucloud::RET_CODE preprocess_drm(ucloud::TvaiImage& tvimage ,std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
-    virtual ucloud::RET_CODE postprocess_drm(std::vector<float*> &output_datas, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
+    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
     virtual ucloud::RET_CODE rknn_output_to_boxes_1LX( std::vector<float*> &output_datas, float threshold, ucloud::VecObjBBox &bboxes);
- 
-    virtual ucloud::RET_CODE preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratios);
-    virtual ucloud::RET_CODE postprocess_opencv(std::vector<float*> &output_datas, float threshold ,float nms_threshold, ucloud::VecObjBBox &bboxes, std::vector<float> &aspect_ratios);
+    
     float clip_threshold(float x);
     float clip_nms_threshold(float x);
 
@@ -43,7 +40,7 @@ protected:
 
 private:
     std::shared_ptr<BaseModel> m_net = nullptr;//推理模型的主干部分
-    std::shared_ptr<ImageUtil> m_drm = nullptr;
+    std::shared_ptr<PreProcess_CPU_DRM_Model> m_cv_preprocess_net = nullptr;
     
     DATA_SHAPE m_InpSp;
     int m_InpNum = 1;//输入Tensor数量

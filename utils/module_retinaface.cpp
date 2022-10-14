@@ -12,7 +12,7 @@ using namespace std;
 RETINAFACE_DETECTION::RETINAFACE_DETECTION(){
     LOGI << "-> RETINAFACE_DETECTION";
     m_net = std::make_shared<BaseModel>();
-    m_drm = std::make_shared<ImageUtil>();
+    m_cv_preprocess_net = std::make_shared<PreProcess_CPU_DRM_Model>();
 }
 
 RETINAFACE_DETECTION::~RETINAFACE_DETECTION(){
@@ -150,9 +150,9 @@ RET_CODE RETINAFACE_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
     m_Tk.start();
 #endif
 #ifdef USEDRM
-    ret = preprocess_drm(tvimage, input_datas, aX, aY);
+    ret = m_cv_preprocess_net->preprocess_drm(tvimage, m_param_img2tensor, input_datas, aX, aY);
 #else
-    ret = preprocess_opencv(tvimage, input_datas, aspect_ratios);
+    ret = m_cv_preprocess_net->preprocess_opencv(tvimage, m_param_img2tensor, input_datas, aX, aY);
 #endif
 #ifdef TIMING    
     m_Tk.end("preprocess");
@@ -176,11 +176,7 @@ RET_CODE RETINAFACE_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 #ifdef TIMING    
     m_Tk.start();
 #endif
-#ifdef USEDRM
-    ret = postprocess_drm(output_datas, threshold, nms_threshold, bboxes, aX, aY);
-#else
-    ret = postprocess_opencv(output_datas, threshold, nms_threshold, bboxes, aspect_ratios);
-#endif
+    ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY);
 #ifdef TIMING    
     m_Tk.end("postprocess");
 #endif    
@@ -202,44 +198,7 @@ RET_CODE RETINAFACE_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 }
 
 
-ucloud::RET_CODE RETINAFACE_DETECTION::preprocess_drm(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, 
-    std::vector<float> &aX, std::vector<float> &aY)
-{
-    LOGI << "-> RETINAFACE_DETECTION::preprocess_drm";
-    bool valid_input_format = true;
-    switch (tvimage.format)
-    {
-    case TVAI_IMAGE_FORMAT_RGB:
-    case TVAI_IMAGE_FORMAT_BGR:
-    case TVAI_IMAGE_FORMAT_NV12:
-    case TVAI_IMAGE_FORMAT_NV21:
-        break;
-    default:
-        valid_input_format = false;
-        break;
-    }
-    if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
-
-    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.h);
-    RET_CODE uret = m_drm->init(tvimage);
-    if(uret!=RET_CODE::SUCCESS) return uret;
-    // int ret = m_drm->resize(tvimage,m_InpSp, data);
-    int ret = m_drm->resize(tvimage, m_param_img2tensor, data);
-    input_datas.push_back(data);
-    aX.push_back( (float(m_InpSp.w))/tvimage.width );
-    aY.push_back( (float(m_InpSp.h))/tvimage.height );
-
-
-#ifdef VISUAL
-    cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    cv::imwrite("preprocess_drm.jpg", cvimage_show);
-#endif
-
-    LOGI << "<- RETINAFACE_DETECTION::preprocess_drm";
-    return RET_CODE::SUCCESS;
-}
-
-ucloud::RET_CODE RETINAFACE_DETECTION::postprocess_drm(std::vector<float*> &output_datas, float threshold ,float nms_threshold, 
+ucloud::RET_CODE RETINAFACE_DETECTION::postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold, 
     ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY)
 {
     LOGI << "-> RETINAFACE_DETECTION::postprocess_drm";
@@ -367,45 +326,5 @@ ucloud::RET_CODE RETINAFACE_DETECTION::rknn_output_to_boxes_1LX( std::vector<flo
     return RET_CODE::SUCCESS;
 }
 
-ucloud::RET_CODE RETINAFACE_DETECTION::preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aspect_ratio  ){
-    LOGI << "-> RETINAFACE_DETECTION::preprocess_opencv";
-    bool use_subpixel = false;
-    std::vector<cv::Mat> dst;
-    std::vector<float> aX,aY;
-    std::vector<cv::Rect> roi = {cv::Rect(0,0,tvimage.width,tvimage.height)};
-    RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, roi, 
-        dst, m_param_img2tensor, aX, aY, use_subpixel);
-    if(ret!=RET_CODE::SUCCESS) return ret;
-    for(auto &&ele: dst){
-        // cv::imwrite("preprocess_img.png", ele);
-        unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
-        memcpy(data, ele.data, ele.total()*3);
-        input_datas.push_back(data);
-    }
-    aspect_ratio = aX;
-    LOGI << "<- RETINAFACE_DETECTION::preprocess_opencv";
-    return ret;
-}
 
-ucloud::RET_CODE RETINAFACE_DETECTION::postprocess_opencv(std::vector<float*> &output_datas, float threshold ,float nms_threshold, 
-    VecObjBBox &bboxes, std::vector<float> &aspect_ratios)
-{
-    LOGI << "-> RETINAFACE_DETECTION::postprocess_opencv";
-    if(output_datas.empty()) return RET_CODE::ERR_POST_EXE;
-
-    VecObjBBox vecBox;
-    VecObjBBox vecBox_after_nms;
-    rknn_output_to_boxes_1LX(output_datas, threshold, vecBox);
-    int n = vecBox.size();
-    LOGI << "rknn_output_to_boxes " << n;
-    base_nmsBBox(vecBox,nms_threshold, NMS_MIN ,vecBox_after_nms );
-    LOGI << "after nms " << vecBox_after_nms.size() << std::endl;
-    base_transform_xyxy_xyhw(vecBox_after_nms, m_expand_ratio, aspect_ratios[0]);
-    bboxes = vecBox_after_nms;
-    VecObjBBox().swap(vecBox);
-    VecObjBBox().swap(vecBox_after_nms);
-    vecBox.clear();
-    LOGI << "<- RETINAFACE_DETECTION::postprocess_opencv";
-    return RET_CODE::SUCCESS;
-}
 

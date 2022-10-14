@@ -1161,7 +1161,9 @@ RET_CODE ImageUtil::resize(ucloud::TvaiImage &tvimage, ucloud::TvaiRect roi, PRE
 }
 
 
-
+/*******************************************************************************
+ * globalscaleTvaiRect 将rect根据scale放大, 同时不超过W,H的图像尺寸
+*******************************************************************************/
 TvaiRect globalscaleTvaiRect(TvaiRect &rect, float scale, int W, int H){
     /**
      * H,W is the border of image 
@@ -1178,6 +1180,9 @@ TvaiRect globalscaleTvaiRect(TvaiRect &rect, float scale, int W, int H){
     return output;
 }
 
+/*******************************************************************************
+ * shift_box_from_roi_to_org 将roi坐标下的bbox, 还原成原图坐标下的bbox
+*******************************************************************************/
 void shift_box_from_roi_to_org(ucloud::VecObjBBox &bboxes, ucloud::TvaiRect &roirect){
     for(auto &&bbox: bboxes){
         bbox.rect.x += roirect.x;
@@ -1187,4 +1192,86 @@ void shift_box_from_roi_to_org(ucloud::VecObjBBox &bboxes, ucloud::TvaiRect &roi
             pt.y += roirect.y;
         }
     }
+}
+
+/*******************************************************************************
+ * PreProcess_CPU_DRM_Model
+ * DESC: CPU/DRM模式下图像前处理
+*******************************************************************************/
+/***whole image preprocess with drm**/
+ucloud::RET_CODE PreProcess_CPU_DRM_Model::preprocess_drm(ucloud::TvaiImage& tvimage, PRE_PARAM pre_param , 
+    std::vector<unsigned char*> &input_datas, 
+    std::vector<float> &aX, std::vector<float> &aY)
+{
+    TvaiRect roi = {0,0,tvimage.width,tvimage.height};
+    return preprocess_drm(tvimage, roi, pre_param, input_datas, aX, aY);
+}
+
+/***whole image preprocess with opencv**/
+RET_CODE PreProcess_CPU_DRM_Model::preprocess_opencv(ucloud::TvaiImage& tvimage, PRE_PARAM pre_param ,
+    std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY)
+{
+    TvaiRect roi = {0,0,tvimage.width,tvimage.height};
+    return preprocess_opencv(tvimage, roi, pre_param, input_datas, aX, aY);
+}
+
+/***image with preprocess with roi+drm**/
+RET_CODE PreProcess_CPU_DRM_Model::preprocess_drm(ucloud::TvaiImage& tvimage , ucloud::TvaiRect roi, PRE_PARAM pre_param ,
+    std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY)
+{
+    LOGI << "-> PreProcess_CPU_DRM_Model::preprocess_drm";
+    bool valid_input_format = true;
+    switch (tvimage.format)
+    {
+    case TVAI_IMAGE_FORMAT_RGB:
+    case TVAI_IMAGE_FORMAT_BGR:
+    case TVAI_IMAGE_FORMAT_NV12:
+    case TVAI_IMAGE_FORMAT_NV21:
+        break;
+    default:
+        valid_input_format = false;
+        break;
+    }
+    if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+    int dst_w = pre_param.model_input_shape.w;
+    int dst_h = pre_param.model_input_shape.h;
+    unsigned char* data = (unsigned char*)std::malloc(3*dst_w*dst_h);
+    RET_CODE uret = m_drm->init(tvimage);
+    if(uret!=RET_CODE::SUCCESS) return uret;
+    // int ret = m_drm->resize(tvimage,m_InpSp, data);
+    int ret = m_drm->resize(tvimage, roi, pre_param, data);
+    input_datas.push_back(data);
+    aX.push_back( (float(dst_w))/roi.width );
+    aY.push_back( (float(dst_h))/roi.height );
+
+#ifdef VISUAL
+    cv::Mat cvimage_show( cv::Size(dst_w, dst_h), CV_8UC3, data);
+    cv::imwrite("preprocess_drm.jpg", cvimage_show);
+#endif
+
+    LOGI << "<- PreProcess_CPU_DRM_Model::preprocess_drm";
+    return RET_CODE::SUCCESS;    
+}
+
+/***image preprocess with roi+opencv**/
+RET_CODE PreProcess_CPU_DRM_Model::preprocess_opencv(ucloud::TvaiImage& tvimage, ucloud::TvaiRect roi, PRE_PARAM pre_param ,
+    std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY)
+{
+    LOGI << "-> PreProcess_CPU_DRM_Model::preprocess_opencv";
+    bool use_subpixel = false;
+    std::vector<cv::Mat> dst;
+    std::vector<cv::Rect> _roi_ = {cv::Rect(roi.x,roi.y,roi.width,roi.height)};
+    RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, _roi_, 
+        dst, pre_param, aX, aY, use_subpixel);
+    if(ret!=RET_CODE::SUCCESS) return ret;
+    for(auto &&ele: dst){
+        #ifdef VISUAL
+        cv::imwrite("preprocess_opencv.jpg", ele);
+        #endif
+        unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
+        memcpy(data, ele.data, ele.total()*3);
+        input_datas.push_back(data);
+    }
+    LOGI << "<- PreProcess_CPU_DRM_Model::preprocess_opencv";
+    return ret;    
 }

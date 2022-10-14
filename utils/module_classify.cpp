@@ -6,7 +6,7 @@ using namespace ucloud;
 Classification::Classification(){
     LOGI<<"-> Classification";
     m_net = std::make_shared<BaseModel>();
-    m_drm = std::make_shared<ImageUtil>();
+    m_cv_preprocess_net = std::make_shared<PreProcess_CPU_DRM_Model>();
 }
 
 Classification::~Classification(){
@@ -44,120 +44,6 @@ ucloud::RET_CODE Classification::init(std::map<ucloud::InitParam,std::string> &m
     m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;//confirm??
     m_param_img2tensor.model_input_shape = m_InpSp;
     LOGI << "<- Classification::init";
-    return ret;
-}
-
-/***whole image preprocess with opencv**/
-ucloud::RET_CODE Classification::preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY ){
-    LOGI << "-> Classification::preprocess_opencv";
-    bool use_subpixel = false;
-    std::vector<cv::Mat> dst;
-    std::vector<cv::Rect> roi = {cv::Rect(0,0,tvimage.width,tvimage.height)};
-    RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, roi, 
-        dst, m_param_img2tensor, aX, aY, use_subpixel);
-    if(ret!=RET_CODE::SUCCESS) return ret;
-    for(auto &&ele: dst){
-        // cv::imwrite("preprocess_img.png", ele);
-        unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
-        memcpy(data, ele.data, ele.total()*3);
-        input_datas.push_back(data);
-    }
-    LOGI << "<- Classification::preprocess_opencv";
-    return ret;
-}
-
-/***image with preprocess with roi+drm**/
-ucloud::RET_CODE Classification::preprocess_drm(ucloud::TvaiImage& tvimage, ucloud::TvaiRect roi, std::vector<unsigned char*> &input_datas, 
-    std::vector<float> &aX, std::vector<float> &aY)
-{
-    LOGI << "-> Classification::preprocess_drm with roi";
-    bool valid_input_format = true;
-    switch (tvimage.format)
-    {
-    case TVAI_IMAGE_FORMAT_RGB:
-    case TVAI_IMAGE_FORMAT_BGR:
-    case TVAI_IMAGE_FORMAT_NV12:
-    case TVAI_IMAGE_FORMAT_NV21:
-        break;
-    default:
-        valid_input_format = false;
-        break;
-    }
-    if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
-
-    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.h);
-    RET_CODE uret = m_drm->init(tvimage);
-    if(uret!=RET_CODE::SUCCESS) return uret;
-    // int ret = m_drm->resize(tvimage,m_InpSp, data);
-    int ret = m_drm->resize(tvimage, roi, m_param_img2tensor, data);
-    input_datas.push_back(data);
-    aX.push_back( (float(m_InpSp.w))/roi.width );
-    aY.push_back( (float(m_InpSp.h))/roi.height );
-
-#ifdef VISUAL
-    cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    cv::imwrite("preprocess_drm.jpg", cvimage_show);
-#endif
-
-    LOGI << "<- Classification::preprocess_drm with roi";
-    return RET_CODE::SUCCESS;
-}
-
-/***whole image preprocess with drm**/
-ucloud::RET_CODE Classification::preprocess_drm(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, 
-    std::vector<float> &aX, std::vector<float> &aY)
-{
-    LOGI << "-> Classification::preprocess_drm";
-    bool valid_input_format = true;
-    switch (tvimage.format)
-    {
-    case TVAI_IMAGE_FORMAT_RGB:
-    case TVAI_IMAGE_FORMAT_BGR:
-    case TVAI_IMAGE_FORMAT_NV12:
-    case TVAI_IMAGE_FORMAT_NV21:
-        break;
-    default:
-        valid_input_format = false;
-        break;
-    }
-    if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
-
-    unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.w);
-    RET_CODE uret = m_drm->init(tvimage);
-    if(uret!=RET_CODE::SUCCESS) return uret;
-    // int ret = m_drm->resize(tvimage,m_InpSp, data);
-    int ret = m_drm->resize(tvimage, m_param_img2tensor, data);
-    input_datas.push_back(data);
-    aX.push_back( (float(m_InpSp.w))/tvimage.width );
-    aY.push_back( (float(m_InpSp.h))/tvimage.height );
-
-#ifdef VISUAL
-    cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
-    cv::imwrite("preprocess_drm.jpg", cvimage_show);
-#endif
-
-    LOGI << "<- Classification::preprocess_drm";
-    return RET_CODE::SUCCESS;
-}
-
-/***image preprocess with roi+opencv**/
-ucloud::RET_CODE Classification::preprocess_opencv(ucloud::TvaiImage& tvimage, TvaiRect roi, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY  ){
-    LOGI << "-> Classification::preprocess_opencv with roi";
-    bool use_subpixel = false;
-    std::vector<cv::Mat> dst;
-    std::vector<cv::Rect> _roi_ = {cv::Rect(roi.x,roi.y,roi.width,roi.height)};
-    RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, _roi_, 
-        dst, m_param_img2tensor, aX, aY, use_subpixel);
-    if(ret!=RET_CODE::SUCCESS) return ret;
-    for(auto &&ele: dst){
-        #ifdef VISUAL
-        cv::imwrite("preprocess_opencv.jpg", ele);
-        #endif
-        unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
-        memcpy(data, ele.data, ele.total()*3);
-        input_datas.push_back(data);
-    }
-    LOGI << "<- Classification::preprocess_opencv with roi";
     return ret;
 }
 
@@ -225,10 +111,10 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
         vector<float> aX,aY;
         
     #ifdef USEDRM  
-        roi = get_valid_rect(roi, tvimage.width, tvimage.height);
-        ret = preprocess_drm(tvimage, roi, input_datas, aX, aY);
+        roi =  get_valid_rect(roi, tvimage.width, tvimage.height);
+        ret = m_cv_preprocess_net->preprocess_drm(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
     #else
-        ret = preprocess_opencv(tvimage, roi, input_datas, aX, aY);
+        ret = preprocess_opencv(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
     #endif
         if(ret!=ucloud::RET_CODE::SUCCESS){
             printf("**[%s][%d] Classification preprocess return [%d]\n", __FILE__, __LINE__, ret);
@@ -285,3 +171,125 @@ ucloud::RET_CODE Classification::set_output_cls_order(std::vector<ucloud::CLS_TY
 
 
 
+
+
+
+
+
+
+
+
+
+// /***whole image preprocess with opencv**/
+// ucloud::RET_CODE Classification::preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY ){
+//     LOGI << "-> Classification::preprocess_opencv";
+//     bool use_subpixel = false;
+//     std::vector<cv::Mat> dst;
+//     std::vector<cv::Rect> roi = {cv::Rect(0,0,tvimage.width,tvimage.height)};
+//     RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, roi, 
+//         dst, m_param_img2tensor, aX, aY, use_subpixel);
+//     if(ret!=RET_CODE::SUCCESS) return ret;
+//     for(auto &&ele: dst){
+//         // cv::imwrite("preprocess_img.png", ele);
+//         unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
+//         memcpy(data, ele.data, ele.total()*3);
+//         input_datas.push_back(data);
+//     }
+//     LOGI << "<- Classification::preprocess_opencv";
+//     return ret;
+// }
+
+// /***image with preprocess with roi+drm**/
+// ucloud::RET_CODE Classification::preprocess_drm(ucloud::TvaiImage& tvimage, ucloud::TvaiRect roi, std::vector<unsigned char*> &input_datas, 
+//     std::vector<float> &aX, std::vector<float> &aY)
+// {
+//     LOGI << "-> Classification::preprocess_drm with roi";
+//     bool valid_input_format = true;
+//     switch (tvimage.format)
+//     {
+//     case TVAI_IMAGE_FORMAT_RGB:
+//     case TVAI_IMAGE_FORMAT_BGR:
+//     case TVAI_IMAGE_FORMAT_NV12:
+//     case TVAI_IMAGE_FORMAT_NV21:
+//         break;
+//     default:
+//         valid_input_format = false;
+//         break;
+//     }
+//     if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+
+//     unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.h);
+//     RET_CODE uret = m_drm->init(tvimage);
+//     if(uret!=RET_CODE::SUCCESS) return uret;
+//     // int ret = m_drm->resize(tvimage,m_InpSp, data);
+//     int ret = m_drm->resize(tvimage, roi, m_param_img2tensor, data);
+//     input_datas.push_back(data);
+//     aX.push_back( (float(m_InpSp.w))/roi.width );
+//     aY.push_back( (float(m_InpSp.h))/roi.height );
+
+// #ifdef VISUAL
+//     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
+//     cv::imwrite("preprocess_drm.jpg", cvimage_show);
+// #endif
+
+//     LOGI << "<- Classification::preprocess_drm with roi";
+//     return RET_CODE::SUCCESS;
+// }
+
+// /***whole image preprocess with drm**/
+// ucloud::RET_CODE Classification::preprocess_drm(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, 
+//     std::vector<float> &aX, std::vector<float> &aY)
+// {
+//     LOGI << "-> Classification::preprocess_drm";
+//     bool valid_input_format = true;
+//     switch (tvimage.format)
+//     {
+//     case TVAI_IMAGE_FORMAT_RGB:
+//     case TVAI_IMAGE_FORMAT_BGR:
+//     case TVAI_IMAGE_FORMAT_NV12:
+//     case TVAI_IMAGE_FORMAT_NV21:
+//         break;
+//     default:
+//         valid_input_format = false;
+//         break;
+//     }
+//     if(!valid_input_format) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+
+//     unsigned char* data = (unsigned char*)std::malloc(3*m_InpSp.w*m_InpSp.w);
+//     RET_CODE uret = m_drm->init(tvimage);
+//     if(uret!=RET_CODE::SUCCESS) return uret;
+//     // int ret = m_drm->resize(tvimage,m_InpSp, data);
+//     int ret = m_drm->resize(tvimage, m_param_img2tensor, data);
+//     input_datas.push_back(data);
+//     aX.push_back( (float(m_InpSp.w))/tvimage.width );
+//     aY.push_back( (float(m_InpSp.h))/tvimage.height );
+
+// #ifdef VISUAL
+//     cv::Mat cvimage_show( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, data);
+//     cv::imwrite("preprocess_drm.jpg", cvimage_show);
+// #endif
+
+//     LOGI << "<- Classification::preprocess_drm";
+//     return RET_CODE::SUCCESS;
+// }
+
+// /***image preprocess with roi+opencv**/
+// ucloud::RET_CODE Classification::preprocess_opencv(ucloud::TvaiImage& tvimage, TvaiRect roi, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY  ){
+//     LOGI << "-> Classification::preprocess_opencv with roi";
+//     bool use_subpixel = false;
+//     std::vector<cv::Mat> dst;
+//     std::vector<cv::Rect> _roi_ = {cv::Rect(roi.x,roi.y,roi.width,roi.height)};
+//     RET_CODE ret = PreProcessModel::preprocess_subpixel(tvimage, _roi_, 
+//         dst, m_param_img2tensor, aX, aY, use_subpixel);
+//     if(ret!=RET_CODE::SUCCESS) return ret;
+//     for(auto &&ele: dst){
+//         #ifdef VISUAL
+//         cv::imwrite("preprocess_opencv.jpg", ele);
+//         #endif
+//         unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
+//         memcpy(data, ele.data, ele.total()*3);
+//         input_datas.push_back(data);
+//     }
+//     LOGI << "<- Classification::preprocess_opencv with roi";
+//     return ret;
+// }

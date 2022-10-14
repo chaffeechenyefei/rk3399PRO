@@ -21,20 +21,20 @@ public:
     virtual ucloud::RET_CODE set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss);
 
 protected:
-    /***whole image preprocess with drm**/
-    virtual ucloud::RET_CODE preprocess_drm(ucloud::TvaiImage& tvimage ,std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
-    /***whole image preprocess with opencv**/
-    virtual ucloud::RET_CODE preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
-    /***image with preprocess with roi+drm**/
-    virtual ucloud::RET_CODE preprocess_drm(ucloud::TvaiImage& tvimage , ucloud::TvaiRect roi,std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
-    /***image preprocess with roi+opencv**/
-    virtual ucloud::RET_CODE preprocess_opencv(ucloud::TvaiImage& tvimage, ucloud::TvaiRect roi, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
+    // /***whole image preprocess with drm**/
+    // virtual ucloud::RET_CODE preprocess_drm(ucloud::TvaiImage& tvimage ,std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
+    // /***whole image preprocess with opencv**/
+    // virtual ucloud::RET_CODE preprocess_opencv(ucloud::TvaiImage& tvimage, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
+    // /***image with preprocess with roi+drm**/
+    // virtual ucloud::RET_CODE preprocess_drm(ucloud::TvaiImage& tvimage , ucloud::TvaiRect roi,std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
+    // /***image preprocess with roi+opencv**/
+    // virtual ucloud::RET_CODE preprocess_opencv(ucloud::TvaiImage& tvimage, ucloud::TvaiRect roi, std::vector<unsigned char*> &input_datas, std::vector<float> &aX, std::vector<float> &aY);
     
     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, float threshold ,ucloud::BBox &bbox);
 
 private:
     std::shared_ptr<BaseModel> m_net = nullptr;
-    std::shared_ptr<ImageUtil> m_drm = nullptr;
+    std::shared_ptr<PreProcess_CPU_DRM_Model> m_cv_preprocess_net = nullptr;
     
     DATA_SHAPE m_InpSp;
     DATA_SHAPE m_OutSp;
