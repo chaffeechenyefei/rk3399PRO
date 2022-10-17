@@ -6,6 +6,7 @@
 #include "utils/module_classify.hpp"
 #include "utils/module_phone.hpp"
 #include "utils/module_retinaface.hpp"
+#include "utils/module_smoke_cig_detection.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -100,6 +101,14 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_); 
     }
     break;   
+    /*
+    * 抽烟
+    */
+    case AlgoAPIName::SMOKING_DETECTOR:{
+        SMOKE_CIG_DETECTION* _ptr_ = new SMOKE_CIG_DETECTION();
+        apiHandle.reset(_ptr_); 
+    }
+    break;       
 
     default:
         std::cout << "ERROR: Current API is not ready yet!" << std::endl;

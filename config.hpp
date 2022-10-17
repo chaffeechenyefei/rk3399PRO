@@ -108,7 +108,7 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::MOTOR_DET,          "yolov5s-conv-motor-20211217_736x416_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::HAND_DET_224x320,   "yolov5s-conv-hand-20220117_224x320_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::HAND_DET_736x416,   "yolov5s-conv-hand-20220118_736x416_mlu220_bs1c1_fp16.cambricon"},
-    {MODELFILENAME::CIG_DET,            "yolov5s-conv-cig-20220311_256x256_mlu220_bs1c1_fp16.cambricon"},
+    {MODELFILENAME::CIG_DET,            rknn_model_path + "yolov5s-conv-cig-20220311_256x256.rknn"},
     {MODELFILENAME::PHONE_CLS_220215,   "phoning-r34_20220215_256x256_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::PHONE_CLS_220302,   rknn_model_path + "resnet34-phone-20220302_256x256.rknn"},
     {MODELFILENAME::HEAD_DET,           "yolov5s-conv-head-20220121_736x416_mlu220_bs1c1_fp16.cambricon"},//20220222

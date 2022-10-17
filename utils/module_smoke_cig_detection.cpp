@@ -50,7 +50,7 @@ RET_CODE SMOKE_CIG_DETECTION::run(TvaiImage &tvimage, VecObjBBox &bboxes, float 
     for(auto &&face_bbox: face_bboxes){
         VecObjBBox target_bboxes;
         ucloud::TvaiRect scaled_face_rect = globalscaleTvaiRect(face_bbox.rect, expand_scale, tvimage.width, tvimage.height);
-        ret = m_cig_detectHandle->run(tvimage, face_bbox.rect, target_bboxes, threshold, nms_threshold);
+        ret = m_cig_detectHandle->run(tvimage, scaled_face_rect, target_bboxes, threshold, nms_threshold);
         if(!target_bboxes.empty()){
             std::sort(target_bboxes.begin(), target_bboxes.end(), box_sort_confidence_max );
             face_bbox.confidence = target_bboxes[0].confidence;
@@ -58,13 +58,15 @@ RET_CODE SMOKE_CIG_DETECTION::run(TvaiImage &tvimage, VecObjBBox &bboxes, float 
             face_bbox.rect = scaled_face_rect;
             face_bbox.objtype = target_bboxes[0].objtype;
             bboxes.push_back(face_bbox);
-        } 
+        } else {//输出人脸数据供检验
+            bboxes.push_back(face_bbox);
+        }
 
         //
-        for(auto &&target_bbox: target_bboxes)
-        {
-            bboxes.push_back(target_bbox);
-        }
+        // for(auto &&target_bbox: target_bboxes)
+        // {
+        //     bboxes.push_back(target_bbox);
+        // }
     }
     return RET_CODE::SUCCESS;
 }

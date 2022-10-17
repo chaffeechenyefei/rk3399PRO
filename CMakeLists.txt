@@ -142,6 +142,10 @@ set_target_properties(ai_core PROPERTIES PUBLIC_HEADER "libai_core.hpp" )
 
 
 include_directories( ${CMAKE_SOURCE_DIR}/3rdparty/ )
+#通过config.hpp配置算法, 测试单个图片
+add_executable(test_one test_one.cpp)
+target_link_libraries(test_one ai_core ${RK_LIBS} dl)
+
 #yolo检测模型单帧测试
 add_executable(test_yolo test_yolo.cpp)
 target_link_libraries(test_yolo ai_core ${RK_LIBS} dl)
