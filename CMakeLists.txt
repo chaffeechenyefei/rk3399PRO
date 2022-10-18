@@ -67,7 +67,7 @@ list(APPEND OPENCV_LIBS ${OPENCV_EXTRA_LIB_PATH}/libtegra_hal.a)
 message(STATUS "opencv libraries: ${OPENCV_LIBS}")
 
 # ========ffmpeg========
-set(FFMPEG_LIB_PATH "${THIRD_PARTY_LIBS}/ffmpeg_n4.3.4/lib")
+set(FFMPEG_LIB_PATH "${THIRD_PARTY_LIBS}/ffmpeg/lib")
 list(APPEND OPENCV_LIBS ${FFMPEG_LIB_PATH}/libavformat.a)
 list(APPEND OPENCV_LIBS ${FFMPEG_LIB_PATH}/libavdevice.a)
 list(APPEND OPENCV_LIBS ${FFMPEG_LIB_PATH}/libavfilter.a)

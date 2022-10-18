@@ -21,6 +21,8 @@
 #include <fstream>
 #include <iostream>
 #include <sys/time.h>
+// #include "utils/module_base.hpp"
+#include "libai_core.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
@@ -162,7 +164,14 @@ static unsigned char *load_image(const char *image_path, rknn_tensor_attr *input
         }
         STBI_FREE(image_data);
         image_data = image_resized;
+      
     }
+    // string savename = image_path;
+    // savename = savename.replace(savename.find("."),4,"_result.jpg");
+    // cv::Mat image(cv::Size(req_width,req_height),CV_8UC3,image_data);
+    // cv::cvtColor(image,image,cv::COLOR_RGB2BGR);
+    // cv::imwrite(savename,image);
+
 
     return image_data;
 }
@@ -180,6 +189,23 @@ int main(int argc, char **argv)
 
     const char *model_path = argv[1];
     const char *img_path = argv[2];
+
+    ifstream file;
+    file.open(img_path);
+    if (!file) {
+        std::cout<<"file "<<img_path<<" cant open!\n"<<std::endl;
+    }
+    string line,filename;
+    vector<string> filelist;
+    while(getline(file,line)){
+        stringstream is(line);
+        while(is>>filename){
+            filelist.push_back(filename);
+            // std::cout<<"filename is "<< filename << "\n";
+        }
+        // std::cout<<std::endl;
+    }
+    // printf("filelist has %d images\n",filelist.size());
 
     // Load RKNN Model
     model = load_model(model_path, &model_len);
@@ -232,73 +258,117 @@ int main(int argc, char **argv)
     }
 
     // Load image
-    unsigned char *input_data = NULL;
-    input_data = load_image(img_path, &input_attrs[0]);
-    cv::Mat im = cv::imread(img_path);
-    printf("opencv image: %d,%d \n", im.cols, im.rows);
-    if (!input_data)
-    {
-        return -1;
-    }
+    // std::shared_ptr<PreProcess_CPU_DRM_Model> im_utils = std::make_shared<PreProcess_CPU_DRM_Model>();
+    // PRE_PARAM param_img2tensor;
+    // param_img2tensor.keep_aspect_ratio = true;//保持长宽比, opencv有效, drm无效
+    // param_img2tensor.pad_both_side = false;//仅进行单边(右下)补齐, drm无效
+    // param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;//转换成RGB格式
+    // param_img2tensor.model_input_shape.w = 256;
+    // param_img2tensor.model_input_shape.h = 256;
+    for (int m = 0;m<filelist.size();m++){
+        string impath = filelist[m];
+        // printf("imagename %s",impath.c_str());
+        string respath = impath;
+        respath = respath.replace(respath.find("."),4,".txt");
+        ofstream out;
+        out.open(respath,ios::trunc);
+        printf("imagename %s",impath.c_str()); 
+        unsigned char *input_data = NULL;
+        input_data = load_image(impath.c_str(), &input_attrs[0]);
 
-    // Set Input Data
-    rknn_input inputs[1];
-    memset(inputs, 0, sizeof(inputs));
-    inputs[0].index = 0;
-    inputs[0].type = RKNN_TENSOR_UINT8;
-    inputs[0].size = input_attrs[0].size;
-    inputs[0].fmt = RKNN_TENSOR_NHWC;
-    inputs[0].buf = input_data;
 
-    ret = rknn_inputs_set(ctx, io_num.n_input, inputs);
-    if (ret < 0)
-    {
-        printf("rknn_input_set fail! ret=%d\n", ret);
-        return -1;
-    }
 
-    // Run
-    printf("rknn_run\n");
-    ret = rknn_run(ctx, nullptr);
-    if (ret < 0)
-    {
-        printf("rknn_run fail! ret=%d\n", ret);
-        return -1;
-    }
+        // cv::Mat im = cv::imread(impath);
+        // printf("opencv image: %d,%d \n", im.cols, im.rows);
+        // cv::cvtColor(im,im,cv::COLOR_BGR2RGB);
+        // ucloud::TvaiImage tvinp;
+        // tvinp.width = im.cols;
+        // tvinp.heights = im.rows;
+        // tvinp.stride = im.cols;
+        // unsigned char* dataptr = (unsigned char *)malloc(im.total()*3);
+        // memcpy(dataptr,im.data,im.total()*3);
+        // tvinp.pData = dataptr;
+        // tvinp.format = ucloud::TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB;
+        // tvinp.dataSize = tvinp.width*tvinp.height*3;
 
-    // Get Output
-    rknn_output outputs[1];
-    memset(outputs, 0, sizeof(outputs));
-    outputs[0].want_float = 1;
-    ret = rknn_outputs_get(ctx, 1, outputs, NULL);
-    if (ret < 0)
-    {
-        printf("rknn_outputs_get fail! ret=%d\n", ret);
-        return -1;
-    }
+        // std::vector<unsigned char*> input_datas;
+        // std::vector<float> aX, aY;
+        // std::vector<float*> output_datas;
 
-    // Post Process
-    for (int i = 0; i < io_num.n_output; i++)
-    {
-        // uint32_t MaxClass[5];
-        // float fMaxProb[5];
-        float *buffer = (float *)outputs[i].buf;
-        uint32_t sz = outputs[i].size / 4;
-
-        printf("output size = %d\n", sz);
-        printf("[ %f, %f ] \n", buffer[0], buffer[1]);
-
-        // rknn_GetTop(buffer, fMaxProb, MaxClass, sz, 5);
-
-        // printf(" --- Top5 ---\n");
-        // for (int i = 0; i < 5; i++)
-        // {
-        //     printf("%3d: %8.6f\n", MaxClass[i], fMaxProb[i]);
+       
+        // ucloud::RET_CODE ret = im_utils->preprocess_drm(tvinp,param_im2tensor,input_datas,aX,aY);
+        // if (ret != ucloud::SUCCESS){
+        //     printf("DRM resize failed!\n");
+        //     return;
         // }
-    }
+        // string resImg = impath;
+        // resImg = resImg.replace(resImg.find("."),4,"_drm.jpg");
+        // cv::Mat tmat(cv::Size(256,256),CV_8UC3,input_datas[0]);
+        // cv::imwrite(resImg,tmat);
 
-    // Release rknn_outputs
-    rknn_outputs_release(ctx, 1, outputs);
+
+
+        if (!input_data)
+        {
+            return -1;
+        }
+
+        // Set Input Data
+        rknn_input inputs[1];
+        memset(inputs, 0, sizeof(inputs));
+        inputs[0].index = 0;
+        inputs[0].type = RKNN_TENSOR_UINT8;
+        inputs[0].size = input_attrs[0].size;
+        inputs[0].fmt = RKNN_TENSOR_NHWC;
+        inputs[0].buf = input_data;
+
+        ret = rknn_inputs_set(ctx, io_num.n_input, inputs);
+        if (ret < 0)
+        {
+            printf("rknn_input_set fail! ret=%d\n", ret);
+            return -1;
+        }
+
+        // Run
+        printf("rknn_run\n");
+        ret = rknn_run(ctx, nullptr);
+        if (ret < 0)
+        {
+            printf("rknn_run fail! ret=%d\n", ret);
+            return -1;
+        }
+
+        // Get Output
+        rknn_output outputs[1];
+        memset(outputs, 0, sizeof(outputs));
+        outputs[0].want_float = 1;
+        ret = rknn_outputs_get(ctx, 1, outputs, NULL);
+        if (ret < 0)
+        {
+            printf("rknn_outputs_get fail! ret=%d\n", ret);
+            return -1;
+        }
+
+        // Post Process
+        for (int i = 0; i < io_num.n_output; i++)
+        {
+            // uint32_t MaxClass[5];
+            // float fMaxProb[5];
+            float *buffer = (float *)outputs[i].buf;
+            uint32_t sz = outputs[i].size / 4;
+            out<<buffer[0]<<" "<<buffer[1]<<" "<<buffer[2];
+
+            // printf("output size = %d\n", sz);
+            // printf("[ %f, %f ] \n", buffer[0], buffer[1]);
+        }
+        out.close();
+        // Release rknn_outputs
+        rknn_outputs_release(ctx, 1, outputs);
+        if (input_data)
+        {
+            stbi_image_free(input_data);
+        }
+    }
 
     // Release
     if (ctx >= 0)
@@ -310,10 +380,11 @@ int main(int argc, char **argv)
         free(model);
     }
 
-    if (input_data)
-    {
-        stbi_image_free(input_data);
-    }
+    // if (input_data)
+    // {
+    //     stbi_image_free(input_data);
+    // }
+    
 
     return 0;
 }
