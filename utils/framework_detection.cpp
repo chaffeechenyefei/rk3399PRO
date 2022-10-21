@@ -18,6 +18,7 @@ RET_CODE AnyDetectionV4ByteTrack::run(TvaiImage &tvimage, VecObjBBox &bboxes, fl
     threshold = clip_threshold(threshold);
     nms_threshold = clip_threshold(nms_threshold);
     BYTETRACKPARM track_param = {threshold, threshold+0.1f};
+    LOGI << "threshold: " << threshold << ", high det: " << threshold +0.1f;
     RET_CODE ret = m_detector->run(tvimage, bboxes, threshold, nms_threshold);
     if(ret!=RET_CODE::SUCCESS) return ret;
 #ifdef TIMING    

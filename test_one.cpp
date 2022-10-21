@@ -63,6 +63,13 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         free(imgBuf);
         if(i == num_loops_each_thread-1) show_bboxes = bboxes;
     }
+    for(auto &&box : show_bboxes){
+        printf("id[%d], type[%d], x,y,w,h = %d,%d,%d,%d, confidence = %.3f, objectness = %.3f \n", 
+        box.track_id, box.objtype,
+        box.rect.x, box.rect.y, box.rect.width, box.rect.height,
+        box.confidence, box.objectness
+        );
+    }
     unsigned char* imgBuf = readImg_to_BGR(datapath, 1280, 720, width, height);
     if(imgBuf){
         drawImg(imgBuf, width, height, show_bboxes, true, true, false, 1);
