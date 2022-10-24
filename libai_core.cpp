@@ -488,3 +488,144 @@ double Clocker::end(std::string title, bool display){
     Timer* cTx = reinterpret_cast<Timer*>(ctx);
     return cTx->end(title, display);
 }
+/*--------------END Clocker------------------*/
+
+
+/*******************************************************************************
+输入argc argv的解析
+chaffee.chen@2022-10-20
+*******************************************************************************/
+/*--------------BEGIN ArgParser------------------*/
+bool ArgParser::add_argument(const std::string &keyword, int default_value , const std::string &helpword){
+    //if(std::is_same<typename std::decay<T>::type,int>::value)
+    std::string valType = "int";
+    m_cmd_int.insert(std::make_pair(keyword, default_value));
+    std::string _helpword = helpword+" ["+valType+"], default value = " + std::to_string(default_value);
+    m_cmd_help.insert(std::make_pair(keyword, _helpword));
+    printf("+ %s\n", _helpword.c_str());
+    return true;
+}
+
+bool ArgParser::add_argument(const std::string &keyword, float default_value , const std::string &helpword){
+    //if(std::is_same<typename std::decay<T>::type,int>::value)
+    std::string valType = "float";
+    m_cmd_float.insert(std::make_pair(keyword, default_value));
+    std::string _helpword = helpword+" ["+valType+"], default value = " + std::to_string(default_value);
+    m_cmd_help.insert(std::make_pair(keyword, _helpword));
+    printf("+ %s\n", _helpword.c_str());
+    return true;
+}
+
+// bool ArgParser::add_argument(const std::string &keyword, bool default_value , const std::string &helpword){
+//     //if(std::is_same<typename std::decay<T>::type,int>::value)
+//     std::string valType = "bool";
+//     m_cmd_bool.insert(std::make_pair(keyword, default_value));
+//     std::string _helpword = helpword+" ["+valType+"], default value = " + (default_value?"true":"false");
+//     m_cmd_help.insert(std::make_pair(keyword, _helpword));
+//     printf("+ %s\n", _helpword.c_str());
+//     return true;
+// }
+
+bool ArgParser::add_argument(const std::string &keyword, const std::string &default_value , const std::string &helpword){
+    std::string valType = "string";
+    m_cmd_str.insert(std::make_pair(keyword, default_value));
+    std::string _helpword = helpword+" ["+valType+"], default value = " + default_value;
+    m_cmd_help.insert(std::make_pair(keyword, _helpword));
+    printf("+ %s\n", _helpword.c_str());
+    return true;
+}
+
+bool ArgParser::parser(int argc, char* argv[]){
+    printf("------------------------------------------\n");
+    printf("parser\n");
+    printf("------------------------------------------\n");
+    for(int i = 0; i < argc; i++){
+        std::string keyword = std::string(argv[i]);
+        // printf("%s ", keyword.c_str());
+        if(keyword=="-help"||keyword=="--help"){
+            print_help();
+            return false;
+        }
+    }
+    printf("start parsering...\n");
+    for(int i = 0 ; i < argc -1; i++ ){
+        std::string keyword = std::string(argv[i]);
+        // printf("%s \n", argv[i]);
+        if(m_cmd_help.find(keyword)==m_cmd_help.end()){
+            // printf("%s command is not known, which will be skipped.\n", keyword.c_str());
+            continue;
+        }
+        if(m_cmd_int.find(keyword)!=m_cmd_int.end()){
+            m_cmd_int[keyword] = std::atoi(argv[i+1]);
+            printf("set [%s] to %d\n", keyword.c_str() ,m_cmd_int[keyword]);
+        }
+        if(m_cmd_str.find(keyword)!=m_cmd_str.end()){
+            m_cmd_str[keyword] = std::string(argv[i+1]);
+            printf("set [%s] to %s\n", keyword.c_str() ,m_cmd_str[keyword].c_str());
+        }
+        // if(m_cmd_bool.find(keyword)!=m_cmd_bool.end()){
+        //     m_cmd_bool[keyword] = std::atoi(argv[i+1]) > 0 ? true:false ;
+        // }
+        if(m_cmd_float.find(keyword)!=m_cmd_float.end()){
+            m_cmd_float[keyword] = std::atof(argv[i+1]);
+            printf("set [%s] to %.3f\n", keyword.c_str() ,m_cmd_float[keyword]);
+        }
+    }
+    // print_help();
+    printf("------------------------------------------\n");
+    return true;
+}
+
+void ArgParser::print_help(){
+    printf("------------------------------------------\n");
+    printf("help\n");
+    printf("------------------------------------------\n");
+    for(auto&& cmd: m_cmd_help){
+        printf("%s : %s\n", cmd.first.c_str(), cmd.second.c_str());
+    }
+    printf("------------------------------------------\n");
+}
+
+float ArgParser::get_value_float(const std::string &keyword){
+    if(m_cmd_help.find(keyword)==m_cmd_help.end()){
+        printf("%s keyword unknown, will be skipped and return 0\n", keyword.c_str());
+        return 0;
+    }
+    if(m_cmd_float.find(keyword)!=m_cmd_float.end()){
+        return m_cmd_float[keyword];
+    }
+    return 0;
+}
+
+int ArgParser::get_value_int(const std::string &keyword){
+    if(m_cmd_help.find(keyword)==m_cmd_help.end()){
+        printf("%s keyword unknown, will be skipped and return 0\n", keyword.c_str());
+        return 0;
+    }
+    if(m_cmd_int.find(keyword)!=m_cmd_int.end()){
+        return m_cmd_int[keyword];
+    }
+    return 0;
+}
+
+// bool ArgParser::get_value_bool(const std::string &keyword){
+//     if(m_cmd_help.find(keyword)==m_cmd_help.end()){
+//         printf("%s keyword unknown, will be skipped and return 0\n", keyword.c_str());
+//         return 0;
+//     }
+//     if(m_cmd_bool.find(keyword)!=m_cmd_bool.end()){
+//         return m_cmd_bool[keyword];
+//     }
+//     return 0;
+// }
+
+std::string ArgParser::get_value_string(const std::string &keyword){
+    if(m_cmd_help.find(keyword)==m_cmd_help.end()){
+        printf("%s keyword unknown, will be skipped and return 0\n", keyword.c_str());
+        return "";
+    }
+    if(m_cmd_str.find(keyword)!=m_cmd_str.end()){
+        return m_cmd_str[keyword];
+    }
+    return "";
+}

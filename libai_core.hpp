@@ -414,6 +414,34 @@ public:
 private:
     void* ctx;
 };
+
+/*******************************************************************************
+输入argc argv的解析 仅支持float/int/string
+chaffee.chen@2022-10-20
+*******************************************************************************/
+class UCLOUD_API_PUBLIC ArgParser{
+public: 
+    ArgParser(){}
+    ~ArgParser(){}
+    bool add_argument(const std::string &keyword, int default_value , const std::string &helpword);
+    bool add_argument(const std::string &keyword, float default_value , const std::string &helpword);
+    // bool add_argument(const std::string &keyword, bool default_value , const std::string &helpword);
+    bool add_argument(const std::string &keyword, const std::string &default_value , const std::string &helpword);
+    bool parser(int argc, char* argv[]);
+    void print_help();
+protected:
+    std::map<std::string,float> m_cmd_float;
+    std::map<std::string,int> m_cmd_int;
+    std::map<std::string,bool> m_cmd_bool;
+    std::map<std::string, std::string> m_cmd_str;
+    std::map<std::string, std::string> m_cmd_help;
+public:
+    float get_value_float(const std::string &keyword);
+    int get_value_int(const std::string &keyword);
+    // bool get_value_bool(const std::string &keyword);
+    std::string get_value_string(const std::string &keyword);
+};
+
 /**
  * 20210917
  * 以下是历史遗留产物, 后期不再更新维护.

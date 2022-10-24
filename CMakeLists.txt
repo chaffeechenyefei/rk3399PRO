@@ -16,7 +16,7 @@ else()
 endif()
 
 #==========全局宏定义==========
-add_definitions(-DVERBOSE=True) #设定时 LOGI<< 触发输出, 否则不输出
+# add_definitions(-DVERBOSE=True) #设定时 LOGI<< 触发输出, 否则不输出
 # add_definitions(-DVISUAL=True)  #设定时会保存一些中间结果图, 仅在debug下使用, 不需要时请注释
 add_definitions(-DUSEDRM=True) #设定时则使用DRM进行前处理 否则使用opencv
 # add_definitions(-DTIMING=True) #是否进行内部耗时显示
