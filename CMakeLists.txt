@@ -159,14 +159,14 @@ target_link_libraries(test_one ai_core ${RK_LIBS} dl)
 add_executable(test_yolo test_yolo.cpp)
 target_link_libraries(test_yolo ai_core ${RK_LIBS} dl)
 
-add_executable(test_resnet test_resnet.cpp)
-target_include_directories(test_resnet PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
-target_link_libraries(test_resnet ${RK_LIBS} dl ${OPENCV_LIBS})
+# add_executable(test_resnet test_resnet.cpp)
+# target_include_directories(test_resnet PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+# target_link_libraries(test_resnet ${RK_LIBS} dl ${OPENCV_LIBS})
 
 #任意模型读取后, 输入输出shape打印
-add_executable(test_any test_any_model.cpp)
-target_include_directories(test_any PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
-target_link_libraries(test_any ${RK_LIBS} dl ${OPENCV_LIBS})
+# add_executable(test_any test_any_model.cpp)
+# target_include_directories(test_any PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+# target_link_libraries(test_any ${RK_LIBS} dl ${OPENCV_LIBS})
 
 #视频读写推理测试
 add_executable(test_video test_video.cpp)

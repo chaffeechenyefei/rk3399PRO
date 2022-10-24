@@ -69,6 +69,7 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         free(imgBuf);
         if(i == num_loops_each_thread-1) show_bboxes = bboxes;
     }
+    printf("total %d bboxes returned\n", show_bboxes.size());
     for(auto &&box : show_bboxes){
         printf("id[%d], type[%d], x,y,w,h = %d,%d,%d,%d, confidence = %.3f, objectness = %.3f \n", 
         box.track_id, box.objtype,

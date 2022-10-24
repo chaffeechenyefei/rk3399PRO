@@ -7,6 +7,7 @@
 #include "utils/module_phone.hpp"
 #include "utils/module_retinaface.hpp"
 #include "utils/module_smoke_cig_detection.hpp"
+#include "utils/module_fire_detection.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -97,6 +98,14 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_);
     }
         break;        
+    case AlgoAPIName::FIRE_DETECTOR_X://火焰检测加强版
+    {
+        FireDetector* _ptr_ = new FireDetector();
+        // vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
+        // _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }
+        break;              
     /*
     * 打电话
     */
