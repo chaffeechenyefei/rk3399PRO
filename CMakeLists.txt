@@ -16,10 +16,19 @@ else()
 endif()
 
 #==========全局宏定义==========
-# add_definitions(-DVERBOSE=True) #设定时 LOGI<< 触发输出, 否则不输出
+add_definitions(-DVERBOSE=True) #设定时 LOGI<< 触发输出, 否则不输出
 # add_definitions(-DVISUAL=True)  #设定时会保存一些中间结果图, 仅在debug下使用, 不需要时请注释
 add_definitions(-DUSEDRM=True) #设定时则使用DRM进行前处理 否则使用opencv
 add_definitions(-DTIMING=True) #是否进行内部耗时显示
+
+EXECUTE_PROCESS(COMMAND git log -1 --pretty=format:%h:%s
+        TIMEOUT 100
+        OUTPUT_VARIABLE GIT_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE # 删除字符串尾的换行符
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} # 执行路径
+        )
+message(STATUS "building from git commit, hash:comment ${GIT_VERSION}")
+add_definitions(-DBUILD_VERSION=\"${GIT_VERSION}\")
 
 
 # ========RK3399========
@@ -179,7 +188,7 @@ target_link_libraries(test_phone ai_core ${RK_LIBS} dl)
 add_executable(test_classification test_classification.cpp)
 target_link_libraries(test_classification ai_core ${RK_LIBS} dl )
 
-
+message(STATUS "building from git commit, hash:comment ${GIT_VERSION}")
 message("=========END=========")
 
 

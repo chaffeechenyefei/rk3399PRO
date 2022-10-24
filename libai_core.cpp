@@ -22,6 +22,13 @@ AICoreFactory::AICoreFactory(){LOGI << "AICoreFactory Constructor";}
 AICoreFactory::~AICoreFactory(){}
 
 AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
+#ifdef BUILD_VERSION
+    printf("------------------------LIBAI_CORE-------------------------------\n");
+    printf("-----------------------------------------------------------------\n");
+    printf("current version of libai_core.so is \"%s\"\n", BUILD_VERSION);
+    printf("-----------------------------------------------------------------\n");
+    printf("-----------------------------------------------------------------\n");
+#endif     
     AlgoAPISPtr apiHandle = nullptr;
     switch (apiName)
     {

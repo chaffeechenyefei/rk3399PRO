@@ -132,6 +132,7 @@ void ByteTrackOriginPool::update(TvaiImage &tvimage, VecObjBBox &bboxIN, BYTETRA
     vector<ucloud::CLS_TYPE> triggered;
     for(auto &&clsboxes: clss_bboxes){//loop class
         cam_class_uuid uuid = get_cam_class_uuid(cam_uuid,  clsboxes.first);
+        LOGI << "cam uuid: " << uuid;
         add_trackor(uuid, params);
         triggered.push_back(clsboxes.first);
         vector<bytetrack_origin::Object> vecObjIN;
