@@ -21,7 +21,7 @@ endif()
 add_definitions(-DUSEDRM=True) #设定时则使用DRM进行前处理 否则使用opencv
 # add_definitions(-DTIMING=True) #是否进行内部耗时显示
 
-EXECUTE_PROCESS(COMMAND git log -1 --pretty=format:%h:%s
+EXECUTE_PROCESS(COMMAND git log -1 --pretty=format:%cD<hash>%h<note>%s
         TIMEOUT 100
         OUTPUT_VARIABLE GIT_VERSION
         OUTPUT_STRIP_TRAILING_WHITESPACE # 删除字符串尾的换行符
