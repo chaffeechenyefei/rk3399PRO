@@ -1,5 +1,8 @@
 #include "module_yolo.hpp"
 #include <opencv2/opencv.hpp>
+#include <string>
+#include <fstream>
+#include <sstream>
 using namespace ucloud;
 using namespace std;
 // using namespace cv;
@@ -201,6 +204,99 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 }
 
 
+RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, VecObjBBox &bboxes, std::string &filename,float threshold, float nms_threshold){
+    // return run_drm(tvimage, bboxes);
+    LOGI << "-> YOLO_DETECTION_NAIVE::run";
+    RET_CODE ret = RET_CODE::SUCCESS;
+    threshold = clip_threshold(threshold);
+    nms_threshold = clip_threshold(nms_threshold);
+
+    switch (tvimage.format)
+    {
+    case TVAI_IMAGE_FORMAT_RGB:
+    case TVAI_IMAGE_FORMAT_BGR:
+    case TVAI_IMAGE_FORMAT_NV12:
+    case TVAI_IMAGE_FORMAT_NV21:
+        ret = RET_CODE::SUCCESS;
+        break;
+    default:
+        ret = RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+        break;
+    }
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+    std::vector<unsigned char*> input_datas;
+    std::vector<float> aX, aY;
+    std::vector<float*> output_datas;
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+#ifdef USEDRM
+    ret = m_cv_preprocess_net->preprocess_drm(tvimage, m_param_img2tensor, input_datas, aX, aY);
+#else
+    ret = m_cv_preprocess_net->preprocess_opencv(tvimage, m_param_img2tensor, input_datas, aX, aY);
+#endif
+#ifdef TIMING    
+    m_Tk.end("preprocess");
+#endif
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+cv::Mat cvim(cv::Size(m_InpSp.w,m_InpSp.h),CV_8UC3,input_datas[0]);
+cv::cvtColor(cvim,cvim,cv::COLOR_RGB2BGR);
+string savename = filename;
+savename = savename.replace(savename.find("."),4,"_drm.jpg");
+cv::imwrite(savename,cvim);
+
+string respath = filename;
+respath = respath.replace(respath.find("."),4,".txt");
+ofstream out;
+out.open(respath,ios::trunc);
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+    ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
+#ifdef TIMING    
+    m_Tk.end("general_infer_uint8_nhwc_to_float");
+#endif    
+    if(ret!=RET_CODE::SUCCESS) {
+        for(auto &&t: input_datas) free(t);
+        return ret;
+    }
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+    ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY);
+#ifdef TIMING    
+    m_Tk.end("postprocess");
+#endif    
+    if (!bboxes.empty()){
+        for (auto &bbox:bboxes){
+            out<<bbox.x0<<" "<<bbox.y0<<" "<<bbox.x1<<" "<<bbox.y1<<"\n";
+        }
+    }
+    out.close();
+
+
+    if(ret!=RET_CODE::SUCCESS) {
+        for(auto &&t: input_datas) free(t);
+        for(auto &&t: output_datas) free(t);
+        return ret;
+    }
+
+    for(auto &&t: output_datas){
+        free(t);
+    }
+    for(auto &&t: input_datas){
+        free(t);
+    }
+
+    LOGI << "<- YOLO_DETECTION_NAIVE::run";
+    return RET_CODE::SUCCESS;
+}
+
+
 RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox &bboxes, float threshold, float nms_threshold){
     // return run_drm(tvimage, bboxes);
     LOGI << "-> YOLO_DETECTION_NAIVE::run with roi";
@@ -275,6 +371,7 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox
     LOGI << "<- YOLO_DETECTION_NAIVE::run with roi";
     return RET_CODE::SUCCESS;
 }
+
 
 ucloud::RET_CODE YOLO_DETECTION_NAIVE::postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold, 
     ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY)

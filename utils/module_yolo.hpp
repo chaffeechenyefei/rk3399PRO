@@ -6,6 +6,7 @@
 #include "module_track.hpp"
 #include <atomic>
 #include "framework_detection.hpp"
+#include <string>
 
 // class YOLO_DETECTION;//带跟踪
 class YOLO_DETECTION_NAIVE;//不带跟踪
@@ -27,6 +28,7 @@ public:
     virtual ~YOLO_DETECTION_NAIVE();
     virtual void release();
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, std::string> &modelpath);
+    virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, std::string &filename, float threshold=0.5, float nms_threshold=0.6);
     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6);
     virtual ucloud::RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);
     virtual ucloud::RET_CODE set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss);
