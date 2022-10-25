@@ -29,6 +29,7 @@ namespace ucloud{
 
 class UCLOUD_API_PUBLIC AICoreFactory;//算法创建工厂前置声明, 方便索引
 class UCLOUD_API_PUBLIC AlgoAPI;//算法对外接口前置声明, 方便索引
+typedef struct tagWeightData WeightData;//模型结构体
 
 //算法功能的枚举
 typedef enum _AlgoAPIName{
@@ -78,6 +79,11 @@ typedef enum _InitParam{
     TRACK_MODEL         = 1, //跟踪模型
     SUB_MODEL           = 2, //模型级联时, 主模型用于初步检测, 次模型用于二次过滤, 提高精度
 }InitParam;
+
+typedef struct tagWeightData{
+    unsigned char* pData;
+    int size;/*size_t*/
+}WeightData;
 
 typedef enum _APIParam{
     OBJ_THRESHOLD      = 0, //目标检测阈值/分类阈值
@@ -295,6 +301,7 @@ public:
     virtual ~AlgoAPI(){};
     /*****************************外部使用**************************************/
     virtual RET_CODE init(std::map<InitParam, std::string> &modelpath){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
+    virtual RET_CODE init(std::map<InitParam, WeightData> &weightConfig){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     virtual RET_CODE run(TvaiImage& tvimage, VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     /**
      * 返回检测的类别, 或返回适用的类别
@@ -307,6 +314,10 @@ public:
     //默认情况下, 输入一个模型地址则用于BASE_MODEL 
     virtual RET_CODE init(const std::string &modelpath){
         std::map<InitParam, std::string> config = {{InitParam::BASE_MODEL, modelpath}};
+        return init(config);
+        }
+    virtual RET_CODE init(WeightData weightConfig){
+        std::map<InitParam, WeightData> config = {{InitParam::BASE_MODEL, weightConfig}};
         return init(config);
         }
     virtual RET_CODE set_output_cls_order(std::vector<CLS_TYPE> &output_clss){return RET_CODE::ERR_VIRTUAL_FUNCTION;}

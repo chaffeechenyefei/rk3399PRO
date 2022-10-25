@@ -19,6 +19,7 @@ class FireDetector:public ucloud::AlgoAPI{
     }
     virtual ~FireDetector(){};
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam,std::string> &modelpath);
+    virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage,ucloud::VecObjBBox &bboxes,float threshold=0.5, float nms_threshold=0.5);
     //实际使用m_clsHandle管理的cls_type
     virtual ucloud::RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);

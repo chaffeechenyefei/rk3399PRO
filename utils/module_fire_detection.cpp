@@ -4,6 +4,45 @@ using namespace ucloud;
 using namespace std;
 
 
+ucloud::RET_CODE FireDetector::init(std::map<ucloud::InitParam,ucloud::WeightData> &weightConfig){
+    LOGI<<"->FireDetector init";
+    ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
+    WeightData dnetPath,cnetPath;
+    if (weightConfig.find(ucloud::InitParam::BASE_MODEL)==weightConfig.end()){
+        printf("**[%s][%d]FireDetector fail to search detector and classify model\n", __FILE__, __LINE__);
+        ret = ucloud::RET_CODE::ERR_INIT_PARAM_FAILED;
+        return ret;
+    }
+    dnetPath = weightConfig[ucloud::InitParam::BASE_MODEL];
+    cnetPath = weightConfig[ucloud::InitParam::SUB_MODEL];
+
+
+    vector<CLS_TYPE> yolov5s_target = {CLS_TYPE::OTHERS};
+    m_detectHandle->set_output_cls_order(yolov5s_target);
+    ret = m_detectHandle->init(dnetPath);
+    if(ret!=RET_CODE::SUCCESS){
+        printf("ERR::FireDetector m_detectHandle init return [%d]\n", ret);
+        return ret;
+    }
+
+    ret = m_clsHandle->init(cnetPath);
+    if (ret!=ucloud::RET_CODE::SUCCESS){
+        printf("** FireDetector classfication init failed\n");
+        return ret;
+    }
+    vector<CLS_TYPE> classify_target = {CLS_TYPE::OTHERS, CLS_TYPE::FIRE};
+    m_clsHandle->set_output_cls_order(classify_target);
+    // vector<CLS_TYPE> output_dim_cls_order = {CLS_TYPE::OTHERS, m_cls, CLS_TYPE::OTHERS};
+    // m_clsHandle->set_output_cls_order(output_dim_cls_order);
+    if (ret!=ucloud::RET_CODE::SUCCESS){
+        printf("** FireDetector failed\n");
+        return ret;
+    }
+    
+    return ret;
+}
+
+
 ucloud::RET_CODE FireDetector::init(std::map<ucloud::InitParam,std::string> &modelpath){
     LOGI<<"->FireDetector init";
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;

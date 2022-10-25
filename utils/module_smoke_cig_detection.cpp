@@ -10,6 +10,34 @@ static bool box_sort_confidence_max(const BBox& a, const BBox& b){
  * SMOKE_CIG_DETECTION
  * chaffee.chen@ucloud.cn 2022-10-12
 *******************************************************************************/
+RET_CODE SMOKE_CIG_DETECTION::init(std::map<InitParam, ucloud::WeightData> &weightConfig){
+    LOGI << "-> SMOKE_CIG_DETECTION::init";
+    WeightData face_detect_modelpath ,cig_detect_modelpath;
+    if(weightConfig.find(InitParam::BASE_MODEL)==weightConfig.end() || \
+        weightConfig.find(InitParam::SUB_MODEL)==weightConfig.end()) {
+            std::cout << weightConfig.size() << endl;
+            for(auto param: weightConfig){
+                printf( "[%d]:[%s], ", param.first, param.second);
+            }
+            printf("ERR:: SmokingDetectionV2->init() still missing models\n");
+            return RET_CODE::ERR_INIT_PARAM_FAILED;
+        }
+    RET_CODE ret = RET_CODE::FAILED;
+    face_detect_modelpath = weightConfig[InitParam::BASE_MODEL];
+    cig_detect_modelpath = weightConfig[InitParam::SUB_MODEL];
+
+    //face detection
+    ret = m_face_detectHandle->init(face_detect_modelpath);
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+    //cig detection
+    ret = m_cig_detectHandle->init(cig_detect_modelpath);
+    if(ret!=RET_CODE::SUCCESS) return ret;
+    vector<CLS_TYPE> cls_types = {m_cls};
+    m_cig_detectHandle->set_output_cls_order(cls_types);
+    
+    return RET_CODE::SUCCESS;
+}
 
 RET_CODE SMOKE_CIG_DETECTION::init(std::map<InitParam, std::string> &modelpath){
     LOGI << "-> SMOKE_CIG_DETECTION::init";

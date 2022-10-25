@@ -18,6 +18,44 @@ void PhoneDetector::transform_box_to_ped_box(VecObjBBox &in_boxes){
     return;
 }
 
+
+ucloud::RET_CODE PhoneDetector::init(std::map<InitParam, ucloud::WeightData> &weightConfig){
+    LOGI<<"->PhoneDetector init";
+    ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
+    WeightData dnetPath,cnetPath;
+    if (weightConfig.find(ucloud::InitParam::BASE_MODEL)==weightConfig.end()||
+    weightConfig.find(ucloud::InitParam::SUB_MODEL)==weightConfig.end()){
+        LOGI<<"PhoneDetector fail to search detector and classify model";
+        ret = ucloud::RET_CODE::ERR_INIT_PARAM_FAILED;
+        return ret;
+    }
+    dnetPath = weightConfig[ucloud::InitParam::BASE_MODEL];
+    cnetPath = weightConfig[ucloud::InitParam::SUB_MODEL];
+
+
+    vector<CLS_TYPE> yolov5s_conv_9 = {CLS_TYPE::PEDESTRIAN, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR};
+    m_ped_detectHandle->set_output_cls_order(yolov5s_conv_9);
+    ret = m_ped_detectHandle->init(dnetPath);
+    if(ret!=RET_CODE::SUCCESS){
+        printf("ERR::PhoningDetection m_ped_detectHandle init return [%d]\n", ret);
+        return ret;
+    }
+
+    ret = m_clsHandle->init(cnetPath);
+    if (ret!=ucloud::RET_CODE::SUCCESS){
+        printf("** PhoneDetector phone classfication init failed\n");
+        return ret;
+    }
+    // vector<CLS_TYPE> output_dim_cls_order = {CLS_TYPE::OTHERS, m_cls, CLS_TYPE::OTHERS};
+    // m_clsHandle->set_output_cls_order(output_dim_cls_order);
+    if (ret!=ucloud::RET_CODE::SUCCESS){
+        printf("** PhoneDetector person detector failed\n");
+        return ret;
+    }
+    
+    return ret;
+}
+
 ucloud::RET_CODE PhoneDetector::init(std::map<ucloud::InitParam,std::string> &modelpath){
     LOGI<<"->PhoneDetector init";
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;

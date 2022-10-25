@@ -375,5 +375,34 @@ void print_all_task(){
 }
 
 
+unsigned char * readfile(const char *filename, int *model_size)
+{
+    FILE *fp = fopen(filename, "rb");
+    if (fp == nullptr)
+    {
+        printf("fopen %s fail!\n", filename);
+        fflush(stdout);
+        return nullptr;
+    }
+    fseek(fp, 0, SEEK_END);
+    int model_len = ftell(fp);
+    unsigned char *model = (unsigned char *)malloc(model_len);
+    fseek(fp, 0, SEEK_SET);
+    if (model_len != fread(model, 1, model_len, fp))
+    {
+        printf("fread %s fail!\n", filename);
+        fflush(stdout);
+        free(model);
+        return nullptr;
+    }
+    *model_size = model_len;
+    if (fp)
+    {
+        fclose(fp);
+    }
+    return model;
+}
+
+
 
 

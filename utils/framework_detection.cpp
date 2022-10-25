@@ -40,8 +40,17 @@ RET_CODE AnyDetectionV4ByteTrack::init(std::map<InitParam, std::string> &modelpa
     return m_detector->init(modelpath);
 }
 
+RET_CODE AnyDetectionV4ByteTrack::init(std::map<InitParam, WeightData> &weightConfig){
+    LOGI << "-> AnyDetectionV4ByteTrack::init";
+    return m_detector->init(weightConfig);
+}
+
 RET_CODE AnyDetectionV4ByteTrack::init(const std::string &modelpath){
     return m_detector->init(modelpath);
+}
+
+RET_CODE AnyDetectionV4ByteTrack::init(WeightData weightConfig){
+    return m_detector->init(weightConfig);
 }
 
 RET_CODE AnyDetectionV4ByteTrack::get_class_type(std::vector<CLS_TYPE> &valid_clss){

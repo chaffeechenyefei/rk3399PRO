@@ -31,7 +31,9 @@ class AnyDetectionV4ByteTrack:public ucloud::AlgoAPI{
 public:
     AnyDetectionV4ByteTrack();
     virtual RET_CODE init(std::map<ucloud::InitParam, std::string> &modelpath);
+    virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
     virtual RET_CODE init(const std::string &modelpath);
+    virtual RET_CODE init(ucloud::WeightData weightConfig);
     virtual ~AnyDetectionV4ByteTrack(){};
     virtual RET_CODE run(TvaiImage &tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.55, float nms_threshold=0.6);
     virtual RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);

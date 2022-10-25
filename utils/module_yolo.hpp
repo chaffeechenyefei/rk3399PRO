@@ -27,6 +27,7 @@ public:
     virtual ~YOLO_DETECTION_NAIVE();
     virtual void release();
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, std::string> &modelpath);
+    virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6);
     virtual ucloud::RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);
     virtual ucloud::RET_CODE set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss);
