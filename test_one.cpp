@@ -103,7 +103,14 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         box.confidence, box.objectness
         );
     }
-    unsigned char* imgBuf = readImg_to_BGR(datapath, W, H, width, height);
+
+    unsigned char* imgBuf = nullptr;
+    if(datapath.find(".yuv") != std::string::npos){//如果输入图像后缀是YUV则直接读取
+        imgBuf = yuv_reader(datapath, W, H , true);
+    } else{
+        imgBuf = readImg_to_BGR(datapath, W, H, width, height);
+    }
+    
     if(imgBuf){
         drawImg(imgBuf, width, height, show_bboxes, true, true, false, 1);
         writeImg("result.jpg", imgBuf, width , height);

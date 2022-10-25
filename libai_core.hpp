@@ -367,7 +367,7 @@ UCLOUD_API_PUBLIC void freeImg(unsigned char** imgPtr);
 UCLOUD_API_PUBLIC void drawImg(unsigned char* img, int width, int height, VecObjBBox &bboxs, \
         bool disp_landmark=false ,bool disp_label=false, bool use_rand_color=true, int color_for_trackid_or_cls = 0);
 //读取yuv和rgb的二进制文件流, 便于测试
-UCLOUD_API_PUBLIC unsigned char* yuv_reader(std::string filename, int w=1920, int h=1080);
+UCLOUD_API_PUBLIC unsigned char* yuv_reader(std::string filename, int w=1920, int h=1080, bool trans2bgr=false);
 UCLOUD_API_PUBLIC unsigned char* rgb_reader(std::string filename, int w=1920, int h=1080);        
 //视频读取基于opencv
 class UCLOUD_API_PUBLIC VIDOUT{

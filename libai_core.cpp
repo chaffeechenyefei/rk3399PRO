@@ -315,7 +315,7 @@ void ucloud::drawImg(unsigned char* img, int width, int height, VecObjBBox &bbox
 }
 
 
-unsigned char* ucloud::yuv_reader(std::string filename, int w, int h){
+unsigned char* ucloud::yuv_reader(std::string filename, int w, int h, bool trans2bgr){
     std::ifstream fin(filename, std::ios::binary);
     int l = fin.tellg();
     fin.seekg(0, std::ios::end);
@@ -328,7 +328,16 @@ unsigned char* ucloud::yuv_reader(std::string filename, int w, int h){
     unsigned char* yuvdata = (unsigned char*)malloc(int(wh/2*3)*sizeof(unsigned char));
     fin.read( reinterpret_cast<char*>(yuvdata) , int(wh/2*3)*sizeof(unsigned char));
     fin.close();
-    return yuvdata;
+    if(!trans2bgr)
+        return yuvdata;
+    else{
+        unsigned char* bgrdata = (unsigned char*)malloc(int(wh*3)*sizeof(unsigned char));
+        cv::Mat img(h/2*3,w,CV_8UC1,yuvdata);
+        cv::Mat bgr(h,w,CV_8UC3, bgrdata);
+        cv::cvtColor(img, bgr, CV_YUV2BGR_NV21);
+        free(yuvdata);
+        return bgrdata;
+    }
 }
 
 unsigned char* ucloud::rgb_reader(std::string filename, int w, int h){
