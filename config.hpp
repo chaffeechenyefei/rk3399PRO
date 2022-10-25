@@ -37,6 +37,8 @@ typedef enum _TASKNAME{
     PED_CAR_NONCARV2  = 23,//人车非检测
     LICPLATE        = 24,//车牌检测+车牌识别
 
+    TASK_END,
+
     HAND_DET        = 50,//手的检测 224x320
     HAND_L_DET      = 51,//手的检测 736x416
     JSON            = 100,//用户自定义json形式
@@ -122,8 +124,8 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
 
 };
 
-bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAPIName &apiName, std::map<InitParam, std::string> &init_param, int &use_batch){
-    std::cout << "=============parser start=================" << std::endl;
+bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAPIName &apiName, std::map<InitParam, std::string> &init_param, int &use_batch, bool displayTask=false){
+    if(!displayTask) std::cout << "=============parser start=================" << std::endl;
     string taskDesc;
     use_batch = 1;
     threshold = 0.2;
@@ -344,13 +346,32 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         break;
     }
 
-    std::cout << "TASK: " << taskDesc << ", threshold = " << threshold << ", nms_threshold = " << nms_threshold << std::endl;
-    std::cout << "cambricon files:" << std::endl;
-    for(auto param: init_param){
-        std::cout << param.first << "," << param.second << std::endl;
+    if(retcode){
+        printf("*taskid %d: %s, threshold(nms)=%1.2f (%1.2f)\n", int(taskid), taskDesc.c_str(), threshold, nms_threshold);
+        // std::cout << "TASK: " << taskDesc << ", threshold = " << threshold << ", nms_threshold = " << nms_threshold << std::endl;
+        if(!displayTask) {
+            for(auto &&param: init_param)
+                printf("  |__ (%d) %s\n", param.first, param.second.c_str());
+        }
+    } else {
+        printf("taskid %d not found\n", int(taskid));
     }
-    std::cout << "=============parser end=================" << std::endl;
+        // std::cout << "cambricon files:" << std::endl;
+    // for(auto param: init_param){
+    //     std::cout << param.first << "," << param.second << std::endl;
+    // }
+    if(!displayTask) std::cout << "=============parser end=================" << std::endl;
     return retcode;
+}
+
+void print_all_task(){
+    for(int i = 0; i < int(TASKNAME::TASK_END); i++){
+        float threshold, nms_threshold;
+        int use_batch;
+        std::map<InitParam, std::string> init_param;
+        ucloud::AlgoAPIName algoname;
+        task_parser(TASKNAME(i),threshold, nms_threshold,algoname, init_param, use_batch, true);
+    }
 }
 
 

@@ -99,7 +99,13 @@ int main(int argc, char **argv)
     myParser.add_argument("-threshold",-1, "threshold(if less than 0, value from task parser will be applied.)");
     myParser.add_argument("-w", 1280, "input image width");
     myParser.add_argument("-h", 720, "input image height");
+    myParser.add_argument("-list",0, "list all the task");
     if(!myParser.parser(argc, argv)) return -1;
+
+    if(myParser.get_value_int("-list")>0){
+        print_all_task();
+        return -1;
+    }
 
     bool use_track = true;
     int num_loops = myParser.get_value_int("-loop");
