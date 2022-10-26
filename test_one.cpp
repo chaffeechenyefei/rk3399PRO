@@ -97,9 +97,11 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
     }
     printf("total %d bboxes returned\n", show_bboxes.size());
     for(auto &&box : show_bboxes){
-        printf("id[%d], type[%d], x,y,w,h = %d,%d,%d,%d, confidence = %.3f, objectness = %.3f \n", 
+        printf("id[%d], type[%d], [rect]x,y,w,h = %d,%d,%d,%d, (x0y0x1y1,xywh = %d,%d,%d,%d, %d,%d,%d,%d) confidence = %.3f, objectness = %.3f \n", 
         box.track_id, box.objtype,
         box.rect.x, box.rect.y, box.rect.width, box.rect.height,
+        int(box.x0),int(box.y0),int(box.x1),int(box.y1),
+        int(box.x), int(box.y), int(box.w), int(box.h),
         box.confidence, box.objectness
         );
     }
