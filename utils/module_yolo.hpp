@@ -41,7 +41,7 @@ protected:
 
     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, ucloud::TvaiRect roi, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
-
+    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY,const vector<vector<int> > anchors,const vector<int> strides);
     /** mode=0: Detect Layer标准输出
      * 模型输出Tensor的维度:
      * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
@@ -51,6 +51,8 @@ protected:
      **/    
     virtual bool check_output_dims_1LX();
     virtual ucloud::RET_CODE rknn_output_to_boxes_1LX( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes); 
+    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes, const vector<vector<int> > &anchors, const vector<int> &strides);
+    
     float clip_threshold(float x);
     float clip_nms_threshold(float x);
 
@@ -84,6 +86,7 @@ private:
     float m_default_threshold = 0.55;
     float m_default_nms_threshold = 0.6;
 
+   
 
 #ifdef TIMING
     Timer m_Tk;

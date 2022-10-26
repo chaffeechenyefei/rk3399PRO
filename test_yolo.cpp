@@ -63,8 +63,8 @@ int main(int argc, char **argv)
     // printf("imlst size %d",imlst.size());
 
     int img_mode = 1;
-    float threshold = 0.6;
-    float nms = 0.4;
+    float threshold = 0.2;
+    float nms = 0.6;
     int fmt_w = 1280; int fmt_h = 720;
     ucloud::TvaiRect roi = {0,0,fmt_w/2, fmt_h};
     bool use_roi = false;

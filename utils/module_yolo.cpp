@@ -7,6 +7,32 @@ using namespace ucloud;
 using namespace std;
 // using namespace cv;
 
+
+// static inline uint8_t qnt_f32_to_affine(float f32, uint8_t zp, float scale)
+// {
+//     float dst_val = (f32 / scale) + zp;
+//     uint8_t res = (uint8_t)__clip(dst_val, 0, 255);
+//     return res;
+// }
+
+// static inline float deqnt_affine_to_f32(uint8_t qnt, uint8_t zp, float scale)
+// {
+//     return ((float)qnt - (float)zp) * scale;
+// }
+
+static inline float sigmoid(float x)
+{
+    return 1.0 / (1.0 + expf(-x));
+}
+
+static inline float unsigmoid(float y)
+{
+    return -1.0 * logf((1.0 / y) - 1.0);
+}
+
+
+
+
 /*******************************************************************************
  * 内部函数
 *******************************************************************************/
@@ -264,10 +290,19 @@ out.open(respath,ios::trunc);
         return ret;
     }
 
+vector<int> anchor0 = {10, 13, 16, 30, 33, 23};
+vector<int> anchor1 = {30, 61, 62, 45, 59, 119};
+vector<int> anchor2 = {116, 90, 156, 198, 373, 326};
+vector<vector<int> > anchors;
+anchors.push_back(anchor0);
+anchors.push_back(anchor1);
+anchors.push_back(anchor2);
+vector<int> strides = {8, 16, 32}; 
+
 #ifdef TIMING    
     m_Tk.start();
 #endif
-    ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY);
+    ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY, anchors,strides);
 #ifdef TIMING    
     m_Tk.end("postprocess");
 #endif    
@@ -427,6 +462,35 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::postprocess(std::vector<float*> &output_d
     return RET_CODE::SUCCESS;
 }
 
+ucloud::RET_CODE YOLO_DETECTION_NAIVE::postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold, 
+    ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY, const std::vector<vector<int> >  anchors, const std::vector<int> strides)
+{
+    LOGI << "-> YOLO_DETECTION_NAIVE::postprocess";
+    if(output_datas.empty()) return RET_CODE::ERR_POST_EXE;
+
+    std::vector<VecObjBBox> vecBox;
+    VecObjBBox vecBox_after_nms;
+    rknn_output_to_boxes_1LX(output_datas, threshold, vecBox, anchors, strides);
+    int n = 0;
+    for(auto &&box: vecBox){
+        n+=box.size();
+    }
+    LOGI << "rknn_output_to_boxes " << n;
+    base_nmsBBox(vecBox, nms_threshold , NMS_MIN ,vecBox_after_nms );
+    LOGI << "after nms " << vecBox_after_nms.size() << std::endl;
+    base_transform_xyxy_xyhw(vecBox_after_nms, 1.0, aX[0], aY[0]);
+    bboxes = vecBox_after_nms;
+    // LOGI << "after filter " << bboxes.size() << std::endl;
+    std::vector<VecObjBBox>().swap(vecBox);
+    VecObjBBox().swap(vecBox_after_nms);
+    vecBox.clear();
+    LOGI << "<- YOLO_DETECTION_NAIVE::postprocess";
+    return RET_CODE::SUCCESS;
+}
+
+
+
+
 /**
  * 输入Tensor的维度:
  * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
@@ -489,6 +553,113 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<flo
     LOGI << "-> YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX";
     return RET_CODE::SUCCESS;
 }
+
+
+ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes, const vector<vector<int> > &anchors, const vector<int> &strides){
+    // const int anchors[3][6] = {{10, 13, 16, 30, 33, 23},{30, 61, 62, 45, 59, 119},{116, 90, 156, 198, 373, 326}};
+    // const int anchor1[6] = {30, 61, 62, 45, 59, 119};
+    // const int anchor2[6] = {116, 90, 156, 198, 373, 326};
+    // const int strides[3] = {8, 16, 32};
+    if (anchors.size()!=strides.size()){
+        LOGI<<"-> YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX anchors size dont match strides size!";
+    }
+    // printf("---->YOLO_DETECTION_NAIVE::step into decode step!\n");
+    
+    if (strides.size()!=m_strides.size()){
+        // m_strides.swap(strides);
+        m_strides = strides;
+    }
+    int NC = m_nc;
+    int layers_num = m_nl;
+    int input_h = m_param_img2tensor.model_input_shape.h;
+    int input_w = m_param_img2tensor.model_input_shape.w;
+    int prior_box_size = 5+NC;//5+1
+    // int object_num = prior_box_size - 5;
+    // float *layer_large = output_datas[0];//center x,y
+    // float *layer_median = output_datas[1];
+    // float *layer_small = output_datas[2];
+    for (int i=0; i<m_unique_clss_map.size(); i++){
+        bboxes.push_back(VecObjBBox());
+    }
+    float thres_sigmoid = unsigmoid(threshold);
+     printf("----->>>> input_h %d,input_w %d, layers_num %d, NC %d  thresh is %f!\n",input_h,input_w,layers_num,NC,thres_sigmoid);
+    for (int layer_id=0;layer_id<layers_num;layer_id++){
+        float *layer = output_datas[layer_id];
+        int grid_h = input_h/strides[layer_id];
+        int grid_w = input_w/strides[layer_id];
+        int grid_len = grid_h*grid_w;
+        int stride = strides[layer_id];
+        printf("stride is %d grid_h %d  grid_w %d\n",stride,grid_h,grid_w);
+        vector<int> anchor = anchors[layer_id];
+        // for (auto item:anchor){
+        //     cout<< item << " "<<endl; 
+        // }
+        for (int a =0;a<3;a++){          
+            for (int i=0;i<grid_h;i++){
+                for (int j=0;j<grid_w;j++){
+                    float box_confidence = layer[(prior_box_size * a + 4) * grid_len + i * grid_w + j];
+                    // if (a==0)
+                    //     printf("box confidence is %f\n",box_confidence);
+                    if (box_confidence >= thres_sigmoid){
+                        BBox fbox; 
+                        int offset = (prior_box_size * a) * grid_len + i * grid_w + j;
+                        float *in_ptr = layer + offset;
+                        float box_x = sigmoid(*in_ptr) * 2.0 - 0.5;
+                        float box_y = sigmoid(in_ptr[grid_len]) * 2.0 - 0.5;
+                        float box_w = sigmoid(in_ptr[2 * grid_len]) * 2.0;
+                        float box_h = sigmoid(in_ptr[3 * grid_len]) * 2.0;
+                        printf("bbox x %f, y %f\n",box_x,box_y);
+                        box_x = (box_x + j) * (float)stride;
+                        box_y = (box_y + i) * (float)stride;
+                        box_w = box_w * box_w * (float)anchor[a * 2];
+                        box_h = box_h * box_h * (float)anchor[a * 2 + 1];
+                        box_x -= (box_w / 2.0);
+                        box_y -= (box_h / 2.0);
+                        
+                        fbox.x0 = box_x - (box_w / 2.0);
+                        fbox.y0 = box_y - (box_h / 2.0);
+                        fbox.x1 = box_x + (box_w / 2.0);
+                        fbox.y1 = box_y + (box_h / 2.0);
+                        fbox.w  = box_w;
+                        fbox.h  = box_h;
+                        float maxClassProbs = in_ptr[5 * grid_len];
+                        int maxid = 0; 
+                        // argmax(confidence, NC , maxid, maxClassProbs);
+                        for (int k = 1; k < NC; ++k)
+                        {
+                            float prob = in_ptr[(5 + k) * grid_len];
+                            if (prob > maxClassProbs)
+                            {
+                                maxid = k;
+                                maxClassProbs = prob;
+                            }
+                        }
+                        float box_conf_f32 = sigmoid(box_confidence);
+                        float class_prob_f32 = sigmoid(maxClassProbs);
+                        fbox.objectness = box_conf_f32;
+                        fbox.confidence = box_conf_f32*class_prob_f32;
+                        fbox.quality = class_prob_f32;
+                        if (maxid < 0 || m_clss.empty())
+                            fbox.objtype = CLS_TYPE::UNKNOWN;
+                        else
+                            fbox.objtype = m_clss[maxid];
+                        if(m_unique_clss_map.find(fbox.objtype)!=m_unique_clss_map.end())
+                            bboxes[m_unique_clss_map[fbox.objtype]].push_back(fbox);
+
+                    }
+                }
+            }
+        }   
+    }
+    LOGI << "-> YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX";
+    return RET_CODE::SUCCESS;
+}
+
+
+
+
+
+
 
 
 

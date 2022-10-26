@@ -368,8 +368,8 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(
 
     // Trans output result to output_datas
     for(int i=0; i < m_outputAttr.size(); i++){
-        // int hwc = m_outputShape[i].h* m_outputShape[i].w * m_outputShape[i].c;
-        // printf("outputs size = %d, hwc = %d \n", outputs[i].size ,hwc);//assert 4*hwc == output size
+        int hwc = m_outputShape[i].h* m_outputShape[i].w * m_outputShape[i].c;
+        printf("outputs size = %d, hwc = %d \n", outputs[i].size ,hwc);//assert 4*hwc == output size
         float* tmp = (float*)malloc(outputs[i].size);//移交出去的指针
         memcpy(tmp, outputs[i].buf, outputs[i].size);
         output_datas.push_back(tmp);
