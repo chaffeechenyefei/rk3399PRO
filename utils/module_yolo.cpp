@@ -90,43 +90,21 @@ RET_CODE YOLO_DETECTION_NAIVE::init(std::map<InitParam, WeightData> &weightConfi
 
 RET_CODE YOLO_DETECTION_NAIVE::init(std::map<ucloud::InitParam, std::string> &modelpath){
     LOGI << "-> YOLO_DETECTION_NAIVE::init";
-    RET_CODE ret = RET_CODE::SUCCESS;
-    if( modelpath.find(InitParam::BASE_MODEL) == modelpath.end() ){
-        LOGI << "base model not found in modelpath";
-        return RET_CODE::ERR_INIT_PARAM_FAILED;
+    std::map<InitParam, WeightData> weightConfig;
+    for(auto &&modelp: modelpath){
+        int szBuf = 0;
+        unsigned char* tmpBuf = readfile(modelp.second.c_str(),&szBuf);
+        weightConfig[modelp.first] = WeightData{tmpBuf,szBuf};
     }
-    // m_net->release();
-    bool useDRM = false;
-    #ifdef TIMING    
-    m_Tk.start();
-    #endif
-    ret = m_net->base_init(modelpath[InitParam::BASE_MODEL], useDRM);
-    #ifdef TIMING    
-    m_Tk.end("model loading");
-    #endif
+    RET_CODE ret = init(weightConfig);
+    for(auto &&wC: weightConfig){
+        free(wC.second.pData);
+    }
     if(ret!=RET_CODE::SUCCESS) return ret;
-    //SISO的体现, 都只取index0的数据
-    if(m_InpNum != m_net->get_input_shape().size()){
-        printf("**[%s][%d], m_InpNum[%d]!=m_net->get_input_shape().size()[%d]\n", __FILE__, __LINE__, m_InpNum, m_net->get_input_shape().size());
-        return RET_CODE::FAILED;
-    }
-    if(m_OtpNum != m_net->get_output_shape().size()){
-        printf("**[%s][%d], m_OtpNum[%d]!=m_net->get_output_shape().size()[%d]\n", __FILE__, __LINE__, m_OtpNum, m_net->get_output_shape().size());
-        return RET_CODE::FAILED;
-    }
-    m_InpSp = m_net->get_input_shape()[0];
-    m_OutEleDims = m_net->get_output_dims();
-    m_OutEleNums = m_net->get_output_elem_num();
-    //图像前处理参数
-    m_param_img2tensor.keep_aspect_ratio = true;//保持长宽比, opencv有效, drm无效
-    m_param_img2tensor.pad_both_side = false;//仅进行单边(右下)补齐, drm无效
-    m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;//转换成RGB格式
-    m_param_img2tensor.model_input_shape = m_InpSp;//resize的需求尺寸
-
-    m_strides = {8,16,32,64};
     LOGI << "<- YOLO_DETECTION_NAIVE::init";
     return ret;
 }
+
 
 /**
  * 输出Tensor的维度:
