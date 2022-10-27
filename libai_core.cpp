@@ -8,6 +8,7 @@
 #include "utils/module_retinaface.hpp"
 #include "utils/module_smoke_cig_detection.hpp"
 #include "utils/module_fire_detection.hpp"
+#include "utils/module_yolo_u.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -52,6 +53,14 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_);
     }
         break;    
+    case AlgoAPIName::RESERVED2:
+    {
+        YOLO_DETECTION_UINT8 *_ptr_ = new YOLO_DETECTION_UINT8();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR};
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }
+        break;
 /*******************************************************************************
 正式接口
 *******************************************************************************/           

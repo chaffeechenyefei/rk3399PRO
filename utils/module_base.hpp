@@ -86,7 +86,7 @@ public:
      * 读取模型权重文件, 并设置模型输入输出格式
     *******************************************************************************/
     ucloud::RET_CODE base_init(const std::string &modelpath, bool useDRM = false);
-    ucloud::RET_CODE base_init(const unsigned char* modelBuf, int sizeBuf, bool useDRM = false);
+    ucloud::RET_CODE base_init(unsigned char* modelBuf, int sizeBuf, bool useDRM = false);
     ucloud::RET_CODE base_init(ucloud::WeightData weightConfig, bool useDRM = false);
     virtual ~BaseModel();
     /*******************************************************************************
@@ -106,6 +106,16 @@ public:
     virtual ucloud::RET_CODE general_infer_uint8_nhwc_to_float( 
         std::vector<unsigned char*> &input_datas,
         std::vector<float*> &output_datas);//设置virtual, 兼容其他方式的rknn处理
+    /*******************************************************************************
+     * general_infer_uint8_nhwc_to_uint8, 
+     * 与general_infer_uint8_nhwc_to_float相对应, 输出变为uint8
+    *******************************************************************************/ 
+    virtual ucloud::RET_CODE general_infer_uint8_nhwc_to_uint8( 
+        std::vector<uint8_t*> &input_datas,
+        std::vector<uint8_t*> &output_datas,
+        std::vector<float> &out_scales,
+        std::vector<uint32_t> &out_zps
+        );//设置virtual, 兼容其他方式的rknn处理        
     
     /*******************************************************************************
      * WARNING: 内部测试 测试内存池管理(已测试通过,但需要进一步优化)
@@ -396,6 +406,9 @@ ucloud::TvaiRect globalscaleTvaiRect(ucloud::TvaiRect &rect, float scale, int W,
  * shift_box_from_roi_to_org 将roi坐标下的bbox, 还原成原图坐标下的bbox
 *******************************************************************************/
 void shift_box_from_roi_to_org(ucloud::VecObjBBox &bboxes, ucloud::TvaiRect &roirect);
+
+
+unsigned char * readfile(const char *filename, int *model_size);
 
 
 #endif
