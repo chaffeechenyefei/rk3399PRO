@@ -898,7 +898,7 @@ void base_nmsBBox(std::vector<T>& input, float threshold, int type, std::vector<
       float roiWidth = std::min(input[i].x1, input[j].x1) - std::max(input[i].x0, input[j].x0);
       float roiHeight = std::min(input[i].y1, input[j].y1) - std::max(input[i].y0, input[j].y0);
       if (roiWidth<=0 || roiHeight<=0) continue;
-      float area1 = (input[j].y1 - input[j].y0 + 1)*(input[j].x1 - input[j].x0 + 1);
+      float area1 = (input[j].y1 - input[j].y0 + 1e-3)*(input[j].x1 - input[j].x0 + 1e-3);
       float ratio = 0.0;
       if (type == NMS_UNION) {
         ratio = roiWidth*roiHeight/(area0 + area1 - roiWidth*roiHeight);
