@@ -72,6 +72,11 @@ typedef enum _AlgoAPIName{
     BATCH_GENERAL_DETECTOR    = 100,//测试用
     FIRE_CLASSIFIER                ,//火焰分类, 内部测试用
     WATER_DETECTOR_OLD      = 1008,//积水检测(旧版unet,与新版之间存在后处理的逻辑差异)
+    //=========高级接口======================================================================
+    //用户可以根据需要自行进行开发(SISO: 只针对单输入单输出)
+    GENERAL_YOLOV5_DETECTOR = 2001,//通用yolov5检测器: 对输入图像进行检测, 返回目标位置, 需要设定模型输出的对应类别
+    GENERAL_CLASSIFY        = 2002,//通用分类器: 对输入图像的特定区域(VecBox进行设定)进行分类, 雪瑶设定模型输出的对应类别
+    GENERAL_INFER           = 2003,//通用推理接口, 返回内容自行解析, 内容返回在TvaiFeature中
 }AlgoAPIName;
 
 typedef enum _InitParam{
