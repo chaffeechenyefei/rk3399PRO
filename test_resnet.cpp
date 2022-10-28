@@ -165,7 +165,7 @@ static unsigned char *load_image(const char *image_path, rknn_tensor_attr *input
         }
         STBI_FREE(image_data);
         image_data = image_resized;
-      
+
     }
     // string savename = image_path;
     // savename = savename.replace(savename.find("."),4,"_result.jpg");
@@ -176,6 +176,37 @@ static unsigned char *load_image(const char *image_path, rknn_tensor_attr *input
 
     return image_data;
 }
+
+
+
+const int anchor0[6] = {10, 13, 16, 30, 33, 23};
+const int anchor1[6] = {30, 61, 62, 45, 59, 119};
+const int anchor2[6] = {116, 90, 156, 198, 373, 326};
+const int PROP_BOX_SIZE = 6;
+
+static int process_fp(float *input, int *anchor, int grid_h, int grid_w, std::string &filename)
+{   
+    int grid_len = grid_h * grid_w;
+    std::ofstream file;
+    file.open(filename,std::ios::trunc);
+
+    for (int a = 0; a < 3; a++)
+    {
+        for (int i = 0; i < grid_h; i++)
+        {
+            for (int j = 0; j < grid_w; j++)
+            {
+                file<<input[PROP_BOX_SIZE*a*grid_len+i*grid_w+j] << " ";
+            }
+            file<<"\n";
+        }
+    }
+    file.close();
+    return 1;
+}
+
+
+
 
 /*-------------------------------------------
                   Main Function
@@ -269,45 +300,13 @@ int main(int argc, char **argv)
     for (int m = 0;m<filelist.size();m++){
         string impath = filelist[m];
         // printf("imagename %s",impath.c_str());
-        string respath = impath;
-        respath = respath.replace(respath.find("."),4,".txt");
-        ofstream out;
-        out.open(respath,ios::trunc);
-        printf("imagename %s",impath.c_str()); 
+        string respath = "./cls_layer2.txt";
+        // respath = respath.replace(respath.find("."),4,".txt");
+        // ofstream out;
+        // out.open(respath,ios::trunc);
+        printf("imagename %s",impath.c_str());
         unsigned char *input_data = NULL;
         input_data = load_image(impath.c_str(), &input_attrs[0]);
-
-
-
-        // cv::Mat im = cv::imread(impath);
-        // printf("opencv image: %d,%d \n", im.cols, im.rows);
-        // cv::cvtColor(im,im,cv::COLOR_BGR2RGB);
-        // ucloud::TvaiImage tvinp;
-        // tvinp.width = im.cols;
-        // tvinp.heights = im.rows;
-        // tvinp.stride = im.cols;
-        // unsigned char* dataptr = (unsigned char *)malloc(im.total()*3);
-        // memcpy(dataptr,im.data,im.total()*3);
-        // tvinp.pData = dataptr;
-        // tvinp.format = ucloud::TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB;
-        // tvinp.dataSize = tvinp.width*tvinp.height*3;
-
-        // std::vector<unsigned char*> input_datas;
-        // std::vector<float> aX, aY;
-        // std::vector<float*> output_datas;
-
-       
-        // ucloud::RET_CODE ret = im_utils->preprocess_drm(tvinp,param_im2tensor,input_datas,aX,aY);
-        // if (ret != ucloud::SUCCESS){
-        //     printf("DRM resize failed!\n");
-        //     return;
-        // }
-        // string resImg = impath;
-        // resImg = resImg.replace(resImg.find("."),4,"_drm.jpg");
-        // cv::Mat tmat(cv::Size(256,256),CV_8UC3,input_datas[0]);
-        // cv::imwrite(resImg,tmat);
-
-
 
         if (!input_data)
         {
@@ -340,31 +339,83 @@ int main(int argc, char **argv)
         }
 
         // Get Output
-        rknn_output outputs[1];
+        rknn_output outputs[3];
         memset(outputs, 0, sizeof(outputs));
-        outputs[0].want_float = 1;
-        ret = rknn_outputs_get(ctx, 1, outputs, NULL);
+        for (int i=0;i<3;i++){
+            outputs[i].want_float=1;
+        }
+        // outputs[0].want_float = 1;
+         printf("rknn_outputs num %d\n", io_num.n_output);
+        ret = rknn_outputs_get(ctx, 3, outputs, NULL);
         if (ret < 0)
         {
             printf("rknn_outputs_get fail! ret=%d\n", ret);
             return -1;
         }
+        
+        
+        string savepath;
+        int grid_h,grid_w;
+        int channels =18;
+        for (int i=0;i<3;i++){
+            cout<<"step into record!"<<endl;
+            switch  (i){
+                case 0:
+                    grid_h = 92;
+                    grid_w = 52;
+                    savepath = "./layer0_unshape.txt";
+                    break;
+                case 1:
+                    grid_h = 46;
+                    grid_w = 26;
+                    savepath = "./layer1_unshape.txt";
+                    break;
+                case 2:
+                    grid_h = 23;
+                    grid_w = 13;
+                    savepath ="./layer2_unshape.txt"; 
+                    break;
+            }
+            std::ofstream file;
+            file.open(savepath,ios::trunc);
+            int grid_len = grid_h*grid_w;
+            float *input = (float *)outputs[i].buf;
+            for (int c=0;c<channels;c++){
+                for(int h = 0;h<grid_h;h++){
+                    for (int w=0;w<grid_w;w++){
+                        int idx = c*grid_len + h*grid_w + w;
+                        file<<input[idx]<<" ";
+                    }
+                    file<<"\n";
+                }
+            }
+            file.close();
+        }
+
+        int stride = 32;
+        grid_h = 13;
+        grid_w = 23;
+        int ret = process_fp((float *)outputs[2].buf,(int *)anchor2,grid_h,grid_w,respath);
+
+
+
+
 
         // Post Process
-        for (int i = 0; i < io_num.n_output; i++)
-        {
-            // uint32_t MaxClass[5];
-            // float fMaxProb[5];
-            float *buffer = (float *)outputs[i].buf;
-            uint32_t sz = outputs[i].size / 4;
-            out<<buffer[0]<<" "<<buffer[1]<<" "<<buffer[2];
+        // for (int i = 0; i < io_num.n_output; i++)
+        // {
+        //     // uint32_t MaxClass[5];
+        //     // float fMaxProb[5];
+        //     float *buffer = (float *)outputs[i].buf;
+        //     uint32_t sz = outputs[i].size / 4;
+        //     out<<buffer[0]<<" "<<buffer[1]<<" "<<buffer[2];
 
-            // printf("output size = %d\n", sz);
-            // printf("[ %f, %f ] \n", buffer[0], buffer[1]);
-        }
-        out.close();
+        //     // printf("output size = %d\n", sz);
+        //     // printf("[ %f, %f ] \n", buffer[0], buffer[1]);
+        // }
+        // out.close();
         // Release rknn_outputs
-        rknn_outputs_release(ctx, 1, outputs);
+        rknn_outputs_release(ctx, 3, outputs);
         if (input_data)
         {
             stbi_image_free(input_data);
@@ -385,7 +436,7 @@ int main(int argc, char **argv)
     // {
     //     stbi_image_free(input_data);
     // }
-    
+
 
     return 0;
 }

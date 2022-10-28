@@ -86,6 +86,8 @@ public:
      * 读取模型权重文件, 并设置模型输入输出格式
     *******************************************************************************/
     ucloud::RET_CODE base_init(const std::string &modelpath, bool useDRM = false);
+    ucloud::RET_CODE base_init(const unsigned char* modelBuf, int sizeBuf, bool useDRM = false);
+    ucloud::RET_CODE base_init(ucloud::WeightData weightConfig, bool useDRM = false);
     virtual ~BaseModel();
     /*******************************************************************************
      * release

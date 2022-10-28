@@ -15,6 +15,7 @@ public:
     Classification();
     virtual ~Classification();
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam,std::string> &modelpath);
+    virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
     /*******************************************************************************
      * run 对bboxes中的每个区域进行分类, 并将结果更新到bboxes中(objtype, objectness, confidence)
      * PARAM:

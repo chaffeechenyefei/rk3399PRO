@@ -19,6 +19,7 @@ public:
     }
     ~SMOKE_CIG_DETECTION(){}
     RET_CODE init(std::map<ucloud::InitParam, std::string> &modelpath);
+    ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
     RET_CODE run(TvaiImage &tvimage, ucloud::VecObjBBox &bboxes, float threshold, float nms_threshold);
     RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);
 

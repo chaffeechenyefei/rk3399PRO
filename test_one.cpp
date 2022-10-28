@@ -17,6 +17,10 @@ using namespace std;
 using namespace ucloud;
 
 std::mutex cmutex;
+int W = 0;
+int H = 0;
+float user_threshold = -1;
+bool use_string_to_init = true;
 
 void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath, int num_loops_each_thread, bool use_track=false ){
     RET_CODE retcode = RET_CODE::FAILED;
@@ -29,6 +33,10 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         std::cout << "parser failed" << std::endl;
         return;
     }
+    if(user_threshold>0){
+        threshold = user_threshold;
+        printf("threshold is set to %1.3f by user input\n", threshold);
+    }
 
     double tm_cost = 0;
     int num_result = 0;
@@ -38,7 +46,22 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
     AlgoAPISPtr ptrMainHandle = ucloud::AICoreFactory::getAlgoAPI(apiName);
     std::cout << "AICoreFactory done!" << endl;
     //Initial model with loading weights
-    retcode = ptrMainHandle->init(init_param);
+    if(use_string_to_init)
+        retcode = ptrMainHandle->init(init_param);
+    else{
+        printf("**using weight config to init\n");
+        std::map<InitParam, WeightData> weightConfig;
+        for(auto &&param: init_param){
+            int tmpSz = 0;
+            unsigned char* tmpPtr = readfile(param.second.c_str(), &tmpSz);
+            WeightData tmp{tmpPtr, tmpSz};
+            weightConfig[param.first] = tmp;
+        }
+        retcode = ptrMainHandle->init(weightConfig);
+        for(auto &&param: weightConfig){
+            free(param.second.pData);
+        }
+    }
     if( retcode != RET_CODE::SUCCESS ){ std::cout << "algo initial failed" << endl; return; }
     //Set model parameters
     // ptrMainHandle->set_param(threshold, nms_threshold);
@@ -49,11 +72,20 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         VecObjBBox bboxes; 
         std::string imgname =datapath;
         printf("loading %s\n", imgname.c_str());
+        unsigned char* imgBuf = nullptr;
+        int inputdata_sz = 0;
+        TvaiImage tvimage;
+        if(imgname.find(".yuv") != std::string::npos){//如果输入图像后缀是YUV则直接读取
+            imgBuf = yuv_reader(imgname, W, H);
+            width = W; height = H; stride = W;
+            inputdata_sz = 3*stride*height/2*sizeof(unsigned char);
+            tvimage = {TVAI_IMAGE_FORMAT_NV21,width,height,stride,imgBuf, inputdata_sz};
+        } else {
+            imgBuf = readImg_to_NV21(imgname, W, H, width, height, stride);
+            inputdata_sz = 3*stride*height/2*sizeof(unsigned char);
+            tvimage = {TVAI_IMAGE_FORMAT_NV21,width,height,stride,imgBuf, inputdata_sz};
+        }
         //将图像resize到1280x720, 模拟摄像头输入
-        unsigned char* imgBuf = readImg_to_NV21(imgname, 1280, 720, width, height, stride);
-        int inputdata_sz = 3*stride*height/2*sizeof(unsigned char);
-        TvaiImage tvimage{TVAI_IMAGE_FORMAT_NV21,width,height,stride,imgBuf, inputdata_sz};
-
         auto start = chrono::system_clock::now();
         RET_CODE _ret_ = ptrMainHandle->run(tvimage, bboxes, threshold , nms_threshold);
         auto end = chrono::system_clock::now();
@@ -63,6 +95,7 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         free(imgBuf);
         if(i == num_loops_each_thread-1) show_bboxes = bboxes;
     }
+    printf("total %d bboxes returned\n", show_bboxes.size());
     for(auto &&box : show_bboxes){
         printf("id[%d], type[%d], x,y,w,h = %d,%d,%d,%d, confidence = %.3f, objectness = %.3f \n", 
         box.track_id, box.objtype,
@@ -70,7 +103,14 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         box.confidence, box.objectness
         );
     }
-    unsigned char* imgBuf = readImg_to_BGR(datapath, 1280, 720, width, height);
+
+    unsigned char* imgBuf = nullptr;
+    if(datapath.find(".yuv") != std::string::npos){//如果输入图像后缀是YUV则直接读取
+        imgBuf = yuv_reader(datapath, W, H , true);
+    } else{
+        imgBuf = readImg_to_BGR(datapath, W, H, width, height);
+    }
+    
     if(imgBuf){
         drawImg(imgBuf, width, height, show_bboxes, true, true, false, 1);
         writeImg("result.jpg", imgBuf, width , height);
@@ -85,22 +125,30 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
 -------------------------------------------*/
 int main(int argc, char **argv)
 {  
-    bool use_track = true;
-    int num_loops = 1;
-    string datapath;
-    TASKNAME taskid = TASKNAME::PED_CAR_NONCAR;     
+    ArgParser myParser;
+    myParser.add_argument("-data","test.jpg","input image");
+    myParser.add_argument("-task",1, "taskid");
+    myParser.add_argument("-loop",1, "loop times");
+    myParser.add_argument("-threshold",-1, "threshold(if less than 0, value from task parser will be applied.)");
+    myParser.add_argument("-w", 1280, "input image width");
+    myParser.add_argument("-h", 720, "input image height");
+    myParser.add_argument("-list",0, "list all the task");
+    myParser.add_argument("-init",0,"0: std::string for init, 1:WeightConfig for init");
+    if(!myParser.parser(argc, argv)) return -1;
 
-    if(argc>=2){
-        string _tmp(argv[1]);
-        datapath = _tmp;
+    if(myParser.get_value_int("-list")>0){
+        print_all_task();
+        return -1;
     }
-    if(argc >= 3){
-        int _taskid = atoi(argv[2]);
-        taskid = TASKNAME(_taskid);
-    }
-    if(argc >= 4){
-        num_loops = atoi(argv[3]);
-    }
+
+    bool use_track = true;
+    int num_loops = myParser.get_value_int("-loop");
+    string datapath = myParser.get_value_string("-data");
+    TASKNAME taskid = TASKNAME(myParser.get_value_int("-task"));     
+    use_string_to_init = myParser.get_value_int("-init") == 0 ? true:false;
+    W = myParser.get_value_int("-w");
+    H = myParser.get_value_int("-h");
+    user_threshold = myParser.get_value_float("-threshold");
 
     printf("=======================\n");
     printf("=======================\n");

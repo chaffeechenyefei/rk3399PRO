@@ -77,6 +77,46 @@ void YOLO_DETECTION_NAIVE::release(){
     m_OutEleDims.clear();
 }
 
+RET_CODE YOLO_DETECTION_NAIVE::init(std::map<InitParam, WeightData> &weightConfig){
+    LOGI << "-> YOLO_DETECTION_NAIVE::init";
+    RET_CODE ret = RET_CODE::SUCCESS;
+    if( weightConfig.find(InitParam::BASE_MODEL) == weightConfig.end() ){
+        LOGI << "base model not found in weightConfig";
+        return RET_CODE::ERR_INIT_PARAM_FAILED;
+    }
+    // m_net->release();
+    bool useDRM = false;
+    #ifdef TIMING    
+    m_Tk.start();
+    #endif
+    ret = m_net->base_init(weightConfig[InitParam::BASE_MODEL].pData, weightConfig[InitParam::BASE_MODEL].size, useDRM);
+    #ifdef TIMING    
+    m_Tk.end("model loading");
+    #endif
+    if(ret!=RET_CODE::SUCCESS) return ret;
+    //SISO的体现, 都只取index0的数据
+    if(m_InpNum != m_net->get_input_shape().size()){
+        printf("**[%s][%d], m_InpNum[%d]!=m_net->get_input_shape().size()[%d]\n", __FILE__, __LINE__, m_InpNum, m_net->get_input_shape().size());
+        return RET_CODE::FAILED;
+    }
+    if(m_OtpNum != m_net->get_output_shape().size()){
+        printf("**[%s][%d], m_OtpNum[%d]!=m_net->get_output_shape().size()[%d]\n", __FILE__, __LINE__, m_OtpNum, m_net->get_output_shape().size());
+        return RET_CODE::FAILED;
+    }
+    m_InpSp = m_net->get_input_shape()[0];
+    m_OutEleDims = m_net->get_output_dims();
+    m_OutEleNums = m_net->get_output_elem_num();
+    //图像前处理参数
+    m_param_img2tensor.keep_aspect_ratio = true;//保持长宽比, opencv有效, drm无效
+    m_param_img2tensor.pad_both_side = false;//仅进行单边(右下)补齐, drm无效
+    m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;//转换成RGB格式
+    m_param_img2tensor.model_input_shape = m_InpSp;//resize的需求尺寸
+
+    m_strides = {8,16,32,64};
+    LOGI << "<- YOLO_DETECTION_NAIVE::init";
+    return ret;
+}
+
 RET_CODE YOLO_DETECTION_NAIVE::init(std::map<ucloud::InitParam, std::string> &modelpath){
     LOGI << "-> YOLO_DETECTION_NAIVE::init";
     RET_CODE ret = RET_CODE::SUCCESS;
@@ -255,9 +295,14 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, VecObjBBox &bboxes, std::
     std::vector<float> aX, aY;
     std::vector<float*> output_datas;
 
+    /// 如果不使用stb load ，注释以下hang
+    input_datas.push_back(tvimage.pData);
+
 #ifdef TIMING    
     m_Tk.start();
 #endif
+
+//// 如果使用原始代码
 #ifdef USEDRM
     ret = m_cv_preprocess_net->preprocess_drm(tvimage, m_param_img2tensor, input_datas, aX, aY);
 #else
@@ -268,11 +313,16 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, VecObjBBox &bboxes, std::
 #endif
     if(ret!=RET_CODE::SUCCESS) return ret;
 
+
+///// 保存每个图像文件drm处理完的图像
 cv::Mat cvim(cv::Size(m_InpSp.w,m_InpSp.h),CV_8UC3,input_datas[0]);
 cv::cvtColor(cvim,cvim,cv::COLOR_RGB2BGR);
 string savename = filename;
 savename = savename.replace(savename.find("."),4,"_drm.jpg");
 cv::imwrite(savename,cvim);
+/// 
+
+
 
 string respath = filename;
 respath = respath.replace(respath.find("."),4,".txt");
@@ -302,6 +352,7 @@ vector<int> strides = {8, 16, 32};
 #ifdef TIMING    
     m_Tk.start();
 #endif
+    // ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY);
     ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY, anchors,strides);
 #ifdef TIMING    
     m_Tk.end("postprocess");
@@ -582,8 +633,23 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<flo
         bboxes.push_back(VecObjBBox());
     }
     float thres_sigmoid = unsigmoid(threshold);
-     printf("----->>>> input_h %d,input_w %d, layers_num %d, NC %d  thresh is %f!\n",input_h,input_w,layers_num,NC,thres_sigmoid);
-    for (int layer_id=0;layer_id<layers_num;layer_id++){
+    string resultxt;
+    printf("----->>>> input_h %d,input_w %d, layers_num %d, NC %d  thresh is %f!\n",input_h,input_w,layers_num,NC,thres_sigmoid);
+    for (int layer_id=1;layer_id<layers_num;layer_id++){
+        switch (layer_id) {
+            case 0:
+            resultxt = "./layer0.txt";
+            break;
+            case 1:
+            resultxt = "./layer1.txt";
+            break;
+            case 2:
+            resultxt = "./layer2.txt";
+            break;
+        }
+        ofstream fd;
+        fd.open(resultxt,ios::trunc);
+        
         float *layer = output_datas[layer_id];
         int grid_h = input_h/strides[layer_id];
         int grid_w = input_w/strides[layer_id];
@@ -591,15 +657,17 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<flo
         int stride = strides[layer_id];
         printf("stride is %d grid_h %d  grid_w %d\n",stride,grid_h,grid_w);
         vector<int> anchor = anchors[layer_id];
-        // for (auto item:anchor){
-        //     cout<< item << " "<<endl; 
-        // }
+        for (auto item:anchor){
+            cout<< item << " "; 
+        }
+        cout<<endl;
         for (int a =0;a<3;a++){          
             for (int i=0;i<grid_h;i++){
                 for (int j=0;j<grid_w;j++){
                     float box_confidence = layer[(prior_box_size * a + 4) * grid_len + i * grid_w + j];
-                    // if (a==0)
-                    //     printf("box confidence is %f\n",box_confidence);
+                    int tmp = (prior_box_size * a + 4) * grid_len + i * grid_w + j;
+                    printf("anchor layer %d,box_confidence %f\n",a,box_confidence);
+                    fd<<layer[prior_box_size*a*grid_len+i*grid_w+j] << " ";
                     if (box_confidence >= thres_sigmoid){
                         BBox fbox; 
                         int offset = (prior_box_size * a) * grid_len + i * grid_w + j;
@@ -608,13 +676,13 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<flo
                         float box_y = sigmoid(in_ptr[grid_len]) * 2.0 - 0.5;
                         float box_w = sigmoid(in_ptr[2 * grid_len]) * 2.0;
                         float box_h = sigmoid(in_ptr[3 * grid_len]) * 2.0;
-                        printf("bbox x %f, y %f\n",box_x,box_y);
+                        // printf("bbox x %f, y %f\n",box_x,box_y);
                         box_x = (box_x + j) * (float)stride;
                         box_y = (box_y + i) * (float)stride;
                         box_w = box_w * box_w * (float)anchor[a * 2];
                         box_h = box_h * box_h * (float)anchor[a * 2 + 1];
-                        box_x -= (box_w / 2.0);
-                        box_y -= (box_h / 2.0);
+                        // box_x -= (box_w / 2.0);
+                        // box_y -= (box_h / 2.0);
                         
                         fbox.x0 = box_x - (box_w / 2.0);
                         fbox.y0 = box_y - (box_h / 2.0);
@@ -648,8 +716,10 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<flo
 
                     }
                 }
+                fd<<"\n";
             }
         }   
+        fd.close();
     }
     LOGI << "-> YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX";
     return RET_CODE::SUCCESS;

@@ -21,7 +21,7 @@ endif()
 add_definitions(-DUSEDRM=True) #设定时则使用DRM进行前处理 否则使用opencv
 add_definitions(-DTIMING=True) #是否进行内部耗时显示
 
-EXECUTE_PROCESS(COMMAND git log -1 --pretty=format:%h:%s
+EXECUTE_PROCESS(COMMAND git log -1 --pretty=format:%cD<hash>%h<note>%s
         TIMEOUT 100
         OUTPUT_VARIABLE GIT_VERSION
         OUTPUT_STRIP_TRAILING_WHITESPACE # 删除字符串尾的换行符
@@ -164,9 +164,9 @@ target_include_directories(test_resnet PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUD
 target_link_libraries(test_resnet ${RK_LIBS} dl ${OPENCV_LIBS})
 
 #任意模型读取后, 输入输出shape打印
-add_executable(test_any test_any_model.cpp)
-target_include_directories(test_any PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
-target_link_libraries(test_any ${RK_LIBS} dl ${OPENCV_LIBS})
+# add_executable(test_any test_any_model.cpp)
+# target_include_directories(test_any PUBLIC ${RK_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS})
+# target_link_libraries(test_any ${RK_LIBS} dl ${OPENCV_LIBS})
 
 #视频读写推理测试
 add_executable(test_video test_video.cpp)

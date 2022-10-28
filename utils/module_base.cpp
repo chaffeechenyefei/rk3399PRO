@@ -1,6 +1,7 @@
 #include "module_base.hpp"
 #include "basic.hpp"
 #include <assert.h>
+#include <fstream>
 
 using namespace ucloud;
 using namespace std;
@@ -214,6 +215,107 @@ unsigned char * BaseModel::load_model(const char *filename, int *model_size)
     return model;
 }
 
+
+ucloud::RET_CODE BaseModel::base_init(ucloud::WeightData weightConfig, bool useDRM){
+    return base_init(weightConfig.pData, weightConfig.size, useDRM);
+}
+
+
+ucloud::RET_CODE BaseModel::base_init(const unsigned char* modelBuf, int sizeBuf, bool useDRM){
+    LOGI << "-> BaseModel::base_init";
+    release();
+    unsigned char *model = nullptr;
+    int model_len = 0;
+    int ret;
+    // model = load_model(modelpath.c_str(), &model_len);
+    if(modelBuf == nullptr )
+        return RET_CODE::ERR_MODEL_FILE_NOT_EXIST;
+    if(sizeBuf>0)
+        model = (unsigned char*)malloc(sizeBuf);
+    else{
+        printf("**[%s][%d] model buf size should not be %d\n", __FILE__, __LINE__, sizeBuf);
+        return RET_CODE::FAILED;
+    }
+    memcpy(model, modelBuf, sizeBuf);
+    model_len = sizeBuf;
+    if(model == nullptr )
+        return RET_CODE::ERR_MODEL_FILE_NOT_EXIST;
+    ret = rknn_init(&m_ctx, model, model_len, 0);
+    if(model) free(model);
+    if(ret < 0){
+        LOGI << "npu initial failed code: " << ret;
+        return RET_CODE::ERR_NPU_INIT_FAILED;
+    }
+
+    // Get Model Input Output Info
+    rknn_input_output_num io_num;
+    ret = rknn_query( m_ctx, RKNN_QUERY_IN_OUT_NUM, &io_num, sizeof(io_num));
+    if (ret != RKNN_SUCC)
+    {
+        LOGI << "rknn_query fail! ret=" << ret;
+        return RET_CODE::ERR_NPU_QUERY_FAILED;
+    } else{
+        LOGI << "model input num = " << io_num.n_input << ", output num = " << io_num.n_output;
+    }   
+    // input tensor
+    rknn_tensor_attr input_attrs[io_num.n_input];
+    memset( input_attrs, 0, sizeof(input_attrs));
+    for (int i = 0; i < io_num.n_input; i++)
+    {
+        input_attrs[i].index = i;
+        ret = rknn_query( m_ctx, RKNN_QUERY_INPUT_ATTR, &(input_attrs[i]), sizeof(rknn_tensor_attr));
+        if (ret != RKNN_SUCC)
+        {
+            LOGI << "rknn_query fail! ret= " << ret;
+            return RET_CODE::ERR_NPU_QUERY_FAILED;
+        }
+        m_inputShape.push_back(get_shape(input_attrs[i]));
+        m_inputAttr.push_back(input_attrs[i]);
+    }
+    print_input_shape();
+    //output tensor::此时的tensor output是非float的, want_float后size会变,ele_num不变
+    rknn_tensor_attr output_attrs[io_num.n_output];
+    memset(output_attrs, 0, sizeof(output_attrs));
+    for (int i = 0; i < io_num.n_output; i++)
+    {
+        output_attrs[i].index = i;
+        ret = rknn_query( m_ctx, RKNN_QUERY_OUTPUT_ATTR, &(output_attrs[i]), sizeof(rknn_tensor_attr));
+        if (ret != RKNN_SUCC)
+        {
+            LOGI << "rknn_query fail! ret= " <<  ret;
+            return RET_CODE::ERR_NPU_QUERY_FAILED;
+        }
+        m_outputShape.push_back(get_shape(output_attrs[i]));
+        m_outputAttr.push_back(output_attrs[i]);
+    }
+    print_output_shape();
+    print_input_attr();
+    print_output_attr();
+
+    //是否采用map+drm的方式进行高效推理
+    m_isMap = useDRM;
+    if(m_isMap){
+#ifdef RKNN_1_7_X        
+        rknn_inputs_map(m_ctx, io_num.n_input , m_inMem );
+        printf("input virt_addr = %p, phys_addr = 0x%llx, fd = %d, size = %d\n",
+               m_inMem[0].logical_addr, m_inMem[0].physical_addr, m_inMem[0].fd,
+               m_inMem[0].size);
+        if (m_inMem[0].physical_addr == 0xffffffffffffffff){
+            printf("get unvalid input physical address, please extend in/out memory space\n");
+            return RET_CODE::ERR_NPU_MEM_ERR;
+        }
+        //DRM
+        memset(&rga_ctx, 0, sizeof(rga_context));
+        memset(&drm_ctx, 0, sizeof(drm_context));
+        RGA_init(&rga_ctx, "/usr/lib/aarch64-linux-gnu/librga.so");
+        drm_fd = drm_init(&drm_ctx, "/usr/lib/aarch64-linux-gnu/libdrm.so");
+#endif        
+    }
+    LOGI << "<- BaseModel::base_init";
+    // printf("BaseModel::base init success");
+    return RET_CODE::SUCCESS;
+}
+
 ucloud::RET_CODE BaseModel::base_init(const std::string &modelpath, bool useDRM){
     LOGI << "-> BaseModel::base_init";
     release();
@@ -370,6 +472,35 @@ RET_CODE BaseModel::general_infer_uint8_nhwc_to_float(
     for(int i=0; i < m_outputAttr.size(); i++){
         int hwc = m_outputShape[i].h* m_outputShape[i].w * m_outputShape[i].c;
         printf("outputs size = %d, hwc = %d \n", outputs[i].size ,hwc);//assert 4*hwc == output size
+        
+        string savepath;
+        switch  (i){
+            case 0:
+                savepath = "./layer0_unshape.txt";
+                break;
+            case 1:
+                savepath = "./layer1_unshape.txt";
+                break;
+            case 2:
+                savepath ="./layer2_unshape.txt"; 
+                break;
+        }
+        std::ofstream file;
+        file.open(savepath,ios::trunc);
+        int grid_len = m_outputShape[i].h*m_outputShape[i].w;
+        float *input = (float *)outputs[i].buf;
+        for (int c=0;c<m_outputShape[i].c;c++){
+            for(int h = 0;h<m_outputShape[i].h;h++){
+                for (int w=0;w<m_outputShape[i].w;w++){
+                    int idx = c*grid_len + h*m_outputShape[i].w + w;
+                    file<<input[idx]<<" ";
+                }
+                file<<"\n";
+            }
+        }
+        file.close();
+
+
         float* tmp = (float*)malloc(outputs[i].size);//移交出去的指针
         memcpy(tmp, outputs[i].buf, outputs[i].size);
         output_datas.push_back(tmp);
@@ -403,6 +534,7 @@ ucloud::RET_CODE BaseModel::general_infer_uint8_nhwc_to_float_mem(
         inputs[i].size = m_inputAttr[i].size;
         inputs[i].fmt = RKNN_TENSOR_NHWC;//模型内部都是使用的NCHW, 输入设置NHWC是为了方便图片输入
         inputs[i].buf = input_datas[i];
+        // inputs[i].pass_through = 0; //add by lihui 2022-10-27
     }
     // rknn_tensor_mem
     ret = rknn_inputs_set(m_ctx, m_inputAttr.size(), inputs);

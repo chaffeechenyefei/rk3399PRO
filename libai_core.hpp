@@ -29,6 +29,7 @@ namespace ucloud{
 
 class UCLOUD_API_PUBLIC AICoreFactory;//算法创建工厂前置声明, 方便索引
 class UCLOUD_API_PUBLIC AlgoAPI;//算法对外接口前置声明, 方便索引
+typedef struct tagWeightData WeightData;//模型结构体
 
 //算法功能的枚举
 typedef enum _AlgoAPIName{
@@ -78,6 +79,11 @@ typedef enum _InitParam{
     TRACK_MODEL         = 1, //跟踪模型
     SUB_MODEL           = 2, //模型级联时, 主模型用于初步检测, 次模型用于二次过滤, 提高精度
 }InitParam;
+
+typedef struct tagWeightData{
+    unsigned char* pData;
+    int size;/*size_t*/
+}WeightData;
 
 typedef enum _APIParam{
     OBJ_THRESHOLD      = 0, //目标检测阈值/分类阈值
@@ -295,6 +301,7 @@ public:
     virtual ~AlgoAPI(){};
     /*****************************外部使用**************************************/
     virtual RET_CODE init(std::map<InitParam, std::string> &modelpath){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
+    virtual RET_CODE init(std::map<InitParam, WeightData> &weightConfig){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     virtual RET_CODE run(TvaiImage& tvimage, VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     
     
@@ -309,6 +316,10 @@ public:
     //默认情况下, 输入一个模型地址则用于BASE_MODEL 
     virtual RET_CODE init(const std::string &modelpath){
         std::map<InitParam, std::string> config = {{InitParam::BASE_MODEL, modelpath}};
+        return init(config);
+        }
+    virtual RET_CODE init(WeightData weightConfig){
+        std::map<InitParam, WeightData> config = {{InitParam::BASE_MODEL, weightConfig}};
         return init(config);
         }
     virtual RET_CODE set_output_cls_order(std::vector<CLS_TYPE> &output_clss){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
@@ -359,7 +370,7 @@ UCLOUD_API_PUBLIC void freeImg(unsigned char** imgPtr);
 UCLOUD_API_PUBLIC void drawImg(unsigned char* img, int width, int height, VecObjBBox &bboxs, \
         bool disp_landmark=false ,bool disp_label=false, bool use_rand_color=true, int color_for_trackid_or_cls = 0);
 //读取yuv和rgb的二进制文件流, 便于测试
-UCLOUD_API_PUBLIC unsigned char* yuv_reader(std::string filename, int w=1920, int h=1080);
+UCLOUD_API_PUBLIC unsigned char* yuv_reader(std::string filename, int w=1920, int h=1080, bool trans2bgr=false);
 UCLOUD_API_PUBLIC unsigned char* rgb_reader(std::string filename, int w=1920, int h=1080);        
 //视频读取基于opencv
 class UCLOUD_API_PUBLIC VIDOUT{
@@ -417,6 +428,34 @@ public:
 private:
     void* ctx;
 };
+
+/*******************************************************************************
+输入argc argv的解析 仅支持float/int/string
+chaffee.chen@2022-10-20
+*******************************************************************************/
+class UCLOUD_API_PUBLIC ArgParser{
+public: 
+    ArgParser(){}
+    ~ArgParser(){}
+    bool add_argument(const std::string &keyword, int default_value , const std::string &helpword);
+    bool add_argument(const std::string &keyword, float default_value , const std::string &helpword);
+    // bool add_argument(const std::string &keyword, bool default_value , const std::string &helpword);
+    bool add_argument(const std::string &keyword, const std::string &default_value , const std::string &helpword);
+    bool parser(int argc, char* argv[]);
+    void print_help();
+protected:
+    std::map<std::string,float> m_cmd_float;
+    std::map<std::string,int> m_cmd_int;
+    std::map<std::string,bool> m_cmd_bool;
+    std::map<std::string, std::string> m_cmd_str;
+    std::map<std::string, std::string> m_cmd_help;
+public:
+    float get_value_float(const std::string &keyword);
+    int get_value_int(const std::string &keyword);
+    // bool get_value_bool(const std::string &keyword);
+    std::string get_value_string(const std::string &keyword);
+};
+
 /**
  * 20210917
  * 以下是历史遗留产物, 后期不再更新维护.
