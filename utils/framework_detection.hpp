@@ -42,6 +42,7 @@ public:
     /** -----------------non AlgoAPI-------------------**/
     virtual RET_CODE set_trackor(TRACKMETHOD trackmethod);
     virtual RET_CODE set_detector(ucloud::AlgoAPI* ptr);
+    // virtual RET_CODE set_anchor(std::vector<float> &anchors);//yolo
 
 protected:
     float clip_threshold(float x);

@@ -53,11 +53,13 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_);
     }
         break;    
-    case AlgoAPIName::RESERVED2:
+    case AlgoAPIName::GENERAL_DETECTOR_FAST_LOAD:
     {
         YOLO_DETECTION_UINT8 *_ptr_ = new YOLO_DETECTION_UINT8();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR};
         _ptr_->set_output_cls_order(model_output_clss);
+        std::vector<float> anchors = { 5.81641,   4.39062,  10.78906,   8.45312,  18.59375,  14.20312,  34.31250,  23.07812,  24.43750,  58.09375,  86.62500,  57.87500,  67.00000, 167.50000, 185.12500, 153.87500, 410.00000, 465.50000};
+        _ptr_->set_anchor(anchors);
         apiHandle.reset(_ptr_);
     }
         break;

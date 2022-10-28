@@ -23,6 +23,18 @@ static inline int get_unique_cls_num(std::vector<CLS_TYPE>& output_clss, std::ma
  * yolov5系列支持, 需要配合特定export_rknn.py输出的结果
  * chaffee.chen@ucloud.cn 2022-10-12
 *******************************************************************************/
+ucloud::RET_CODE YOLO_DETECTION_UINT8::set_anchor(std::vector<float> &anchors){
+    m_anchors = anchors;
+    if(m_anchors.size()==3*3*2 || m_anchors.size()==4*3*2)
+        return RET_CODE::SUCCESS;
+    else {
+        printf("**Err[%s][%d] anchor size(%d) not supported\n", __FILE__, __LINE__, m_anchors.size());
+        return RET_CODE::FAILED;
+    }
+    return RET_CODE::SUCCESS;
+}
+
+
 YOLO_DETECTION_UINT8::YOLO_DETECTION_UINT8(){
     LOGI << "-> YOLO_DETECTION_UINT8";
     m_net = std::make_shared<BaseModel>();
@@ -64,7 +76,7 @@ RET_CODE YOLO_DETECTION_UINT8::init(std::map<InitParam, WeightData> &weightConfi
     }
     if(m_OtpNum != m_net->get_output_shape().size()){
         printf("**[%s][%d], m_OtpNum[%d]!=m_net->get_output_shape().size()[%d]\n", __FILE__, __LINE__, m_OtpNum, m_net->get_output_shape().size());
-        return RET_CODE::FAILED;
+        // return RET_CODE::FAILED;
     }
     m_InpSp = m_net->get_input_shape()[0];
     m_OutEleDims = m_net->get_output_dims();
@@ -132,10 +144,10 @@ RET_CODE YOLO_DETECTION_UINT8::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 
     std::vector<unsigned char*> input_datas;
     std::vector<float> aX, aY;
-    std::vector<uint8_t*> output_datas;
-    std::vector<uint32_t> output_zp;
-    std::vector<float> output_scales;
-    // std::vector<float*> output_datas;
+    // std::vector<uint8_t*> output_datas;
+    // std::vector<uint32_t> output_zp;
+    // std::vector<float> output_scales;
+    std::vector<float*> output_datas;
 
 #ifdef TIMING    
     m_Tk.start();
@@ -153,8 +165,8 @@ RET_CODE YOLO_DETECTION_UINT8::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 #ifdef TIMING    
     m_Tk.start();
 #endif
-    ret = m_net->general_infer_uint8_nhwc_to_uint8(input_datas, output_datas, output_scales, output_zp);
-    // ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
+    // ret = m_net->general_infer_uint8_nhwc_to_uint8(input_datas, output_datas, output_scales, output_zp);
+    ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
 #ifdef TIMING    
     m_Tk.end("general_infer_uint8_nhwc_to_float");
 #endif    
@@ -166,8 +178,8 @@ RET_CODE YOLO_DETECTION_UINT8::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 #ifdef TIMING    
     m_Tk.start();
 #endif
-    ret = postprocess(output_datas, output_scales, output_zp, threshold, nms_threshold, bboxes, aX, aY);
-    // ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY);
+    // ret = postprocess(output_datas, output_scales, output_zp, threshold, nms_threshold, bboxes, aX, aY);
+    ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY);
 #ifdef TIMING    
     m_Tk.end("postprocess");
 #endif    
@@ -213,10 +225,10 @@ RET_CODE YOLO_DETECTION_UINT8::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox
 
     std::vector<unsigned char*> input_datas;
     std::vector<float> aX, aY;
-    std::vector<uint8_t*> output_datas;
-    std::vector<uint32_t> output_zp;
-    std::vector<float> output_scales;
-    // std::vector<float*> output_datas;
+    // std::vector<uint8_t*> output_datas;
+    // std::vector<uint32_t> output_zp;
+    // std::vector<float> output_scales;
+    std::vector<float*> output_datas;
 
 #ifdef TIMING    
     m_Tk.start();
@@ -234,8 +246,8 @@ RET_CODE YOLO_DETECTION_UINT8::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox
 #ifdef TIMING    
     m_Tk.start();
 #endif
-    ret = m_net->general_infer_uint8_nhwc_to_uint8(input_datas, output_datas, output_scales, output_zp);
-    // ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
+    // ret = m_net->general_infer_uint8_nhwc_to_uint8(input_datas, output_datas, output_scales, output_zp);
+    ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
 #ifdef TIMING    
     m_Tk.end("general_infer_uint8_nhwc_to_float");
 #endif    
@@ -247,8 +259,8 @@ RET_CODE YOLO_DETECTION_UINT8::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox
 #ifdef TIMING    
     m_Tk.start();
 #endif
-    ret = postprocess(output_datas, output_scales, output_zp, roi, threshold, nms_threshold, bboxes, aX, aY);
-    // ret = postprocess(output_datas, roi, threshold, nms_threshold, bboxes, aX, aY);
+    // ret = postprocess(output_datas, output_scales, output_zp, roi, threshold, nms_threshold, bboxes, aX, aY);
+    ret = postprocess(output_datas, roi, threshold, nms_threshold, bboxes, aX, aY);
 #ifdef TIMING    
     m_Tk.end("postprocess");
 #endif    
@@ -618,37 +630,22 @@ int YOLO_DETECTION_UINT8::post_process_forked_rknn(
 {   
     int model_in_h = m_InpSp.h;
     int model_in_w = m_InpSp.w;
-    float* anchors = output_datas[3];
+    // float* anchors = output_datas[3];
+    // float anchors[] = { 5.81641, 4.39062,  10.78906,  8.45312, 18.59375, 14.20312, 34.31250, 23.07812, 24.43750,  58.09375,  86.62500,  57.87500,  67.00000, 167.50000, 185.12500, 153.87500, 410.00000, 465.50000};
     int n_anchors = 2*3*m_nl;//6*3=18
+    int validCount = 0;
 
-    // stride 8
-    int stride0 = 8;
-    int grid_h0 = model_in_h / stride0;
-    int grid_w0 = model_in_w / stride0;
-    int validCount0 = 0;
-    float* input0 = output_datas[0];
-    validCount0 = process_forked_rknn(input0, anchors , grid_h0, grid_w0,
-        stride0, result , m_clss, conf_threshold, m_nc);
-
-    // stride 16
-    int stride1 = 16;
-    int grid_h1 = model_in_h / stride1;
-    int grid_w1 = model_in_w / stride1;
-    int validCount1 = 0;
-    float* input1 = output_datas[1];
-    validCount1 = process_forked_rknn(input1, anchors+6, grid_h1, grid_w1,
-        stride1, result , m_clss, conf_threshold, m_nc);
-
-    // stride 32
-    int stride2 = 32;
-    int grid_h2 = model_in_h / stride2;
-    int grid_w2 = model_in_w / stride2;
-    int validCount2 = 0;
-    float* input2 = output_datas[2];
-    validCount2 = process_forked_rknn(input2, anchors+12, grid_h2, grid_w2,
-        stride2, result , m_clss, conf_threshold, m_nc);
-
-    int validCount = validCount0 + validCount1 + validCount2;
+    float *anchors = &(m_anchors[0]);
+    // memcpy(anchors, &(m_anchors[0]), n_anchors*sizeof(float)); 
+    for(int i = 0; i < output_datas.size(); i++){
+        // stride 8
+        int stride0 = m_strides[i];
+        int grid_h0 = model_in_h / stride0;
+        int grid_w0 = model_in_w / stride0;
+        float* input0 = output_datas[i];
+        validCount += process_forked_rknn(input0, &anchors[6*i] , grid_h0, grid_w0,
+            stride0, result , m_clss, conf_threshold, m_nc);
+    }
     // no object detect
     if (validCount <= 0)
     {

@@ -58,6 +58,7 @@ typedef enum _AlgoAPIName{
     GENERAL_DETECTORV2  = 21,//跟踪器替代
     LICPLATE_DETECTOR   = 22, //车牌检测
     LICPLATE_RECOGNIZER = 23, //车牌识别
+    GENERAL_DETECTOR_FAST_LOAD = 24,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR, precompiled快速加载
 // #endif
     //=========内部使用======================================================================
     RESERVED1           = 41,//yingxun保留

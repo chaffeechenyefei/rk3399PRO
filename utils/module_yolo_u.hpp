@@ -29,6 +29,8 @@ public:
     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6);
     virtual ucloud::RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);
     virtual ucloud::RET_CODE set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss);
+
+    ucloud::RET_CODE set_anchor(std::vector<float> &anchors);
 /**
  * non-public API
  */
@@ -88,6 +90,8 @@ private:
     //当传入的参数超过边界时,采用默认数值
     float m_default_threshold = 0.55;
     float m_default_nms_threshold = 0.6;
+
+    std::vector<float> m_anchors;
 
 
 #ifdef TIMING
