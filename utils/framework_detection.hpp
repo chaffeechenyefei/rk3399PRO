@@ -43,9 +43,7 @@ public:
     /** -----------------non AlgoAPI-------------------**/
     virtual RET_CODE set_trackor(TRACKMETHOD trackmethod);
     virtual RET_CODE set_detector(ucloud::AlgoAPI* ptr);
-#ifdef TIMING
-    Timer m_Tk;
-#endif  
+    virtual RET_CODE set_anchor(std::vector<float> &anchors);//yolo
 
 protected:
     float clip_threshold(float x);
@@ -55,9 +53,12 @@ protected:
 
     float m_default_threshold = 0.55;
     float m_default_nms_threshold = 0.6;
-
+    std::vector<float> m_anchors;
     int m_fps = 5;
     int m_nn_buf = 10;
+#ifdef TIMING
+    Timer m_Tk;
+#endif
 };
 
 

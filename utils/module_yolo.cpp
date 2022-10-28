@@ -119,43 +119,32 @@ RET_CODE YOLO_DETECTION_NAIVE::init(std::map<InitParam, WeightData> &weightConfi
 
 RET_CODE YOLO_DETECTION_NAIVE::init(std::map<ucloud::InitParam, std::string> &modelpath){
     LOGI << "-> YOLO_DETECTION_NAIVE::init";
-    RET_CODE ret = RET_CODE::SUCCESS;
-    if( modelpath.find(InitParam::BASE_MODEL) == modelpath.end() ){
-        LOGI << "base model not found in modelpath";
-        return RET_CODE::ERR_INIT_PARAM_FAILED;
+    std::map<InitParam, WeightData> weightConfig;
+    for(auto &&modelp: modelpath){
+        int szBuf = 0;
+        unsigned char* tmpBuf = readfile(modelp.second.c_str(),&szBuf);
+        weightConfig[modelp.first] = WeightData{tmpBuf,szBuf};
     }
-    // m_net->release();
-    bool useDRM = false;
-    #ifdef TIMING    
-    m_Tk.start();
-    #endif
-    ret = m_net->base_init(modelpath[InitParam::BASE_MODEL], useDRM);
-    #ifdef TIMING    
-    m_Tk.end("model loading");
-    #endif
+    RET_CODE ret = init(weightConfig);
+    for(auto &&wC: weightConfig){
+        free(wC.second.pData);
+    }
     if(ret!=RET_CODE::SUCCESS) return ret;
-    //SISO的体现, 都只取index0的数据
-    if(m_InpNum != m_net->get_input_shape().size()){
-        printf("**[%s][%d], m_InpNum[%d]!=m_net->get_input_shape().size()[%d]\n", __FILE__, __LINE__, m_InpNum, m_net->get_input_shape().size());
-        return RET_CODE::FAILED;
-    }
-    if(m_OtpNum != m_net->get_output_shape().size()){
-        printf("**[%s][%d], m_OtpNum[%d]!=m_net->get_output_shape().size()[%d]\n", __FILE__, __LINE__, m_OtpNum, m_net->get_output_shape().size());
-        return RET_CODE::FAILED;
-    }
-    m_InpSp = m_net->get_input_shape()[0];
-    m_OutEleDims = m_net->get_output_dims();
-    m_OutEleNums = m_net->get_output_elem_num();
-    //图像前处理参数
-    m_param_img2tensor.keep_aspect_ratio = true;//保持长宽比, opencv有效, drm无效
-    m_param_img2tensor.pad_both_side = false;//仅进行单边(右下)补齐, drm无效
-    m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;//转换成RGB格式
-    m_param_img2tensor.model_input_shape = m_InpSp;//resize的需求尺寸
-
-    m_strides = {8,16,32,64};
     LOGI << "<- YOLO_DETECTION_NAIVE::init";
     return ret;
 }
+
+ucloud::RET_CODE YOLO_DETECTION_NAIVE::set_anchor(std::vector<float> &anchors){
+    m_anchors = anchors;
+    if(m_anchors.size()==3*3*2 || m_anchors.size()==4*3*2)
+        return RET_CODE::SUCCESS;
+    else {
+        printf("**Err[%s][%d] anchor size(%d) not supported\n", __FILE__, __LINE__, m_anchors.size());
+        return RET_CODE::FAILED;
+    }
+    return RET_CODE::SUCCESS;
+}
+
 
 /**
  * 输出Tensor的维度:
@@ -295,9 +284,6 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, VecObjBBox &bboxes, std::
     std::vector<float> aX, aY;
     std::vector<float*> output_datas;
 
-    /// 如果不使用stb load ，注释以下hang
-    input_datas.push_back(tvimage.pData);
-
 #ifdef TIMING    
     m_Tk.start();
 #endif
@@ -314,20 +300,19 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, VecObjBBox &bboxes, std::
     if(ret!=RET_CODE::SUCCESS) return ret;
 
 
-///// 保存每个图像文件drm处理完的图像
-cv::Mat cvim(cv::Size(m_InpSp.w,m_InpSp.h),CV_8UC3,input_datas[0]);
-cv::cvtColor(cvim,cvim,cv::COLOR_RGB2BGR);
-string savename = filename;
-savename = savename.replace(savename.find("."),4,"_drm.jpg");
-cv::imwrite(savename,cvim);
-/// 
+/// 保存每个图像文件drm处理完的图像
+// cv::Mat cvim(cv::Size(m_InpSp.w,m_InpSp.h),CV_8UC3,input_datas[0]);
+// cv::Mat dest;
+// cv::cvtColor(cvim,dest,cv::COLOR_RGB2BGR);
+// string savename = filename;
+// savename = savename.replace(savename.find("."),4,"_drm.jpg");
+// cv::imwrite(savename,cvim);
+// string respath = filename;
+// respath = respath.replace(respath.find("."),4,".txt");
+// ofstream out;
+// out.open(respath,ios::trunc);
 
 
-
-string respath = filename;
-respath = respath.replace(respath.find("."),4,".txt");
-ofstream out;
-out.open(respath,ios::trunc);
 #ifdef TIMING    
     m_Tk.start();
 #endif
@@ -340,29 +325,20 @@ out.open(respath,ios::trunc);
         return ret;
     }
 
-vector<int> anchor0 = {10, 13, 16, 30, 33, 23};
-vector<int> anchor1 = {30, 61, 62, 45, 59, 119};
-vector<int> anchor2 = {116, 90, 156, 198, 373, 326};
-vector<vector<int> > anchors;
-anchors.push_back(anchor0);
-anchors.push_back(anchor1);
-anchors.push_back(anchor2);
-vector<int> strides = {8, 16, 32}; 
-
 #ifdef TIMING    
     m_Tk.start();
 #endif
     // ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY);
-    ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY, anchors,strides);
+    ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY, true);
 #ifdef TIMING    
     m_Tk.end("postprocess");
 #endif    
-    if (!bboxes.empty()){
-        for (auto &bbox:bboxes){
-            out<<bbox.x0<<" "<<bbox.y0<<" "<<bbox.x1<<" "<<bbox.y1<<"\n";
-        }
-    }
-    out.close();
+    // if (!bboxes.empty()){
+    //     for (auto &bbox:bboxes){
+    //         out<<bbox.x0<<" "<<bbox.y0<<" "<<bbox.x1<<" "<<bbox.y1<<"\n";
+    //     }
+    // }
+    // out.close();
 
 
     if(ret!=RET_CODE::SUCCESS) {
@@ -495,6 +471,7 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::postprocess(std::vector<float*> &output_d
     std::vector<VecObjBBox> vecBox;
     VecObjBBox vecBox_after_nms;
     rknn_output_to_boxes_1LX(output_datas, threshold, vecBox);
+    
     int n = 0;
     for(auto &&box: vecBox){
         n+=box.size();
@@ -514,14 +491,14 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::postprocess(std::vector<float*> &output_d
 }
 
 ucloud::RET_CODE YOLO_DETECTION_NAIVE::postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold, 
-    ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY, const std::vector<vector<int> >  anchors, const std::vector<int> strides)
+    ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY, int decode)
 {
     LOGI << "-> YOLO_DETECTION_NAIVE::postprocess";
     if(output_datas.empty()) return RET_CODE::ERR_POST_EXE;
 
     std::vector<VecObjBBox> vecBox;
     VecObjBBox vecBox_after_nms;
-    rknn_output_to_boxes_1LX(output_datas, threshold, vecBox, anchors, strides);
+    rknn_output_to_boxes_1LX(output_datas, threshold, vecBox, 1);
     int n = 0;
     for(auto &&box: vecBox){
         n+=box.size();
@@ -606,68 +583,39 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<flo
 }
 
 
-ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes, const vector<vector<int> > &anchors, const vector<int> &strides){
-    // const int anchors[3][6] = {{10, 13, 16, 30, 33, 23},{30, 61, 62, 45, 59, 119},{116, 90, 156, 198, 373, 326}};
-    // const int anchor1[6] = {30, 61, 62, 45, 59, 119};
-    // const int anchor2[6] = {116, 90, 156, 198, 373, 326};
-    // const int strides[3] = {8, 16, 32};
-    if (anchors.size()!=strides.size()){
-        LOGI<<"-> YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX anchors size dont match strides size!";
-    }
-    // printf("---->YOLO_DETECTION_NAIVE::step into decode step!\n");
-    
-    if (strides.size()!=m_strides.size()){
-        // m_strides.swap(strides);
-        m_strides = strides;
-    }
+ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes, int decode){
     int NC = m_nc;
     int layers_num = m_nl;
     int input_h = m_param_img2tensor.model_input_shape.h;
     int input_w = m_param_img2tensor.model_input_shape.w;
     int prior_box_size = 5+NC;//5+1
-    // int object_num = prior_box_size - 5;
-    // float *layer_large = output_datas[0];//center x,y
-    // float *layer_median = output_datas[1];
-    // float *layer_small = output_datas[2];
+    int anchor_len = m_anchors.size()/layers_num;
     for (int i=0; i<m_unique_clss_map.size(); i++){
         bboxes.push_back(VecObjBBox());
     }
+
+    cout<<"m_anchor size "<<m_anchors.size()<<endl;
     float thres_sigmoid = unsigmoid(threshold);
-    string resultxt;
     printf("----->>>> input_h %d,input_w %d, layers_num %d, NC %d  thresh is %f!\n",input_h,input_w,layers_num,NC,thres_sigmoid);
-    for (int layer_id=1;layer_id<layers_num;layer_id++){
-        switch (layer_id) {
-            case 0:
-            resultxt = "./layer0.txt";
-            break;
-            case 1:
-            resultxt = "./layer1.txt";
-            break;
-            case 2:
-            resultxt = "./layer2.txt";
-            break;
-        }
-        ofstream fd;
-        fd.open(resultxt,ios::trunc);
-        
+    for (int layer_id=0;layer_id<layers_num;layer_id++){
+
+        vector<int> output_dims = m_OutEleDims[layer_id];
+        printf("layer id %d  output_dims %d h %d w%d c%d\n",layer_id,output_dims.size(),output_dims[0],output_dims[1],output_dims[2]);
+    
+
+
         float *layer = output_datas[layer_id];
-        int grid_h = input_h/strides[layer_id];
-        int grid_w = input_w/strides[layer_id];
+        int grid_h = input_h/m_strides[layer_id];
+        int grid_w = input_w/m_strides[layer_id];
         int grid_len = grid_h*grid_w;
-        int stride = strides[layer_id];
-        printf("stride is %d grid_h %d  grid_w %d\n",stride,grid_h,grid_w);
-        vector<int> anchor = anchors[layer_id];
-        for (auto item:anchor){
-            cout<< item << " "; 
-        }
-        cout<<endl;
-        for (int a =0;a<3;a++){          
+        int stride = m_strides[layer_id];
+        float* anchor= &(m_anchors[anchor_len*layer_id]);
+
+        for (int a =0;a<layers_num;a++){          
             for (int i=0;i<grid_h;i++){
                 for (int j=0;j<grid_w;j++){
                     float box_confidence = layer[(prior_box_size * a + 4) * grid_len + i * grid_w + j];
-                    int tmp = (prior_box_size * a + 4) * grid_len + i * grid_w + j;
-                    printf("anchor layer %d,box_confidence %f\n",a,box_confidence);
-                    fd<<layer[prior_box_size*a*grid_len+i*grid_w+j] << " ";
+                   
                     if (box_confidence >= thres_sigmoid){
                         BBox fbox; 
                         int offset = (prior_box_size * a) * grid_len + i * grid_w + j;
@@ -676,13 +624,12 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<flo
                         float box_y = sigmoid(in_ptr[grid_len]) * 2.0 - 0.5;
                         float box_w = sigmoid(in_ptr[2 * grid_len]) * 2.0;
                         float box_h = sigmoid(in_ptr[3 * grid_len]) * 2.0;
-                        // printf("bbox x %f, y %f\n",box_x,box_y);
+     
+
                         box_x = (box_x + j) * (float)stride;
                         box_y = (box_y + i) * (float)stride;
                         box_w = box_w * box_w * (float)anchor[a * 2];
                         box_h = box_h * box_h * (float)anchor[a * 2 + 1];
-                        // box_x -= (box_w / 2.0);
-                        // box_y -= (box_h / 2.0);
                         
                         fbox.x0 = box_x - (box_w / 2.0);
                         fbox.y0 = box_y - (box_h / 2.0);
@@ -692,7 +639,6 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<flo
                         fbox.h  = box_h;
                         float maxClassProbs = in_ptr[5 * grid_len];
                         int maxid = 0; 
-                        // argmax(confidence, NC , maxid, maxClassProbs);
                         for (int k = 1; k < NC; ++k)
                         {
                             float prob = in_ptr[(5 + k) * grid_len];
@@ -716,10 +662,10 @@ ucloud::RET_CODE YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX( std::vector<flo
 
                     }
                 }
-                fd<<"\n";
+                // fd<<"\n";
             }
         }   
-        fd.close();
+        // fd.close();
     }
     LOGI << "-> YOLO_DETECTION_NAIVE::rknn_output_to_boxes_1LX";
     return RET_CODE::SUCCESS;

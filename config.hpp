@@ -36,6 +36,8 @@ typedef enum _TASKNAME{
     FACE_ATTR       = 22,//人脸检测+属性
     PED_CAR_NONCARV2  = 23,//人车非检测
     LICPLATE        = 24,//车牌检测+车牌识别
+    RESERVED2       = 25,//yolov5 mode3
+    PED_CAR_NONCAR_FAST_LOAD  = 26,//人车非检测快速加载
 
     TASK_END,
 
@@ -59,6 +61,8 @@ typedef enum _MODELFILENAME{
     WATER_DET_UNET,//UNet积水分割
     WATER_DET_PSP,//PSPNet积水分割
     GENERAL_DET,//人车非检测
+    GENERAL_DET_MODE3,//人车非检测
+    GENERAL_DET_MODE4,//人车非检测
     GENERAL_TRK_MLU,//跟踪特征提取器(寒武纪)
     GENERAL_TRK_R18,//跟踪特诊提取器(R18)
     PED_DET,//行人检测
@@ -99,6 +103,8 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::GENERAL_TRK_MLU,    "feature_extract_4c4b_argb_270_v1.5.0.cambricon"},
     {MODELFILENAME::GENERAL_TRK_R18,    "track-r18_20220113_64x128_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::GENERAL_DET,        rknn_model_path + "yolov5s-conv-9-20211104_736x416.rknn"},
+    {MODELFILENAME::GENERAL_DET_MODE3,  rknn_model_path + "yolov5s-conv-9-20211104_736x416_mode3_precompiled.rknn"},
+    {MODELFILENAME::GENERAL_DET_MODE4,  rknn_model_path + "yolov5s-conv-9-20211104_736x416_mode4_precompiled.rknn"},
     {MODELFILENAME::PED_DET,            "yolov5s-conv-people-aug-fall_736x416_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::PED_FALL_DET,       "yolov5s-conv-fall-ped-20220301_736x416_mlu220_bs1c1_fp16.cambricon"},//20220222
     {MODELFILENAME::SAFETY_HAT_DET,     rknn_model_path + "yolov5s-conv-safety-hat-20220217_736x416.rknn"},//20220222
@@ -219,7 +225,6 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         apiName = AlgoAPIName::GENERAL_DETECTOR;
         init_param = { 
             {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::GENERAL_DET] },
-            {InitParam::TRACK_MODEL, cambricon_model_file[MODELFILENAME::GENERAL_TRK_MLU] },
         };
         taskDesc = "PED CAR NONCAR";
         break;
@@ -230,7 +235,15 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
             {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::GENERAL_DET] },
         };
         taskDesc = "PED CAR NONCARV2";
-        break;   
+        break;
+    case TASKNAME::PED_CAR_NONCAR_FAST_LOAD: //建议阈值0.6
+        threshold = 0.55;
+        apiName = AlgoAPIName::GENERAL_DETECTOR_FAST_LOAD;
+        init_param = { 
+            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::GENERAL_DET_MODE4] },
+        };
+        taskDesc = "PED CAR NONCAR yolov5 mode4 fast load";
+        break;           
     case TASKNAME::LICPLATE: //建议阈值0.55
         threshold = 0.5;
         apiName = AlgoAPIName::LICPLATE_DETECTOR;

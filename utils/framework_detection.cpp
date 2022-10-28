@@ -86,6 +86,10 @@ RET_CODE AnyDetectionV4ByteTrack::set_detector(AlgoAPI* ptr){
     return RET_CODE::SUCCESS;
 }
 
+RET_CODE AnyDetectionV4ByteTrack::set_anchor(std::vector<float> &anchors){
+    return m_detector->set_anchor(anchors);
+}
+
 RET_CODE AnyDetectionV4ByteTrack::set_trackor(TRACKMETHOD trackmethod){
     switch (trackmethod)
     {

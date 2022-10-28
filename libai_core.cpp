@@ -8,6 +8,7 @@
 #include "utils/module_retinaface.hpp"
 #include "utils/module_smoke_cig_detection.hpp"
 #include "utils/module_fire_detection.hpp"
+#include "utils/module_yolo_u.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -52,6 +53,16 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_);
     }
         break;    
+    case AlgoAPIName::GENERAL_DETECTOR_FAST_LOAD:
+    {
+        YOLO_DETECTION_UINT8 *_ptr_ = new YOLO_DETECTION_UINT8();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR};
+        _ptr_->set_output_cls_order(model_output_clss);
+        std::vector<float> anchors = { 5.81641,   4.39062,  10.78906,   8.45312,  18.59375,  14.20312,  34.31250,  23.07812,  24.43750,  58.09375,  86.62500,  57.87500,  67.00000, 167.50000, 185.12500, 153.87500, 410.00000, 465.50000};
+        _ptr_->set_anchor(anchors);
+        apiHandle.reset(_ptr_);
+    }
+        break;
 /*******************************************************************************
 正式接口
 *******************************************************************************/           
@@ -95,6 +106,8 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
         _ptr_->set_output_cls_order(model_output_clss);
+        std::vector<float> anchors = {10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59, 119, 116, 90, 156, 198, 373, 326};
+        _ptr_->set_anchor(anchors);
         apiHandle.reset(_ptr_);
     }
         break;        

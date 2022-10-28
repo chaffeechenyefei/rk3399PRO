@@ -35,53 +35,6 @@
 using namespace std;
 using namespace ucloud;
 
-static unsigned char *load_image(const char *image_path)
-{
-    //image load RGB
-    int req_height = 416;
-    int req_width = 736;
-    int req_channel = 3;
-    printf("w=%d,h=%d,c=%d\n", req_width, req_height, req_channel);
-
-    int height = 0;
-    int width = 0;
-    int channel = 0;
-
-    unsigned char *image_data = stbi_load(image_path, &width, &height, &channel, req_channel);
-    if (image_data == NULL)
-    {
-        printf("load image failed!\n");
-        return NULL;
-    }
-
-    if (width != req_width || height != req_height)
-    {
-        unsigned char *image_resized = (unsigned char *)STBI_MALLOC(req_width * req_height * req_channel);
-        if (!image_resized)
-        {
-            printf("malloc image failed!\n");
-            STBI_FREE(image_data);
-            return NULL;
-        }
-        if (stbir_resize_uint8(image_data, width, height, 0, image_resized, req_width, req_height, 0, channel) != 1)
-        {
-            printf("resize image failed!\n");
-            STBI_FREE(image_data);
-            return NULL;
-        }
-        STBI_FREE(image_data);
-        image_data = image_resized;
-
-    }
-    // string savename = image_path;
-    // savename = savename.replace(savename.find("."),4,"_result.jpg");
-    // cv::Mat image(cv::Size(req_width,req_height),CV_8UC3,image_data);
-    // cv::cvtColor(image,image,cv::COLOR_RGB2BGR);
-    // cv::imwrite(savename,image);
-
-
-    return image_data;
-}
 
 /*-------------------------------------------
                   Main Function
@@ -120,7 +73,7 @@ int main(int argc, char **argv)
     int img_mode = 0;
     float threshold = 0.2;
     float nms = 0.6;
-    int fmt_w = 736; int fmt_h = 416;
+    int fmt_w = 1280; int fmt_h = 960;
     ucloud::TvaiRect roi = {0,0,fmt_w/2, fmt_h};
     bool use_roi = false;
     ucloud::AlgoAPIName algName = ucloud::AlgoAPIName::GENERAL_DETECTOR;
@@ -182,8 +135,8 @@ int main(int argc, char **argv)
             case 0:
                 printf("readImg_to_RGB\n");
                 
-                imgBuf = load_image(imagePath.c_str());
-                // imgBuf = ucloud::readImg_to_RGB(imagePath,fmt_w, fmt_h, width,height);
+                // imgBuf = load_image(imagePath.c_str());
+                imgBuf = ucloud::readImg_to_RGB(imagePath,fmt_w, fmt_h, width,height);
                 stride = width;
                 tvInp.format = TvaiImageFormat::TVAI_IMAGE_FORMAT_RGB;
                 tvInp.dataSize = width*height*3;
@@ -277,19 +230,21 @@ int main(int argc, char **argv)
             }
             printf("total [%d] detected\n", bboxes.size());
             if (imgBuf) free(imgBuf);
+
+            if(img_mode <= 3){
+                if(tvInp.format!=TVAI_IMAGE_FORMAT_BGR){
+                    // free(imgBuf);
+                    imgBuf = readImg_to_BGR(imagePath,fmt_w, fmt_h, width,height);
+                }
+                drawImg(imgBuf, width, height, bboxes, true, true, false, 1);
+                writeImg("result.jpg", imgBuf, width , height,false);
+                if(imgBuf) free(imgBuf);
+            }
+
+       
         }
     }
     printf("avg exec ptrHandle->run time = %f\n", avg_time/loop_times);
 
-    if(img_mode <= 3 && imlst.size()==1){
-        if(tvInp.format!=TVAI_IMAGE_FORMAT_BGR){
-            // free(imgBuf);
-            imgBuf = readImg_to_BGR(imlst[0],fmt_w, fmt_h, width,height);
-        }
-        drawImg(imgBuf, width, height, bboxes, true, true, false, 1);
-        writeImg("result.jpg", imgBuf, width , height);
-    }
-
-    // if(imgBuf) free(imgBuf);
     return 0;
 }

@@ -58,6 +58,7 @@ typedef enum _AlgoAPIName{
     GENERAL_DETECTORV2  = 21,//跟踪器替代
     LICPLATE_DETECTOR   = 22, //车牌检测
     LICPLATE_RECOGNIZER = 23, //车牌识别
+    GENERAL_DETECTOR_FAST_LOAD = 24,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR, precompiled快速加载
 // #endif
     //=========内部使用======================================================================
     RESERVED1           = 41,//yingxun保留
@@ -72,6 +73,11 @@ typedef enum _AlgoAPIName{
     BATCH_GENERAL_DETECTOR    = 100,//测试用
     FIRE_CLASSIFIER                ,//火焰分类, 内部测试用
     WATER_DETECTOR_OLD      = 1008,//积水检测(旧版unet,与新版之间存在后处理的逻辑差异)
+    //=========高级接口======================================================================
+    //用户可以根据需要自行进行开发(SISO: 只针对单输入单输出)
+    GENERAL_YOLOV5_DETECTOR = 2001,//通用yolov5检测器: 对输入图像进行检测, 返回目标位置, 需要设定模型输出的对应类别
+    GENERAL_CLASSIFY        = 2002,//通用分类器: 对输入图像的特定区域(VecBox进行设定)进行分类, 雪瑶设定模型输出的对应类别
+    GENERAL_INFER           = 2003,//通用推理接口, 返回内容自行解析, 内容返回在TvaiFeature中
 }AlgoAPIName;
 
 typedef enum _InitParam{
@@ -330,7 +336,9 @@ public:
     virtual RET_CODE run(BatchImageIN &batch_tvimages, VecObjBBox &bboxes){
         if(batch_tvimages.empty()) return RET_CODE::SUCCESS;
         else return run(batch_tvimages[0], bboxes);
-    }                         
+    }  
+    virtual RET_CODE set_anchor(std::vector<float> &anchors){return RET_CODE::SUCCESS;};
+
 };
 typedef std::shared_ptr<AlgoAPI> AlgoAPISPtr;
 
