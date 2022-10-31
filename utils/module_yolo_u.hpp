@@ -7,6 +7,11 @@
 #include <atomic>
 #include "framework_detection.hpp"
 
+/*******************************************************************************
+ * general_infer_uint8_nhwc_to_uint8的使用范例
+*******************************************************************************/
+
+
 // class YOLO_DETECTION;//带跟踪
 class YOLO_DETECTION_UINT8;//不带跟踪
 class YOLO_DETECTION_UINT8_BYTETRACK;

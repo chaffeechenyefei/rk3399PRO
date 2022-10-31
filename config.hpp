@@ -111,7 +111,7 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::TJ_HELMET_DET,      "yolov5s-conv-safety-hat-tongji-20220915_416x416_mlu220_bs1c1_fp16.cambricon"},//20220915
     {MODELFILENAME::TRASH_BAG_DET,      "yolov5s-conv-trashbag-20211214_736x416_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::FIRE_DET,           "yolov5s-conv-fire-21102010_736x416_mlu220_bs1c1_fp16.cambricon"},
-    {MODELFILENAME::FIRE_DET_220407,    rknn_model_path + "yolov5s-conv-fire-220407_736x416.rknn"},
+    {MODELFILENAME::FIRE_DET_220407,    rknn_model_path + "yolov5s-conv-fire-220407_736x416_mode4_precompiled.rknn"},
     {MODELFILENAME::BANNER_DET,         "yolov5s-conv-banner-20211130_736x416_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::MOTOR_DET,          "yolov5s-conv-motor-20211217_736x416_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::HAND_DET_224x320,   "yolov5s-conv-hand-20220117_224x320_mlu220_bs1c1_fp16.cambricon"},
@@ -220,6 +220,16 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         };
         taskDesc = "FIRE";
         break;
+    case TASKNAME::FIRE_X: //建议阈值0.2
+        threshold = 0.4;
+        apiName = AlgoAPIName::FIRE_DETECTOR_X;
+        taskDesc = "FIRE_X(cascaded models)";  
+        init_param = { 
+            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::FIRE_DET_220407] },
+            {InitParam::SUB_MODEL, cambricon_model_file[MODELFILENAME::FIRE_CLS] },
+        };        
+        break;
+
     case TASKNAME::PED_CAR_NONCAR: //建议阈值0.6
         threshold = 0.55;
         apiName = AlgoAPIName::GENERAL_DETECTOR;
@@ -285,15 +295,6 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         };
         taskDesc = "WATER";
         break;    
-    case TASKNAME::FIRE_X: //建议阈值0.2
-        threshold = 0.4;
-        apiName = AlgoAPIName::FIRE_DETECTOR_X;
-        taskDesc = "FIRE_X(cascaded models)";  
-        init_param = { 
-            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::FIRE_DET_220407] },
-            {InitParam::SUB_MODEL, cambricon_model_file[MODELFILENAME::FIRE_CLS] },
-        };        
-        break;
     case TASKNAME::BANNER: //建议阈值0.5
         threshold = 0.5;
         apiName = AlgoAPIName::BANNER_DETECTOR;

@@ -14,7 +14,8 @@ class FireDetector:public ucloud::AlgoAPI{
  public:
     FireDetector(){//直观看到用了哪些类实现的
         LOGI<<"-> FireDetector";
-        m_detectHandle = std::make_shared<YOLO_DETECTION_BYTETRACK>();
+        // m_detectHandle = std::make_shared<YOLO_DETECTION_BYTETRACK>();
+        m_detectHandle = ucloud::AICoreFactory::getAlgoAPI(ucloud::AlgoAPIName::FIRE_DETECTOR);
         m_clsHandle = std::make_shared<Classification>();
     }
     virtual ~FireDetector(){};
