@@ -1,5 +1,8 @@
 #include "module_classify.hpp"
 #include <opencv2/opencv.hpp>
+#include <sstream>
+#include <fstream>
+
 using namespace std;
 using namespace ucloud;
 
@@ -156,6 +159,7 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
             return ret;
         }
 
+    
 // #ifdef VISUAL
 //         cv::Mat cvimage_show;
 //         cv::Mat cvimage_show2( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, input_datas[0]);
@@ -186,7 +190,102 @@ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBB
     }
     return ret;
 }
+ 
+ /****
+  *  add filename for test
+  * ****/
+ ucloud::RET_CODE Classification::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBBox &bboxes,string &filename,float threshold, float nms_threshold){
+    LOGI<<"-> Classification::run";
+    ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
+    switch (tvimage.format)
+    {
+    case ucloud::TVAI_IMAGE_FORMAT_BGR:
+    case ucloud::TVAI_IMAGE_FORMAT_RGB:
+    case ucloud::TVAI_IMAGE_FORMAT_NV12:
+    case ucloud::TVAI_IMAGE_FORMAT_NV21:
+        ret = ucloud::RET_CODE::SUCCESS;
+        break;
     
+    default:
+        ret = ucloud::RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+        break;
+    }
+    if (ret!=ucloud::RET_CODE::SUCCESS) return ret;
+    
+    std::vector<int> output_nums = m_net->get_output_elem_num();
+    int num_cls = m_clss.size();
+    if(output_nums[0]!=num_cls){
+        printf("**[%s][%d] output_nums[0][%d] != num_cls[%d]\n",__FILE__,__LINE__,output_nums[0], num_cls);
+        return RET_CODE::FAILED;
+    }
+    
+    if(bboxes.empty()) return RET_CODE::SUCCESS;//没有目标直接返回
+
+    for(auto &&box: bboxes){
+        std::vector<unsigned char*> input_datas;
+        std::vector<float*> output_datas;
+        TvaiRect roi = box.rect;
+        vector<float> aX,aY;
+        
+        #ifdef USEDRM  
+            roi =  get_valid_rect(roi, tvimage.width, tvimage.height);
+            ret = m_cv_preprocess_net->preprocess_drm(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
+        #else
+            ret = preprocess_opencv(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
+        #endif
+            if(ret!=ucloud::RET_CODE::SUCCESS){
+                printf("**[%s][%d] Classification preprocess return [%d]\n", __FILE__, __LINE__, ret);
+                return ret;
+            }
+        cv::Mat cvim(cv::Size(m_InpSp.w,m_InpSp.h),CV_8UC3,input_datas[0]);
+        cv::cvtColor(cvim,cvim,cv::COLOR_RGB2BGR);
+        string savename = filename;
+        savename = savename.replace(savename.find("."),4,"_drm.jpg");
+        cv::imwrite(savename,cvim);
+
+        string respath = filename;
+        respath = respath.replace(respath.find("."),4,".txt");
+        ofstream out;
+        out.open(respath,ios::trunc);
+        
+    // #ifdef VISUAL
+    //         cv::Mat cvimage_show;
+    //         cv::Mat cvimage_show2( cv::Size(m_InpSp.w, m_InpSp.h), CV_8UC3, input_datas[0]);
+    //         cv::cvtColor(cvimage_show2, cvimage_show, cv::COLOR_RGB2BGR);
+    //         cv::imwrite("inner.jpg", cvimage_show);
+    // #endif        
+
+        ret  = m_net->general_infer_uint8_nhwc_to_float(input_datas,output_datas);
+        if(ret!=RET_CODE::SUCCESS) {
+            for(auto &&t: input_datas) free(t);
+            return ret;
+        }
+        float *sptr = output_datas[0];
+        out<<sptr[0]<<" "<<sptr[1]<<" "<<sptr[2];
+        out.close();
+
+
+        ret = postprocess(output_datas, threshold, box);
+
+        if(ret!=RET_CODE::SUCCESS) {
+            for(auto &&t: input_datas) free(t);
+            for(auto &&t: output_datas) free(t);
+            return ret;
+        }
+
+        for(auto &&t: output_datas){
+            free(t);
+        }
+        for(auto &&t: input_datas){
+            free(t);
+        }
+    }
+    return ret;
+}
+
+
+
+
 
 ucloud::RET_CODE Classification::get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss){
     LOGI << "-> get_class_type: inner_class_num = " << m_clss.size();

@@ -106,6 +106,8 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
         _ptr_->set_output_cls_order(model_output_clss);
+        std::vector<float> anchors = {10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59, 119, 116, 90, 156, 198, 373, 326};
+        _ptr_->set_anchor(anchors);
         apiHandle.reset(_ptr_);
     }
         break;        
