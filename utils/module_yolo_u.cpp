@@ -564,6 +564,7 @@ static int process_forked_rknn(float *input, float *anchor, int grid_h, int grid
     int OBJ_CLASS_NUM = nc;
     int validCount = 0;
     int grid_len = grid_h * grid_w;
+    float u_threshold = unsigmoid(threshold);
     for (int a = 0; a < 3; a++)
     {
         for (int i = 0; i < grid_h; i++)
@@ -571,7 +572,7 @@ static int process_forked_rknn(float *input, float *anchor, int grid_h, int grid
             for (int j = 0; j < grid_w; j++)
             {
                 float box_objectness = input[(PROP_BOX_SIZE * a + 4) * grid_len + i * grid_w + j];
-                if (box_objectness >= threshold)
+                if (box_objectness >= u_threshold)
                 {   
                     BBox box;
                     int offset = (PROP_BOX_SIZE * a) * grid_len + i * grid_w + j;

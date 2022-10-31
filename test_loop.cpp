@@ -31,52 +31,76 @@ using namespace ucloud;
 -------------------------------------------*/
 int main(int argc, char **argv)
 {   
-    TASKNAME taskid = TASKNAME::PED_CAR_NONCAR;
-    float threshold, nms_threshold;
-    AlgoAPIName algoname;
-    std::map<InitParam, std::string> init_param;
-    int use_batch = 0;
-    bool flag_parser = task_parser(taskid, threshold, nms_threshold, algoname, init_param, use_batch);
+    ArgParser myParser;
+    myParser.add_argument("-t1", 1, "task1");
+    myParser.add_argument("-t2", -1, "task2");
+    myParser.add_argument("-t3", -1, "task3");
+    myParser.add_argument("-t4", -1, "task4");
+    myParser.add_argument("-t5", -1, "task4");
+    myParser.add_argument("-list",0, "list all the task");
+    if(!myParser.parser(argc, argv)) return -1;
 
-    AlgoAPISPtr ptrMainHandle = ucloud::AICoreFactory::getAlgoAPI(algoname);
-    std::map<InitParam, WeightData> weightConfig;
-    for(auto &&param: init_param){
-        int tmpSz = 0;
-        unsigned char* tmpPtr = readfile(param.second.c_str(), &tmpSz);
-        printf("data addr:%d, bufsize:%d\n", tmpPtr , tmpSz);
-        WeightData tmp{tmpPtr, tmpSz};
-        weightConfig[param.first] = tmp;
+    if(myParser.get_value_int("-list")>0){
+        print_all_task();
+        return -1;
     }
-    RET_CODE retcode = ptrMainHandle->init(weightConfig);
-    for(auto &&param: weightConfig){
-        free(param.second.pData);
+
+    std::vector<TASKNAME> taskids;
+    if(myParser.get_value_int("-t1") >= 0){
+        taskids.push_back(TASKNAME(myParser.get_value_int("-t1")));
     }
-    if(retcode==RET_CODE::SUCCESS)
-        printf("**stage 1 initialed\n");
-    else
-        printf("**stage 1 failed\n");
-
-    taskid = TASKNAME::PHONING;
-    flag_parser = task_parser(taskid, threshold, nms_threshold, algoname, init_param, use_batch);
-
-    AlgoAPISPtr ptrMainHandle2 = ucloud::AICoreFactory::getAlgoAPI(algoname);
-
-    for(auto &&param: init_param){
-        int tmpSz = 0;
-        unsigned char* tmpPtr = readfile(param.second.c_str(), &tmpSz);
-        printf("data addr:%d, bufsize:%d\n", tmpPtr , tmpSz);
-        WeightData tmp{tmpPtr, tmpSz};
-        weightConfig[param.first] = tmp;
+    if(myParser.get_value_int("-t2") >= 0){
+        taskids.push_back(TASKNAME(myParser.get_value_int("-t2")));
     }
-    retcode = ptrMainHandle2->init(weightConfig);
-    for(auto &&param: weightConfig){
-        free(param.second.pData);
+    if(myParser.get_value_int("-t3") >= 0){
+        taskids.push_back(TASKNAME(myParser.get_value_int("-t3")));
+    }    
+    if(myParser.get_value_int("-t4") >= 0){
+        taskids.push_back(TASKNAME(myParser.get_value_int("-t4")));
     }
-    if(retcode==RET_CODE::SUCCESS)
-        printf("**stage 2 initialed\n");
-    else
-        printf("**stage 2 failed\n");
+    if(myParser.get_value_int("-t5") >= 0){
+        taskids.push_back(TASKNAME(myParser.get_value_int("-t5")));
+    }    
 
+    int cnt = 0;
+    std::map<AlgoAPIName, AlgoAPISPtr> m_handles;
+    for(auto &&taskid: taskids){
+        printf("== creating taskid %d\n", taskid);
+        float threshold, nms_threshold;
+        AlgoAPIName algoname;
+        std::map<InitParam, std::string> init_param;
+        int use_batch = 0;
+        if( task_parser(taskid, threshold, nms_threshold, algoname, init_param, use_batch) ){}
+        else{
+            printf("[%s][%d]ERR task_parser error\n", __FILE__, __LINE__);
+            return -1;
+        }
+        RET_CODE retcode;
+        AlgoAPISPtr ptrHandle = ucloud::AICoreFactory::getAlgoAPI(algoname);
+        if(ptrHandle!=nullptr) m_handles.insert(std::pair<AlgoAPIName, AlgoAPISPtr>(algoname, ptrHandle));
+        else {
+            printf("[%s][%d]ERR getAlgoAPI error\n", __FILE__, __LINE__);
+            return -1;
+        }
+        std::map<InitParam, WeightData> weightConfig;
+        for(auto &&param: init_param){
+            int tmpSz = 0;
+            unsigned char* tmpPtr = readfile(param.second.c_str(), &tmpSz);
+            printf("data addr:%d, bufsize:%d\n", tmpPtr , tmpSz);
+            WeightData tmp{tmpPtr, tmpSz};
+            weightConfig[param.first] = tmp;
+        }
+        {
+            retcode = ptrHandle->init(weightConfig);
+        }
+
+        for(auto &&param: weightConfig){
+            free(param.second.pData);
+        }        
+        if( retcode != RET_CODE::SUCCESS ){ std::cout << "algo initial failed" << endl; return -1; }
+    }
+
+    printf("total [%d] handles created\n", m_handles.size());
 
     return 0;
 }
