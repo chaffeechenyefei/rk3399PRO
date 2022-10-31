@@ -87,6 +87,7 @@ RET_CODE AnyDetectionV4ByteTrack::set_detector(AlgoAPI* ptr){
 }
 
 RET_CODE AnyDetectionV4ByteTrack::set_anchor(std::vector<float> &anchors){
+    LOGI << "-> AnyDetectionV4ByteTrack::set_anchor";
     return m_detector->set_anchor(anchors);
 }
 

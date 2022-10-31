@@ -28,32 +28,38 @@ public:
     virtual ~YOLO_DETECTION_NAIVE();
     virtual void release();
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, std::string> &modelpath);
-    virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, std::string &filename, float threshold=0.5, float nms_threshold=0.6);
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6);
     virtual ucloud::RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);
     virtual ucloud::RET_CODE set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss);
     virtual ucloud::RET_CODE set_anchor(std::vector<float> &anchors);
+    virtual ucloud::RET_CODE set_decode(int mode=4);
+    /*******************************************************************************
+     * lihui test api
+    *******************************************************************************/
+    virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, std::string &filename, float threshold=0.5, float nms_threshold=0.6);
 /**
  * non-public API
  */
 //对roi区域进行检测
     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::TvaiRect roi ,ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6);
 protected:
-
-    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
-    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, ucloud::TvaiRect roi, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY);
-    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY, int decode);
-    /** mode=0: Detect Layer标准输出
-     * 模型输出Tensor的维度:
-     * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
-     * dim0 = 2,NC+1
-     * dim1 = L
-     * dim2 = 1
-     **/    
-    virtual bool check_output_dims_1LX();
-    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes); 
-    virtual ucloud::RET_CODE rknn_output_to_boxes_1LX( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes, int decode);
+    /*******************************************************************************
+     * postprocess decode for mode 0,4
+    *******************************************************************************/
+    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY, int decode_mode);
+    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, ucloud::TvaiRect roi, float threshold ,float nms_threshold,ucloud::VecObjBBox &bboxes, std::vector<float> &aX, std::vector<float> &aY, int decode_mode);
+    
+    // /** mode=0: Detect Layer标准输出
+    //  * 模型输出Tensor的维度:
+    //  * xy[1,L,2] wh[1,L,2] conf[1,L,NC+1]
+    //  * dim0 = 2,NC+1
+    //  * dim1 = L
+    //  * dim2 = 1
+    //  **/    
+    // virtual bool check_output_dims_1LX();
+    virtual ucloud::RET_CODE rknn_output_to_boxes_mode0( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes); 
+    virtual ucloud::RET_CODE rknn_output_to_boxes_mode4( std::vector<float*> &output_datas, float threshold, std::vector<ucloud::VecObjBBox> &bboxes);
     
     float clip_threshold(float x);
     float clip_nms_threshold(float x);
@@ -87,6 +93,8 @@ private:
     //当传入的参数超过边界时,采用默认数值
     float m_default_threshold = 0.55;
     float m_default_nms_threshold = 0.6;
+
+    int m_decode_mode = 4;
 
    
 

@@ -84,6 +84,7 @@ typedef enum _InitParam{
     BASE_MODEL          = 0, //基础模型(检测模型/特征提取模型/分类模型)
     TRACK_MODEL         = 1, //跟踪模型
     SUB_MODEL           = 2, //模型级联时, 主模型用于初步检测, 次模型用于二次过滤, 提高精度
+    ANCHOR_MODEL        = 3,
 }InitParam;
 
 typedef struct tagWeightData{
@@ -309,8 +310,6 @@ public:
     virtual RET_CODE init(std::map<InitParam, std::string> &modelpath){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     virtual RET_CODE init(std::map<InitParam, WeightData> &weightConfig){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
     virtual RET_CODE run(TvaiImage& tvimage, VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
-    
-    
     /**
      * 返回检测的类别, 或返回适用的类别
      */
@@ -336,7 +335,9 @@ public:
         if(batch_tvimages.empty()) return RET_CODE::SUCCESS;
         else return run(batch_tvimages[0], bboxes);
     }  
-    virtual RET_CODE set_anchor(std::vector<float> &anchors){return RET_CODE::SUCCESS;};
+    virtual RET_CODE set_anchor(std::vector<float> &anchors){return RET_CODE::ERR_VIRTUAL_FUNCTION;};
+    /*****************************lihui test api**************************************/
+    virtual RET_CODE run(TvaiImage& tvimage, VecObjBBox &bboxes, std::string &filename, float threshold=0.5, float nms_threshold=0.6){return RET_CODE::ERR_VIRTUAL_FUNCTION;}
 
 };
 typedef std::shared_ptr<AlgoAPI> AlgoAPISPtr;

@@ -7,7 +7,7 @@ using ucloud::AlgoAPIName;
 using ucloud::InitParam;
 using std::string;
 
-typedef enum _TASKNAME{
+enum class TASKNAME{
     //ID
     FACE = 0,//人脸检测+特征提取
     //yolo based
@@ -45,12 +45,12 @@ typedef enum _TASKNAME{
     HAND_L_DET      = 51,//手的检测 736x416
     JSON            = 100,//用户自定义json形式
     TJ_HELMET       = 200,//同济416x416安全帽检测 
-} TASKNAME;
+} ;
 
 /**
  * 寒武纪模型文件KEY
  */
-typedef enum _MODELFILENAME{
+enum class MODELFILENAME{
     FACE_DET,//人脸检测
     FACE_EXT,//人脸特征提取
     SKELETON_DET_R50,//骨架原始R50
@@ -86,7 +86,7 @@ typedef enum _MODELFILENAME{
     MOD_DET_UNET,//UNet移动物体分割
     ACTION_CLS,//行为识别
     FACEATTR_CLS,//人脸属性分类器112x112
-}MODELFILENAME;
+};
 
 /**
  * 寒武纪模型文件KEY,ADDR
@@ -224,7 +224,7 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         threshold = 0.55;
         apiName = AlgoAPIName::GENERAL_DETECTOR;
         init_param = { 
-            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::GENERAL_DET] },
+            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::GENERAL_DET_MODE4] },
         };
         taskDesc = "PED CAR NONCAR";
         break;
@@ -232,7 +232,7 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         threshold = 0.40;
         apiName = AlgoAPIName::GENERAL_DETECTORV2;
         init_param = { 
-            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::GENERAL_DET] },
+            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::GENERAL_DET_MODE4] },
         };
         taskDesc = "PED CAR NONCARV2";
         break;
