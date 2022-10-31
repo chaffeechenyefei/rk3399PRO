@@ -14,8 +14,9 @@
 class SMOKE_CIG_DETECTION: public ucloud::AlgoAPI{
 public:
     SMOKE_CIG_DETECTION(){
-        m_face_detectHandle = std::make_shared<RETINAFACE_DETECTION_BYTETRACK>();
-        m_cig_detectHandle = std::make_shared<YOLO_DETECTION_NAIVE>();
+        // m_face_detectHandle = std::make_shared<RETINAFACE_DETECTION_BYTETRACK>();
+        m_face_detectHandle = ucloud::AICoreFactory::getAlgoAPI(ucloud::AlgoAPIName::FACE_DETECTOR);
+        m_cig_detectHandle = ucloud::AICoreFactory::getAlgoAPI(ucloud::AlgoAPIName::CIG_DETECTOR_NO_TRACK);
     }
     ~SMOKE_CIG_DETECTION(){}
     RET_CODE init(std::map<ucloud::InitParam, std::string> &modelpath);

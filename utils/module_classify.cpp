@@ -54,31 +54,7 @@ ucloud::RET_CODE Classification::init(std::map<ucloud::InitParam,std::string> &m
     LOGI<<"-> Classification::init";
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
 
-    if (modelpath.find(ucloud::InitParam::BASE_MODEL)== modelpath.end()){
-        printf("**[%s][%d] base model not found in modelpath\n", __FILE__, __LINE__);
-        return ucloud::RET_CODE::ERR_INIT_PARAM_FAILED;
-    }
-    bool useDRM = false;
-    ret = m_net->base_init(modelpath[ucloud::InitParam::BASE_MODEL],useDRM);
-    if (ret!=ucloud::RET_CODE::SUCCESS){
-        return ret;
-    }
-    if(m_InpNum != m_net->get_input_shape().size()){
-        printf("** dims err m_InpuNum[%d] != m_net->get_input_shape().size()[%d]\n", m_InpNum, m_net->get_input_shape().size());
-        return RET_CODE::FAILED;
-    }
-    if(m_OutNum != m_net->get_output_shape().size()){
-        printf("** dims err m_OutNum[%d] != m_net->get_output_shape().size()[%d]\n", m_OutNum, m_net->get_output_shape().size());
-        return RET_CODE::FAILED;
-    }
-
-    m_InpSp = m_net->get_input_shape()[0];
-    m_OutEleDims = m_net->get_output_dims();
-    m_OutEleNums = m_net->get_output_elem_num();
-    m_param_img2tensor.keep_aspect_ratio = false;
-    m_param_img2tensor.pad_both_side = false;
-    m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;//confirm??
-    m_param_img2tensor.model_input_shape = m_InpSp;
+    
     LOGI << "<- Classification::init";
     return ret;
 }

@@ -59,12 +59,13 @@ typedef enum _AlgoAPIName{
     LICPLATE_DETECTOR   = 22, //车牌检测
     LICPLATE_RECOGNIZER = 23, //车牌识别
     GENERAL_DETECTOR_FAST_LOAD = 24,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR, precompiled快速加载
+
+    
 // #endif
     //=========内部使用======================================================================
     RESERVED1           = 41,//yingxun保留
     RESERVED2           = 42,
     RESERVED3           = 43,
-    UDF_JSON            = 5000, //用户自定义json输入
     GENERAL_TRACKOR     = 50,//通用跟踪模块, 不能实例化, 但可以在内部使用
     MOD_MOG2_DETECTOR   = 51,//高空抛物, Moving Object Detection(MOD)[MoG2版本]
     HAND_DETECTOR       = 52,//人手检测 224x320, 一般用于内部, 不单独使用
@@ -72,12 +73,18 @@ typedef enum _AlgoAPIName{
     SMOKING_CLASSIFIER  = 54,//抽烟行为分类
     BATCH_GENERAL_DETECTOR    = 100,//测试用
     FIRE_CLASSIFIER                ,//火焰分类, 内部测试用
+    //=========接口======================================================================
+    CIG_DETECTOR_NO_TRACK,//香烟检测
+
+    
     WATER_DETECTOR_OLD      = 1008,//积水检测(旧版unet,与新版之间存在后处理的逻辑差异)
     //=========高级接口======================================================================
     //用户可以根据需要自行进行开发(SISO: 只针对单输入单输出)
     GENERAL_YOLOV5_DETECTOR = 2001,//通用yolov5检测器: 对输入图像进行检测, 返回目标位置, 需要设定模型输出的对应类别
     GENERAL_CLASSIFY        = 2002,//通用分类器: 对输入图像的特定区域(VecBox进行设定)进行分类, 雪瑶设定模型输出的对应类别
     GENERAL_INFER           = 2003,//通用推理接口, 返回内容自行解析, 内容返回在TvaiFeature中
+
+    UDF_JSON            = 5000, //用户自定义json输入
 }AlgoAPIName;
 
 typedef enum _InitParam{

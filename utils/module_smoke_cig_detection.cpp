@@ -41,30 +41,18 @@ RET_CODE SMOKE_CIG_DETECTION::init(std::map<InitParam, ucloud::WeightData> &weig
 
 RET_CODE SMOKE_CIG_DETECTION::init(std::map<InitParam, std::string> &modelpath){
     LOGI << "-> SMOKE_CIG_DETECTION::init";
-    std::string face_detect_modelpath ,cig_detect_modelpath;
-    if(modelpath.find(InitParam::BASE_MODEL)==modelpath.end() || \
-        modelpath.find(InitParam::SUB_MODEL)==modelpath.end()) {
-            std::cout << modelpath.size() << endl;
-            for(auto param: modelpath){
-                printf( "[%d]:[%s], ", param.first, param.second);
-            }
-            printf("ERR:: SmokingDetectionV2->init() still missing models\n");
-            return RET_CODE::ERR_INIT_PARAM_FAILED;
-        }
-    RET_CODE ret = RET_CODE::FAILED;
-    face_detect_modelpath = modelpath[InitParam::BASE_MODEL];
-    cig_detect_modelpath = modelpath[InitParam::SUB_MODEL];
-
-    //face detection
-    ret = m_face_detectHandle->init(face_detect_modelpath);
-    if(ret!=RET_CODE::SUCCESS) return ret;
-
-    //cig detection
-    ret = m_cig_detectHandle->init(cig_detect_modelpath);
-    if(ret!=RET_CODE::SUCCESS) return ret;
-    vector<CLS_TYPE> cls_types = {m_cls};
-    m_cig_detectHandle->set_output_cls_order(cls_types);
-    
+    ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
+    std::map<InitParam, WeightData> weightConfig;
+    for(auto &&modelp: modelpath){
+        int szBuf = 0;
+        unsigned char* tmpBuf = readfile(modelp.second.c_str(),&szBuf);
+        weightConfig[modelp.first] = WeightData{tmpBuf,szBuf};
+    }
+    ret = init(weightConfig);
+    for(auto &&wC: weightConfig){
+        free(wC.second.pData);
+    }
+    // if(ret!=RET_CODE::SUCCESS) return ret;
     return RET_CODE::SUCCESS;
 }
 

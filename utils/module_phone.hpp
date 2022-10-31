@@ -14,7 +14,8 @@ class PhoneDetector:public ucloud::AlgoAPI{
  public:
     PhoneDetector(){//直观看到用了哪些类实现的
         LOGI<<"-> PhoneDetector";
-        m_ped_detectHandle = std::make_shared<YOLO_DETECTION_BYTETRACK>();
+        // m_ped_detectHandle = std::make_shared<YOLO_DETECTION_BYTETRACK>();
+        m_ped_detectHandle = ucloud::AICoreFactory::getAlgoAPI(ucloud::AlgoAPIName::GENERAL_DETECTOR);
         m_clsHandle = std::make_shared<Classification>();
     }
     virtual ~PhoneDetector(){};

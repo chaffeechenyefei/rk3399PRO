@@ -1358,7 +1358,7 @@ RET_CODE PreProcess_CPU_DRM_Model::preprocess_drm(ucloud::TvaiImage& tvimage , u
     int dst_h = pre_param.model_input_shape.h;
     unsigned char* data = (unsigned char*)std::malloc(3*dst_w*dst_h);
     RET_CODE uret = m_drm->init(tvimage);
-    if(uret!=RET_CODE::SUCCESS) return uret;
+    if(uret!=RET_CODE::SUCCESS) { free(data); data=nullptr; return uret;}
     // int ret = m_drm->resize(tvimage,m_InpSp, data);
     int ret = m_drm->resize(tvimage, roi, pre_param, data);
     input_datas.push_back(data);

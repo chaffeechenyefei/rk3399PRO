@@ -20,7 +20,7 @@ using cv::Scalar;
 using cv::Size;
 
 
-// std::vector<float> anchors_fires = {10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59, 119, 116, 90, 156, 198, 373, 326};
+std::vector<float> default_anchors = {10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59, 119, 116, 90, 156, 198, 373, 326};
 // std::vector<float> anchors = { 5.81641,   4.39062,  10.78906,   8.45312,  18.59375,  14.20312,  34.31250,  23.07812,  24.43750,  58.09375,  86.62500,  57.87500,  67.00000, 167.50000, 185.12500, 153.87500, 410.00000, 465.50000};
 
 
@@ -103,6 +103,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     {
         YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PED_SAFETY_HAT, CLS_TYPE::PED_HEAD};
+        _ptr_->set_anchor(default_anchors);
         _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_);
     }
@@ -115,7 +116,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
         _ptr_->set_output_cls_order(model_output_clss);
-        // _ptr_->set_anchor(anchors);
+        _ptr_->set_anchor(default_anchors);
         apiHandle.reset(_ptr_);
     }
         break;        
@@ -145,7 +146,18 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         SMOKE_CIG_DETECTION* _ptr_ = new SMOKE_CIG_DETECTION();
         apiHandle.reset(_ptr_); 
     }
-    break;       
+    break;    
+    /*
+    * 香烟检测
+    */
+    case AlgoAPIName::CIG_DETECTOR_NO_TRACK:{
+        YOLO_DETECTION_NAIVE* _ptr_ = new YOLO_DETECTION_NAIVE();
+        vector<CLS_TYPE> cls_types = {CLS_TYPE::SMOKING};
+        _ptr_->set_output_cls_order(cls_types);
+        _ptr_->set_anchor(default_anchors);
+        apiHandle.reset(_ptr_); 
+    }
+    break;           
 
     default:
         std::cout << "ERROR: Current API is not ready yet!" << std::endl;
