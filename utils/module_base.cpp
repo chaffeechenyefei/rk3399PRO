@@ -1,6 +1,7 @@
 #include "module_base.hpp"
 #include "basic.hpp"
 #include <assert.h>
+#include <fstream>
 
 using namespace ucloud;
 using namespace std;
@@ -522,6 +523,7 @@ ucloud::RET_CODE BaseModel::general_infer_uint8_nhwc_to_float_mem(
         inputs[i].size = m_inputAttr[i].size;
         inputs[i].fmt = RKNN_TENSOR_NHWC;//模型内部都是使用的NCHW, 输入设置NHWC是为了方便图片输入
         inputs[i].buf = input_datas[i];
+        // inputs[i].pass_through = 0; //add by lihui 2022-10-27
     }
     // rknn_tensor_mem
     ret = rknn_inputs_set(m_ctx, m_inputAttr.size(), inputs);

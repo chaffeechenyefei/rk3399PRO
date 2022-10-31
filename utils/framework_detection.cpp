@@ -35,6 +35,30 @@ RET_CODE AnyDetectionV4ByteTrack::run(TvaiImage &tvimage, VecObjBBox &bboxes, fl
     return RET_CODE::SUCCESS;
 }
 
+
+RET_CODE AnyDetectionV4ByteTrack::run(TvaiImage &tvimage, VecObjBBox &bboxes,string &filename, float threshold, float nms_threshold){
+    LOGI << "-> AnyDetectionV4ByteTrack::run";
+    threshold = clip_threshold(threshold);
+    nms_threshold = clip_threshold(nms_threshold);
+    BYTETRACKPARM track_param = {threshold, threshold+0.1f};
+    RET_CODE ret = m_detector->run(tvimage, bboxes, filename, threshold, nms_threshold);
+    if(ret!=RET_CODE::SUCCESS) return ret;
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+    if(m_trackor){
+        m_trackor->update(tvimage, bboxes, track_param);
+        m_trackor->clear();
+    }
+#ifdef TIMING    
+    m_Tk.end("tracking");
+#endif
+    LOGI << "<- AnyDetectionV4ByteTrack::run";
+    return RET_CODE::SUCCESS;
+}
+
+
+
 RET_CODE AnyDetectionV4ByteTrack::init(std::map<InitParam, std::string> &modelpath){
     LOGI << "-> AnyDetectionV4ByteTrack::init";
     return m_detector->init(modelpath);
@@ -60,6 +84,10 @@ RET_CODE AnyDetectionV4ByteTrack::get_class_type(std::vector<CLS_TYPE> &valid_cl
 RET_CODE AnyDetectionV4ByteTrack::set_detector(AlgoAPI* ptr){
     m_detector.reset(ptr);
     return RET_CODE::SUCCESS;
+}
+
+RET_CODE AnyDetectionV4ByteTrack::set_anchor(std::vector<float> &anchors){
+    return m_detector->set_anchor(anchors);
 }
 
 RET_CODE AnyDetectionV4ByteTrack::set_trackor(TRACKMETHOD trackmethod){

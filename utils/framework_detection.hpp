@@ -10,7 +10,7 @@
 #include "basic.hpp"
 #include "module_base.hpp"
 #include <functional>
-
+#include <string>
 
 
 /*******************************************************************************
@@ -36,13 +36,14 @@ public:
     virtual RET_CODE init(ucloud::WeightData weightConfig);
     virtual ~AnyDetectionV4ByteTrack(){};
     virtual RET_CODE run(TvaiImage &tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.55, float nms_threshold=0.6);
+    virtual RET_CODE run(TvaiImage &tvimage, ucloud::VecObjBBox &bboxes,std::string &filename,float threshold=0.55,float nms_threshold=0.6);
     virtual RET_CODE get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss);
     virtual RET_CODE set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss);
 
     /** -----------------non AlgoAPI-------------------**/
     virtual RET_CODE set_trackor(TRACKMETHOD trackmethod);
     virtual RET_CODE set_detector(ucloud::AlgoAPI* ptr);
-    // virtual RET_CODE set_anchor(std::vector<float> &anchors);//yolo
+    virtual RET_CODE set_anchor(std::vector<float> &anchors);//yolo
 
 protected:
     float clip_threshold(float x);
@@ -52,9 +53,12 @@ protected:
 
     float m_default_threshold = 0.55;
     float m_default_nms_threshold = 0.6;
-
+    std::vector<float> m_anchors;
     int m_fps = 5;
     int m_nn_buf = 10;
+#ifdef TIMING
+    Timer m_Tk;
+#endif
 };
 
 
@@ -82,7 +86,9 @@ public:
         m_filter_funcs.push_back(filter_func);
         if(!fixed_threshold) unfixed_thresholds_index = m_handles.size()-1;
     }
-
+#ifdef TIMING
+    Timer m_Tk;
+#endif  
 protected:
     std::vector<ucloud::AlgoAPISPtr> m_handles;
     std::vector<float> m_thresholds;

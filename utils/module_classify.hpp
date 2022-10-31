@@ -3,6 +3,7 @@
 #include <vector>
 #include "module_base.hpp"
 #include "basic.hpp"
+#include <string>
 
 /*******************************************************************************
  * Classification
@@ -20,6 +21,8 @@ public:
      * PARAM:
      *  threshold只有超过阈值的分类结果才会更新到bboxes中
     *******************************************************************************/
+    virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, std::string &filename, float threshold=0.5, float nms_threshold=0.5);
+
     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.5);
     /*******************************************************************************
      * get_class_type 返回剔除占位类型OTHERS后的有效分类类别
