@@ -33,11 +33,11 @@ AICoreFactory::~AICoreFactory(){}
 
 AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
 #ifdef BUILD_VERSION
-    printf("------------------------LIBAI_CORE-------------------------------\n");
-    printf("-----------------------------------------------------------------\n");
-    printf("current version of libai_core.so is \"%s\"\n", BUILD_VERSION);
-    printf("-----------------------------------------------------------------\n");
-    printf("-----------------------------------------------------------------\n");
+    printf("\033[31m------------------------LIBAI_CORE-------------------------------\033[0m\n");
+    printf("\033[31m-----------------------------------------------------------------\033[0m\n");
+    printf("\033[31mcurrent version of libai_core.so is \"%s\"\033[0m\n", BUILD_VERSION);
+    printf("\033[31m-----------------------------------------------------------------\033[0m\n");
+    printf("\033[31m-----------------------------------------------------------------\033[0m\n");
 #endif     
     AlgoAPISPtr apiHandle = nullptr;
     switch (apiName)
