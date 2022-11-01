@@ -118,7 +118,7 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::HAND_DET_736x416,   "yolov5s-conv-hand-20220118_736x416_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::CIG_DET,            rknn_model_path + "yolov5s-conv-cig-20220311_256x256_mode4_precompiled.rknn"},
     {MODELFILENAME::PHONE_CLS_220215,   "phoning-r34_20220215_256x256_mlu220_bs1c1_fp16.cambricon"},
-    {MODELFILENAME::PHONE_CLS_220302,   rknn_model_path + "resnet34-phone-20220302_256x256.rknn"},
+    {MODELFILENAME::PHONE_CLS_220302,   rknn_model_path + "phone_resnet34_20220302_256x256_mode0_precompiled.rknn"},
     {MODELFILENAME::HEAD_DET,           "yolov5s-conv-head-20220121_736x416_mlu220_bs1c1_fp16.cambricon"},//20220222
     //BATCH IN============================================================================================================================
     {MODELFILENAME::ACTION_CLS,         "tsn_53_224x224_mlu220_bs1c1_fp16.cambricon"},
@@ -174,7 +174,7 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         apiName = AlgoAPIName::PHONING_DETECTOR;
         nms_threshold = 0.6;
         init_param = { 
-            {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::GENERAL_DET]},
+            {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::GENERAL_DET_MODE4]},
             {InitParam::SUB_MODEL,  cambricon_model_file[MODELFILENAME::PHONE_CLS_220302]},
         };
         taskDesc = "phoning";
@@ -347,7 +347,7 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         apiName = AlgoAPIName::SOS_DETECTOR;
         nms_threshold = 0.6;//trival in this task
         init_param = { 
-            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::GENERAL_DET] },
+            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::GENERAL_DET_MODE4] },
             {InitParam::SUB_MODEL,  cambricon_model_file[MODELFILENAME::HAND_DET_736x416]},
         };
         taskDesc = "SOS DETECTION";
