@@ -264,7 +264,11 @@ ucloud::RET_CODE BaseModel::base_init(unsigned char* modelBuf, int sizeBuf, bool
         m_inputShape.push_back(get_shape(input_attrs[i]));
         m_inputAttr.push_back(input_attrs[i]);
     }
-    print_input_shape();
+    #ifdef PRINT_ATTR
+    #if PRINT_ATTR
+        print_input_shape();
+    #endif
+    #endif
     //output tensor::此时的tensor output是非float的, want_float后size会变,ele_num不变
     rknn_tensor_attr output_attrs[io_num.n_output];
     memset(output_attrs, 0, sizeof(output_attrs));
@@ -280,9 +284,13 @@ ucloud::RET_CODE BaseModel::base_init(unsigned char* modelBuf, int sizeBuf, bool
         m_outputShape.push_back(get_shape(output_attrs[i]));
         m_outputAttr.push_back(output_attrs[i]);
     }
+    #ifdef PRINT_ATTR
+    #if PRINT_ATTR    
     print_output_shape();
     print_input_attr();
     print_output_attr();
+    #endif
+    #endif
 
     //是否采用map+drm的方式进行高效推理
     m_isMap = useDRM;
