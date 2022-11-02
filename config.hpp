@@ -38,6 +38,7 @@ enum class TASKNAME{
     LICPLATE        = 24,//车牌检测+车牌识别
     RESERVED2       = 25,//yolov5 mode3
     PED_CAR_NONCAR_FAST_LOAD  = 26,//人车非检测快速加载
+    FACE_EXT        = 27,//单纯人脸特征提取
 
     TASK_END,
 
@@ -94,7 +95,7 @@ enum class MODELFILENAME{
 std::string rknn_model_path = "/home/firefly/yefei/test/data/model/";
 std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::FACE_DET,           rknn_model_path + "retinaface_int8_2022xx_736x416_slow.rknn"},
-    {MODELFILENAME::FACE_EXT,           "resnet101-wbf-20220107_112x112_mlu220_fp16.cambricon"},
+    {MODELFILENAME::FACE_EXT,           rknn_model_path + "resnet50_irse_mx_int8_2022xx_112x112_fast.rknn"},
     {MODELFILENAME::SKELETON_DET_R50,   "pose_resnet_50_256x192_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::SKELETON_DET_R18,   "posenet-r18_20220225_192x256_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::FIRE_CLS,           rknn_model_path + "rknn_int8_fire-r34_20220302_224x224_fast.rknn"},
@@ -159,6 +160,15 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         };
         taskDesc = "face detection with attribution";
         break;
+    case TASKNAME::FACE_EXT:
+        threshold = 0.5;
+        apiName = AlgoAPIName::FEATURE_EXTRACTOR;
+        nms_threshold = 0.6;
+        init_param = {
+            {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::FACE_EXT]},
+        };
+        taskDesc = "face feature extraction on 112x112 images only";
+        break;           
     case TASKNAME::SMOKING://推荐阈值0.6
         threshold = 0.6;
         apiName = AlgoAPIName::SMOKING_DETECTOR;

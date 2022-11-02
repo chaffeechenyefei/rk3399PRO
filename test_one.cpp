@@ -133,7 +133,7 @@ int main(int argc, char **argv)
     myParser.add_argument("-data","test.jpg","input image");
     myParser.add_argument("-task",1, "taskid");
     myParser.add_argument("-loop",1, "loop times");
-    myParser.add_argument("-threshold",-1, "threshold(if less than 0, value from task parser will be applied.)");
+    myParser.add_argument("-threshold",-1.f, "threshold(if less than 0, value from task parser will be applied.)");
     myParser.add_argument("-w", 1280, "input image width");
     myParser.add_argument("-h", 720, "input image height");
     myParser.add_argument("-list",0, "list all the task");

@@ -75,6 +75,7 @@ typedef enum _AlgoAPIName{
     FIRE_CLASSIFIER                ,//火焰分类, 内部测试用
     //=========接口======================================================================
     CIG_DETECTOR_NO_TRACK,//香烟检测
+    FEATURE_EXTRACTOR,//通用特征提取
 
     
     WATER_DETECTOR_OLD      = 1008,//积水检测(旧版unet,与新版之间存在后处理的逻辑差异)
@@ -360,6 +361,7 @@ public:
     static AlgoAPISPtr getAlgoAPI(AlgoAPIName apiName);
     //用户自定义json配置文件导入初始化算法
     static AlgoAPISPtr getAlgoAPI(const std::string &configpath);
+    static void releaseVecObjBBox(VecObjBBox &bboxes);
 };
 
 UCLOUD_API_PUBLIC unsigned char* readImg_to_RGB(std::string filepath, int &width, int &height);

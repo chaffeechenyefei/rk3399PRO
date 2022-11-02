@@ -9,6 +9,7 @@
 #include "utils/module_smoke_cig_detection.hpp"
 #include "utils/module_fire_detection.hpp"
 #include "utils/module_yolo_u.hpp"
+#include "utils/module_feature_extraction.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -154,6 +155,10 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_); 
     }
     break;    
+  
+/*******************************************************************************
+小模块
+*******************************************************************************/              
     /*
     * 香烟检测
     */
@@ -165,13 +170,33 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         _ptr_->set_anchor(default_anchors);
         apiHandle.reset(_ptr_); 
     }
-    break;           
+    break;   
+    /*
+    * 特征提取
+    */
+    case AlgoAPIName::FEATURE_EXTRACTOR:{
+        printf("AlgoAPIName::FEATURE_EXTRACTOR\n");
+        FeatureExtractor* _ptr_ = new FeatureExtractor();
+        apiHandle.reset(_ptr_); 
+    }
+    break;   
+
 
     default:
         std::cout << "ERROR: Current API is not ready yet!" << std::endl;
         break;
     }
     return apiHandle;
+}
+
+void AICoreFactory::releaseVecObjBBox(VecObjBBox &bboxes){
+    for(auto &&box: bboxes){
+        if(box.feat.pFeature!=nullptr){
+            free(box.feat.pFeature);
+            box.feat.pFeature = nullptr;
+            box.feat.featureLen = 0;
+        }
+    }
 }
 
 /*--------------Read/Write API------------------*/

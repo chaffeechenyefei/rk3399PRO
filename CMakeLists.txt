@@ -185,6 +185,9 @@ target_link_libraries(test_thread ai_core ${RK_LIBS} dl)
 add_executable(test_thread_new test_thread_new.cpp)
 target_link_libraries(test_thread_new ai_core ${RK_LIBS} dl)
 
+#单纯人脸特征提取测试
+add_executable(test_face_feature_extraction test_face_feature_extraction.cpp)
+target_link_libraries(test_face_feature_extraction ai_core ${RK_LIBS} dl)
 # #phone双模型测试
 # add_executable(test_phone test_phone.cpp)
 # target_link_libraries(test_phone ai_core ${RK_LIBS} dl)

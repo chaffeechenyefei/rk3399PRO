@@ -52,9 +52,17 @@ ucloud::RET_CODE Classification::init(std::map<ucloud::InitParam,ucloud::WeightD
 
 ucloud::RET_CODE Classification::init(std::map<ucloud::InitParam,std::string> &modelpath){
     LOGI<<"-> Classification::init";
-    ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
-
-    
+    std::map<InitParam, WeightData> weightConfig;
+    for(auto &&modelp: modelpath){
+        int szBuf = 0;
+        unsigned char* tmpBuf = readfile(modelp.second.c_str(),&szBuf);
+        weightConfig[modelp.first] = WeightData{tmpBuf,szBuf};
+    }
+    RET_CODE ret = init(weightConfig);
+    for(auto &&wC: weightConfig){
+        free(wC.second.pData);
+    }
+    if(ret!=RET_CODE::SUCCESS) return ret;
     LOGI << "<- Classification::init";
     return ret;
 }
