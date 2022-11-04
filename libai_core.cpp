@@ -10,6 +10,7 @@
 #include "utils/module_fire_detection.hpp"
 #include "utils/module_yolo_u.hpp"
 #include "utils/module_feature_extraction.hpp"
+#include "utils/module_posenet.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -180,6 +181,15 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_); 
     }
     break;   
+    /*
+    * 骨架定位
+    */
+    case AlgoAPIName::SKELETON_DETECTOR: {
+        printf("AlgoAPIName::SKELETON_DETECTOR\n");
+        PoseNet* _ptr_ = new PoseNet();
+        apiHandle.reset(_ptr_);
+    }
+    break;
 
 
     default:
@@ -240,6 +250,21 @@ unsigned char* ucloud::readImg_to_RGB(std::string filepath, int w, int h,int &wi
     return dst_ptr;
 }
 
+unsigned char* ucloud::readImg_to_RGB_no_aspect(std::string filepath, int w, int h,int &width, int &height){
+    Mat im = imread(filepath);
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    cv::cvtColor(im, im, cv::COLOR_BGR2RGB);
+    float ax, ay;
+    im = resize_no_aspect(im,Size(w,h), ax , ay);         
+    dst_ptr = (unsigned char*)malloc(im.total()*3);
+    memcpy(dst_ptr, im.data, im.total()*3);
+    width = im.cols;
+    height = im.rows;
+    return dst_ptr;
+}
+
 unsigned char* ucloud::readImg_to_BGR(std::string filepath, int w, int h, int &width, int &height){
     Mat im = imread(filepath);
     unsigned char* dst_ptr = nullptr;
@@ -247,6 +272,20 @@ unsigned char* ucloud::readImg_to_BGR(std::string filepath, int w, int h, int &w
         return dst_ptr;
     float ar = 1.0;
     im = resize(im,Size(w,h), false, ar );        
+    dst_ptr = (unsigned char*)malloc(im.total()*3);
+    memcpy(dst_ptr, im.data, im.total()*3);
+    width = im.cols;
+    height = im.rows;
+    return dst_ptr;
+}
+
+unsigned char* ucloud::readImg_to_BGR_no_aspect(std::string filepath, int w, int h, int &width, int &height){
+    Mat im = imread(filepath);
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    float ax, ay;
+    im = resize_no_aspect(im,Size(w,h), ax, ay);        
     dst_ptr = (unsigned char*)malloc(im.total()*3);
     memcpy(dst_ptr, im.data, im.total()*3);
     width = im.cols;
@@ -287,10 +326,36 @@ unsigned char* ucloud::readImg_to_NV21(std::string filepath, int w, int h,int &w
     return dst_ptr;    
 }
 
+unsigned char* ucloud::readImg_to_NV21_no_aspect(std::string filepath, int w, int h,int &width, int &height, int &stride){
+    Mat im = imread(filepath);
+    if(im.empty()){
+        printf("%s not found\n", filepath.c_str());
+        return nullptr;
+    }
+    float ax,ay;
+    im = resize_no_aspect(im, Size(w,h),ax, ay);
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    dst_ptr = BGR2YUV_nv21_with_stride(im, width, height, stride, 2);
+    return dst_ptr;    
+}
+
 unsigned char* ucloud::readImg_to_NV12(std::string filepath, int w, int h,int &width, int &height, int &stride){
     Mat im = imread(filepath);
     float ar = 1.0;
     im = resize(im,Size(w,h), false, ar );
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    dst_ptr = BGR2YUV_nv12_with_stride(im, width, height, stride, 2);
+    return dst_ptr;    
+}
+
+unsigned char* ucloud::readImg_to_NV12_no_aspect(std::string filepath, int w, int h,int &width, int &height, int &stride){
+    Mat im = imread(filepath);
+    float ax,ay;
+    im = resize_no_aspect(im,Size(w,h), ax, ay );
     unsigned char* dst_ptr = nullptr;
     if (im.empty())
         return dst_ptr;

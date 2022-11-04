@@ -19,6 +19,8 @@
 // class AnyDetectionV4DeepSort;//任意检测模型+DeepSort
 class AnyDetectionV4ByteTrack;//任意检测模型+ByteTrack
 class PipelineNaive;//任意模型管道式组合
+class AnyModelWithBBox;//通用推理模型, 输入tvimage和VecBBox,针对VecBBox给的TvaiRect进行推理, 多态postprocess
+
 
 
 
@@ -98,5 +100,78 @@ protected:
 
 };
 
+
+/*******************************************************************************
+ * AnyModelWithBBox RGB input only
+ * chaffee.chen@2022-11-03
+*******************************************************************************/
+class AnyModelWithBBox: public ucloud::AlgoAPI{
+public:
+    AnyModelWithBBox();
+    virtual ~AnyModelWithBBox();
+    virtual ucloud::RET_CODE init(std::map<ucloud::InitParam,std::string> &modelpath);
+    virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
+    /*******************************************************************************
+     * run 对bboxes中的每个区域进行特征提取, 并将结果更新到bboxes中(objtype,tvaifeature)
+    *******************************************************************************/
+    virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.5);
+protected:
+    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas ,ucloud::BBox &bbox, float aX, float aY);
+
+protected:
+    std::shared_ptr<BaseModel> m_net = nullptr;
+    std::shared_ptr<PreProcess_CPU_DRM_Model> m_cv_preprocess_net = nullptr;
+    
+    DATA_SHAPE m_InpSp;
+    DATA_SHAPE m_OutSp;
+    PRE_PARAM m_param_img2tensor;
+
+    int m_InpNum = 0;
+    int m_OutNum = 0;
+
+    std::vector<int> m_OutEleNums;
+    std::vector<std::vector<int>> m_OutEleDims;
+
+#ifdef TIMING
+    Timer m_TK;
+#endif
+};
+
+
+// /*******************************************************************************
+//  * AnyModelWithTvaiImage RGB input only
+//  * chaffee.chen@2022-11-03
+// *******************************************************************************/
+// class AnyModelWithTvaiImage: public ucloud::AlgoAPI{
+// public:
+//     AnyModelWithTvaiImage();
+//     virtual ~AnyModelWithTvaiImage();
+//     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam,std::string> &modelpath);
+//     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
+//     /*******************************************************************************
+//      * run 对bboxes中的每个区域进行特征提取, 并将结果更新到bboxes中(objtype,tvaifeature)
+//     *******************************************************************************/
+//     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.5);
+// protected:
+//     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas ,ucloud::BBox &bbox, float aX, float aY);
+
+// protected:
+//     std::shared_ptr<BaseModel> m_net = nullptr;
+//     std::shared_ptr<PreProcess_CPU_DRM_Model> m_cv_preprocess_net = nullptr;
+    
+//     DATA_SHAPE m_InpSp;
+//     DATA_SHAPE m_OutSp;
+//     PRE_PARAM m_param_img2tensor;
+
+//     int m_InpNum = 0;
+//     int m_OutNum = 0;
+
+//     std::vector<int> m_OutEleNums;
+//     std::vector<std::vector<int>> m_OutEleDims;
+
+// #ifdef TIMING
+//     Timer m_TK;
+// #endif
+// };
 
 #endif

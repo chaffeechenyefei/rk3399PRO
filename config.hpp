@@ -82,6 +82,7 @@ enum class MODELFILENAME{
     CIG_DET,//香烟检测
     PHONE_CLS_220215,//打电话分类
     PHONE_CLS_220302,//打电话分类
+    PHONE_CLS_220302_INNER_NORM,//打电话分类 模型内-m/std
     HEAD_DET,//人头检测
     MOD_DET_DIF,//DIF移动物体分割
     MOD_DET_UNET,//UNet移动物体分割
@@ -97,7 +98,7 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::FACE_DET,           rknn_model_path + "retinaface_int8_2022xx_736x416_slow.rknn"},
     {MODELFILENAME::FACE_EXT,           rknn_model_path + "resnet50_irse_mx_int8_2022xx_112x112_fast.rknn"},
     {MODELFILENAME::SKELETON_DET_R50,   "pose_resnet_50_256x192_mlu220_bs1c1_fp16.cambricon"},
-    {MODELFILENAME::SKELETON_DET_R18,   "posenet-r18_20220225_192x256_mlu220_bs1c1_fp16.cambricon"},
+    {MODELFILENAME::SKELETON_DET_R18,   rknn_model_path + "rknn_int8_posenet-r18_20220225_192x256_slow.rknn"},
     {MODELFILENAME::FIRE_CLS,           rknn_model_path + "rknn_int8_fire-r34_20220302_224x224_fast.rknn"},
     {MODELFILENAME::WATER_DET_UNET,     "unetwater_393_224x224_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::WATER_DET_PSP,      "pspwater_20211119_736x416_mlu220_bs1c1_fp16.cambricon"},
@@ -120,6 +121,7 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::CIG_DET,            rknn_model_path + "yolov5s-conv-cig-20220311_256x256_mode4_precompiled.rknn"},
     {MODELFILENAME::PHONE_CLS_220215,   "phoning-r34_20220215_256x256_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::PHONE_CLS_220302,   rknn_model_path + "phone_resnet34_20220302_256x256_mode0_precompiled.rknn"},
+    {MODELFILENAME::PHONE_CLS_220302_INNER_NORM,   rknn_model_path + "phone_resnet34_20220302_256x256_mode0_normal_rgb_precompiled.rknn"},
     {MODELFILENAME::HEAD_DET,           "yolov5s-conv-head-20220121_736x416_mlu220_bs1c1_fp16.cambricon"},//20220222
     //BATCH IN============================================================================================================================
     {MODELFILENAME::ACTION_CLS,         "tsn_53_224x224_mlu220_bs1c1_fp16.cambricon"},
@@ -140,6 +142,15 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
     bool retcode = true;
     switch (taskid)
     {
+    case TASKNAME::SKELETON:
+        threshold = 0.5;
+        apiName = AlgoAPIName::SKELETON_DETECTOR;
+        nms_threshold = 0.6;
+        init_param = {
+            {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::SKELETON_DET_R18]},
+        };
+        taskDesc = "skeleton detector";
+        break;
     case TASKNAME::FACE:
         threshold = 0.5;
         apiName = AlgoAPIName::FACE_DETECTOR;
@@ -185,7 +196,7 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         nms_threshold = 0.6;
         init_param = { 
             {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::GENERAL_DET_MODE4]},
-            {InitParam::SUB_MODEL,  cambricon_model_file[MODELFILENAME::PHONE_CLS_220302]},
+            {InitParam::SUB_MODEL,  cambricon_model_file[MODELFILENAME::PHONE_CLS_220302_INNER_NORM]},
         };
         taskDesc = "phoning";
         break;

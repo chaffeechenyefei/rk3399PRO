@@ -380,6 +380,10 @@ UCLOUD_API_PUBLIC unsigned char* readImg_to_RGB(std::string filepath, int w, int
 UCLOUD_API_PUBLIC unsigned char* readImg_to_BGR(std::string filepath, int w, int h, int &width, int &height);
 UCLOUD_API_PUBLIC unsigned char* readImg_to_NV21(std::string filepath, int w, int h,int &width, int &height, int &stride);
 UCLOUD_API_PUBLIC unsigned char* readImg_to_NV12(std::string filepath, int w, int h,int &width, int &height, int &stride);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_RGB_no_aspect(std::string filepath, int w, int h, int &width, int &height);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_BGR_no_aspect(std::string filepath, int w, int h, int &width, int &height);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_NV21_no_aspect(std::string filepath, int w, int h,int &width, int &height, int &stride);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_NV12_no_aspect(std::string filepath, int w, int h,int &width, int &height, int &stride);
 //写图像, 是否采用覆盖式写入
 UCLOUD_API_PUBLIC void writeImg(std::string filepath , unsigned char* imgPtr, int width, int height, bool overwrite=true);
 UCLOUD_API_PUBLIC void freeImg(unsigned char** imgPtr);

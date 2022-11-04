@@ -81,11 +81,19 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
             inputdata_sz = 3*stride*height/2*sizeof(unsigned char);
             tvimage = {TVAI_IMAGE_FORMAT_NV21,width,height,stride,imgBuf, inputdata_sz};
         } else {
-            imgBuf = readImg_to_NV21(imgname, W, H, width, height, stride);
+            if(apiName==AlgoAPIName::SKELETON_DETECTOR){
+                imgBuf = readImg_to_NV21_no_aspect(imgname, W, H, width, height, stride);
+            } else
+                imgBuf = readImg_to_NV21(imgname, W, H, width, height, stride);
             inputdata_sz = 3*stride*height/2*sizeof(unsigned char);
             tvimage = {TVAI_IMAGE_FORMAT_NV21,width,height,stride,imgBuf, inputdata_sz};
         }
         //将图像resize到1280x720, 模拟摄像头输入
+        if(apiName==AlgoAPIName::SKELETON_DETECTOR){
+            BBox box;
+            box.rect = TvaiRect{0,0,width,height};
+            bboxes.push_back(box);
+        }
         auto start = chrono::system_clock::now();
         RET_CODE _ret_ = ptrMainHandle->run(tvimage, bboxes, threshold , nms_threshold);
         auto end = chrono::system_clock::now();
@@ -112,7 +120,10 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
     if(datapath.find(".yuv") != std::string::npos){//如果输入图像后缀是YUV则直接读取
         imgBuf = yuv_reader(datapath, W, H , true);
     } else{
-        imgBuf = readImg_to_BGR(datapath, W, H, width, height);
+        if(apiName==AlgoAPIName::SKELETON_DETECTOR){
+            imgBuf = readImg_to_BGR_no_aspect(datapath, W, H, width, height);
+        } else
+            imgBuf = readImg_to_BGR(datapath, W, H, width, height);
     }
     
     if(imgBuf){
