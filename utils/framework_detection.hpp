@@ -20,7 +20,7 @@
 class AnyDetectionV4ByteTrack;//任意检测模型+ByteTrack
 class PipelineNaive;//任意模型管道式组合
 class AnyModelWithBBox;//通用推理模型, 输入tvimage和VecBBox,针对VecBBox给的TvaiRect进行推理, 多态postprocess
-
+class AnyModelWithTvaiImage; //通用推理模型, 多态postprocess
 
 
 
@@ -103,6 +103,10 @@ protected:
 
 /*******************************************************************************
  * AnyModelWithBBox RGB input only
+ * 适用类型:
+ *  1. 模型推理结果(outputs)的数据指针不会通过VecObjBBox传到外部
+ *  2. 运行run时, 只对VecObjBBox中的有效rect区域进行推理
+ *  3. 使用时, 需要对postprocess进行重载
  * chaffee.chen@2022-11-03
 *******************************************************************************/
 class AnyModelWithBBox: public ucloud::AlgoAPI{
@@ -138,40 +142,45 @@ protected:
 };
 
 
-// /*******************************************************************************
-//  * AnyModelWithTvaiImage RGB input only
-//  * chaffee.chen@2022-11-03
-// *******************************************************************************/
-// class AnyModelWithTvaiImage: public ucloud::AlgoAPI{
-// public:
-//     AnyModelWithTvaiImage();
-//     virtual ~AnyModelWithTvaiImage();
-//     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam,std::string> &modelpath);
-//     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
-//     /*******************************************************************************
-//      * run 对bboxes中的每个区域进行特征提取, 并将结果更新到bboxes中(objtype,tvaifeature)
-//     *******************************************************************************/
-//     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.5);
-// protected:
-//     virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas ,ucloud::BBox &bbox, float aX, float aY);
+/*******************************************************************************
+ * AnyModelWithTvaiImage RGB input only
+ * chaffee.chen@2022-11-03
+*******************************************************************************/
+class AnyModelWithTvaiImage: public ucloud::AlgoAPI{
+public:
+    AnyModelWithTvaiImage();
+    virtual ~AnyModelWithTvaiImage();
+    virtual ucloud::RET_CODE init(std::map<ucloud::InitParam,std::string> &modelpath);
+    virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
+    virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.5);
+    virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage, ucloud::TvaiRect roi ,ucloud::VecObjBBox &bboxes, float threshold=0.5, float nms_threshold=0.6);
+protected:
+    virtual ucloud::RET_CODE postprocess(std::vector<float*> &output_datas, ucloud::TvaiRect roi, float threshold, float nms_threshold ,ucloud::VecObjBBox &bboxes,float aX, float aY);
 
-// protected:
-//     std::shared_ptr<BaseModel> m_net = nullptr;
-//     std::shared_ptr<PreProcess_CPU_DRM_Model> m_cv_preprocess_net = nullptr;
+    float clip_threshold(float x);
+    float clip_nms_threshold(float x);
+
+protected:
+    std::shared_ptr<BaseModel> m_net = nullptr;
+    std::shared_ptr<PreProcess_CPU_DRM_Model> m_cv_preprocess_net = nullptr;
     
-//     DATA_SHAPE m_InpSp;
-//     DATA_SHAPE m_OutSp;
-//     PRE_PARAM m_param_img2tensor;
+    DATA_SHAPE m_InpSp;
+    DATA_SHAPE m_OutSp;
+    PRE_PARAM m_param_img2tensor;
 
-//     int m_InpNum = 0;
-//     int m_OutNum = 0;
+    int m_InpNum = 0;
+    int m_OutNum = 0;
 
-//     std::vector<int> m_OutEleNums;
-//     std::vector<std::vector<int>> m_OutEleDims;
+    std::vector<int> m_OutEleNums;
+    std::vector<std::vector<int>> m_OutEleDims;
 
-// #ifdef TIMING
-//     Timer m_TK;
-// #endif
-// };
+    //当传入的参数超过边界时,采用默认数值
+    float m_default_threshold = 0.55;
+    float m_default_nms_threshold = 0.6;
+
+#ifdef TIMING
+    Timer m_TK;
+#endif
+};
 
 #endif

@@ -313,76 +313,236 @@ ucloud::RET_CODE AnyModelWithBBox::run(ucloud::TvaiImage& tvimage,ucloud::VecObj
 }
 
 
-// /*******************************************************************************
-//  * AnyModelWithTvaiImage RGB input only
-//  * chaffee.chen@2022-11-03
-// *******************************************************************************/
-// AnyModelWithTvaiImage::AnyModelWithTvaiImage(){
-//     LOGI<<"-> AnyModelWithTvaiImage";
-//     m_net = std::make_shared<BaseModel>();
-//     m_cv_preprocess_net = std::make_shared<PreProcess_CPU_DRM_Model>();
-// }
+/*******************************************************************************
+ * AnyModelWithTvaiImage RGB input only
+ * chaffee.chen@2022-11-03
+*******************************************************************************/
+AnyModelWithTvaiImage::AnyModelWithTvaiImage(){
+    LOGI<<"-> AnyModelWithTvaiImage";
+    m_net = std::make_shared<BaseModel>();
+    m_cv_preprocess_net = std::make_shared<PreProcess_CPU_DRM_Model>();
+}
 
-// AnyModelWithTvaiImage::~AnyModelWithTvaiImage(){
-//     LOGI<<"-> ~AnyModelWithTvaiImage";
-// }
+AnyModelWithTvaiImage::~AnyModelWithTvaiImage(){
+    LOGI<<"-> ~AnyModelWithTvaiImage";
+}
 
-// ucloud::RET_CODE AnyModelWithTvaiImage::init(std::map<ucloud::InitParam,ucloud::WeightData> &weightConfig){
-//     LOGI<<"-> AnyModelWithTvaiImage::init";
-//     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
+float AnyModelWithTvaiImage::clip_threshold(float x){
+    if(x < 0) return m_default_threshold;
+    if(x > 1) return m_default_threshold;
+    return x;
+}
+float AnyModelWithTvaiImage::clip_nms_threshold(float x){
+    if(x < 0) return m_default_nms_threshold;
+    if(x > 1) return m_default_nms_threshold;
+    return x;
+}
 
-//     if (weightConfig.find(ucloud::InitParam::BASE_MODEL)== weightConfig.end()){
-//         printf("**[%s][%d] base model not found in weightConfig\n", __FILE__, __LINE__);
-//         return ucloud::RET_CODE::ERR_INIT_PARAM_FAILED;
-//     }
-//     bool useDRM = false;
-//     ret = m_net->base_init(weightConfig[ucloud::InitParam::BASE_MODEL],useDRM);
-//     if (ret!=ucloud::RET_CODE::SUCCESS){
-//         return ret;
-//     }
-//     m_InpNum = m_net->get_input_shape().size();
-//     m_OutNum = m_net->get_output_shape().size();
-//     // if(m_InpNum != m_net->get_input_shape().size()){
-//     //     printf("** dims err m_InpuNum[%d] != m_net->get_input_shape().size()[%d]\n", m_InpNum, m_net->get_input_shape().size());
-//     //     return RET_CODE::FAILED;
-//     // }
-//     // if(m_OutNum != m_net->get_output_shape().size()){
-//     //     printf("** dims err m_OutNum[%d] != m_net->get_output_shape().size()[%d]\n", m_OutNum, m_net->get_output_shape().size());
-//     //     return RET_CODE::FAILED;
-//     // }
+ucloud::RET_CODE AnyModelWithTvaiImage::init(std::map<ucloud::InitParam,ucloud::WeightData> &weightConfig){
+    LOGI<<"-> AnyModelWithTvaiImage::init";
+    ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
 
-//     m_InpSp = m_net->get_input_shape()[0];
-//     m_OutEleDims = m_net->get_output_dims();
-//     m_OutEleNums = m_net->get_output_elem_num();
-//     m_param_img2tensor.keep_aspect_ratio = true;
-//     m_param_img2tensor.pad_both_side = true;
-//     m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;//confirm??
-//     m_param_img2tensor.model_input_shape = m_InpSp;
-//     LOGI << "<- AnyModelWithTvaiImage::init";
-//     return ret;
-// }
+    if (weightConfig.find(ucloud::InitParam::BASE_MODEL)== weightConfig.end()){
+        printf("**[%s][%d] base model not found in weightConfig\n", __FILE__, __LINE__);
+        return ucloud::RET_CODE::ERR_INIT_PARAM_FAILED;
+    }
+    bool useDRM = false;
+    ret = m_net->base_init(weightConfig[ucloud::InitParam::BASE_MODEL],useDRM);
+    if (ret!=ucloud::RET_CODE::SUCCESS){
+        return ret;
+    }
+    m_InpNum = m_net->get_input_shape().size();
+    m_OutNum = m_net->get_output_shape().size();
+    // if(m_InpNum != m_net->get_input_shape().size()){
+    //     printf("** dims err m_InpuNum[%d] != m_net->get_input_shape().size()[%d]\n", m_InpNum, m_net->get_input_shape().size());
+    //     return RET_CODE::FAILED;
+    // }
+    // if(m_OutNum != m_net->get_output_shape().size()){
+    //     printf("** dims err m_OutNum[%d] != m_net->get_output_shape().size()[%d]\n", m_OutNum, m_net->get_output_shape().size());
+    //     return RET_CODE::FAILED;
+    // }
+
+    m_InpSp = m_net->get_input_shape()[0];
+    m_OutEleDims = m_net->get_output_dims();
+    m_OutEleNums = m_net->get_output_elem_num();
+    m_param_img2tensor.keep_aspect_ratio = true;
+    m_param_img2tensor.pad_both_side = true;
+    m_param_img2tensor.model_input_format = MODEL_INPUT_FORMAT::RGB;//confirm??
+    m_param_img2tensor.model_input_shape = m_InpSp;
+    LOGI << "<- AnyModelWithTvaiImage::init";
+    return ret;
+}
 
 
-// ucloud::RET_CODE AnyModelWithTvaiImage::init(std::map<ucloud::InitParam,std::string> &modelpath){
-//     LOGI<<"-> AnyModelWithTvaiImage::init";
-//     std::map<InitParam, WeightData> weightConfig;
-//     for(auto &&modelp: modelpath){
-//         int szBuf = 0;
-//         unsigned char* tmpBuf = readfile(modelp.second.c_str(),&szBuf);
-//         weightConfig[modelp.first] = WeightData{tmpBuf,szBuf};
-//     }
-//     RET_CODE ret = init(weightConfig);
-//     for(auto &&wC: weightConfig){
-//         free(wC.second.pData);
-//     }
-//     if(ret!=RET_CODE::SUCCESS) return ret;
-//     LOGI << "<- AnyModelWithTvaiImage::init";
-//     return ret;
-// }
+ucloud::RET_CODE AnyModelWithTvaiImage::init(std::map<ucloud::InitParam,std::string> &modelpath){
+    LOGI<<"-> AnyModelWithTvaiImage::init";
+    std::map<InitParam, WeightData> weightConfig;
+    for(auto &&modelp: modelpath){
+        int szBuf = 0;
+        unsigned char* tmpBuf = readfile(modelp.second.c_str(),&szBuf);
+        weightConfig[modelp.first] = WeightData{tmpBuf,szBuf};
+    }
+    RET_CODE ret = init(weightConfig);
+    for(auto &&wC: weightConfig){
+        free(wC.second.pData);
+    }
+    if(ret!=RET_CODE::SUCCESS) return ret;
+    LOGI << "<- AnyModelWithTvaiImage::init";
+    return ret;
+}
 
-// ucloud::RET_CODE AnyModelWithTvaiImage::postprocess(std::vector<float*> &output_datas ,BBox &bbox, float aX, float aY){
-//     LOGI << "-> AnyModelWithTvaiImage::postprocess";
-//     RET_CODE ret = RET_CODE::SUCCESS;
-//     LOGI << "<- AnyModelWithTvaiImage::postprocess";
-//     return ret;
-// }
+ucloud::RET_CODE AnyModelWithTvaiImage::postprocess(std::vector<float*> &output_datas, TvaiRect roi ,float threshold, float nms_threshold ,ucloud::VecObjBBox &bboxes,float aX, float aY){
+    LOGI << "-> AnyModelWithTvaiImage::postprocess";
+    RET_CODE ret = RET_CODE::SUCCESS;
+    LOGI << "<- AnyModelWithTvaiImage::postprocess";
+    return ret;
+}
+
+
+RET_CODE AnyModelWithTvaiImage::run(TvaiImage& tvimage, VecObjBBox &bboxes, float threshold, float nms_threshold){
+    LOGI << "-> AnyModelWithTvaiImage::run";
+    RET_CODE ret = RET_CODE::SUCCESS;
+    threshold = clip_threshold(threshold);
+    nms_threshold = clip_threshold(nms_threshold);
+
+    switch (tvimage.format)
+    {
+    case TVAI_IMAGE_FORMAT_RGB:
+    case TVAI_IMAGE_FORMAT_BGR:
+    case TVAI_IMAGE_FORMAT_NV12:
+    case TVAI_IMAGE_FORMAT_NV21:
+        ret = RET_CODE::SUCCESS;
+        break;
+    default:
+        ret = RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+        break;
+    }
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+    std::vector<unsigned char*> input_datas;
+    std::vector<float> aX, aY;
+    std::vector<float*> output_datas;
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+#ifdef USEDRM
+    ret = m_cv_preprocess_net->preprocess_drm(tvimage, m_param_img2tensor, input_datas, aX, aY);
+#else
+    ret = m_cv_preprocess_net->preprocess_opencv(tvimage, m_param_img2tensor, input_datas, aX, aY);
+#endif
+#ifdef TIMING    
+    m_Tk.end("preprocess");
+#endif
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+    ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
+#ifdef TIMING    
+    m_Tk.end("general_infer_uint8_nhwc_to_float");
+#endif    
+    if(ret!=RET_CODE::SUCCESS) {
+        for(auto &&t: input_datas) free(t);
+        return ret;
+    }
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+    ret = postprocess(output_datas, TvaiRect{0,0,tvimage.width, tvimage.height} , threshold, nms_threshold, bboxes, aX[0], aY[0]);
+#ifdef TIMING    
+    m_Tk.end("postprocess");
+#endif    
+    if(ret!=RET_CODE::SUCCESS) {
+        for(auto &&t: input_datas) free(t);
+        for(auto &&t: output_datas) free(t);
+        return ret;
+    }
+
+    for(auto &&t: output_datas){
+        free(t);
+    }
+    for(auto &&t: input_datas){
+        free(t);
+    }
+
+    LOGI << "<- AnyModelWithTvaiImage::run";
+    return RET_CODE::SUCCESS;
+}
+
+
+RET_CODE AnyModelWithTvaiImage::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox &bboxes, float threshold, float nms_threshold){
+    LOGI << "-> AnyModelWithTvaiImage::run with roi";
+    RET_CODE ret = RET_CODE::SUCCESS;
+    threshold = clip_threshold(threshold);
+    nms_threshold = clip_threshold(nms_threshold);
+    roi = get_valid_rect(roi, tvimage.width, tvimage.height);
+
+    switch (tvimage.format)
+    {
+    case TVAI_IMAGE_FORMAT_RGB:
+    case TVAI_IMAGE_FORMAT_BGR:
+    case TVAI_IMAGE_FORMAT_NV12:
+    case TVAI_IMAGE_FORMAT_NV21:
+        ret = RET_CODE::SUCCESS;
+        break;
+    default:
+        ret = RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
+        break;
+    }
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+    std::vector<unsigned char*> input_datas;
+    std::vector<float> aX, aY;
+    std::vector<float*> output_datas;
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+#ifdef USEDRM
+    ret = m_cv_preprocess_net->preprocess_drm(tvimage, roi, m_param_img2tensor ,input_datas, aX, aY);
+#else
+    ret = m_cv_preprocess_net->preprocess_opencv(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
+#endif
+#ifdef TIMING    
+    m_Tk.end("preprocess");
+#endif
+    if(ret!=RET_CODE::SUCCESS) return ret;
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+    ret = m_net->general_infer_uint8_nhwc_to_float(input_datas, output_datas);
+#ifdef TIMING    
+    m_Tk.end("general_infer_uint8_nhwc_to_float");
+#endif    
+    if(ret!=RET_CODE::SUCCESS) {
+        for(auto &&t: input_datas) free(t);
+        return ret;
+    }
+
+#ifdef TIMING    
+    m_Tk.start();
+#endif
+    ret = postprocess(output_datas, roi, threshold, nms_threshold, bboxes, aX[0], aY[0]);
+#ifdef TIMING    
+    m_Tk.end("postprocess");
+#endif    
+    if(ret!=RET_CODE::SUCCESS) {
+        for(auto &&t: input_datas) free(t);
+        for(auto &&t: output_datas) free(t);
+        return ret;
+    }
+
+    for(auto &&t: output_datas){
+        free(t);
+    }
+    for(auto &&t: input_datas){
+        free(t);
+    }
+
+    LOGI << "<- AnyModelWithTvaiImage::run with roi";
+    return RET_CODE::SUCCESS;
+}
