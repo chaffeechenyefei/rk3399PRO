@@ -216,7 +216,7 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         apiName = AlgoAPIName::PED_BEND_DETECTOR;
         nms_threshold = 0.6;
         init_param = {
-            {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::GENERAL_DET]},
+            {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::GENERAL_DET_MODE4]},
             {InitParam::SUB_MODEL,  cambricon_model_file[MODELFILENAME::SKELETON_DET_R18]},
         };
         taskDesc = "ped bending";

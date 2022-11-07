@@ -6,7 +6,7 @@
 #include "utils/module_classify.hpp"
 #include "utils/module_phone.hpp"
 #include "utils/module_retinaface.hpp"
-#include "utils/module_smoke_cig_detection.hpp"
+#include "utils/imp_smoke_cig_detection.hpp"
 #include "utils/module_fire_detection.hpp"
 #include "utils/module_yolo_u.hpp"
 #include "utils/module_feature_extraction.hpp"
@@ -153,7 +153,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     */
     case AlgoAPIName::SMOKING_DETECTOR:{
         printf("\033[32m AlgoAPIName::SMOKING_DETECTOR\n\033[0m");
-        SMOKE_CIG_DETECTION* _ptr_ = new SMOKE_CIG_DETECTION();
+        IMP_SMOKE_CIG_DETECTION* _ptr_ = new IMP_SMOKE_CIG_DETECTION();
         apiHandle.reset(_ptr_); 
     }
     break;

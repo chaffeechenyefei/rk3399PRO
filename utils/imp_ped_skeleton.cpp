@@ -331,12 +331,16 @@ RET_CODE IMP_PED_BENDING_DETECTION::run(TvaiImage &tvimage, VecObjBBox &bboxes, 
         if(box.objtype == CLS_TYPE::PEDESTRIAN) ped_bboxes.push_back(box);
     }
 
+    // printf("%d ped detected\n", ped_bboxes.size());
+
     if(ped_bboxes.empty()) return RET_CODE::SUCCESS;
     ret = m_sk_detectHandle->run(tvimage,ped_bboxes,0.1,0.1);
     if(ret!=RET_CODE::SUCCESS){
         printf("**[%s][%d] m_sk_detectHandle return %d\n", __FILE__, __LINE__, ret);
         return ret;
     }
+
+    // printf("%d ped detected\n", ped_bboxes.size());
 
     filter_valid_pose(tvimage, ped_bboxes, bboxes);
 
