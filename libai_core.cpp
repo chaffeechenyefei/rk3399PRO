@@ -11,6 +11,7 @@
 #include "utils/module_yolo_u.hpp"
 #include "utils/module_feature_extraction.hpp"
 #include "utils/module_posenet.hpp"
+#include "utils/imp_ped_skeleton.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -81,7 +82,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
      */
     case AlgoAPIName::FACE_DETECTOR:
     {
-        printf("AlgoAPIName::FACE_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::FACE_DETECTOR\n\033[0m");
         RETINAFACE_DETECTION_BYTETRACK* _ptr_ = new RETINAFACE_DETECTION_BYTETRACK();
         apiHandle.reset(_ptr_);
     }
@@ -91,7 +92,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
      */
     case AlgoAPIName::GENERAL_DETECTOR:
     {
-        printf("AlgoAPIName::GENERAL_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::GENERAL_DETECTOR\n\033[0m");
         YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR};
         _ptr_->set_output_cls_order(model_output_clss);
@@ -105,7 +106,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
      */
     case AlgoAPIName::SAFETY_HAT_DETECTOR:
     {
-        printf("AlgoAPIName::SAFETY_HAT_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::SAFETY_HAT_DETECTOR\n\033[0m");
         YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PED_SAFETY_HAT, CLS_TYPE::PED_HEAD};
         _ptr_->set_anchor(default_anchors);
@@ -118,7 +119,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
      */
     case AlgoAPIName::FIRE_DETECTOR:
     {
-        printf("AlgoAPIName::FIRE_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::FIRE_DETECTOR\n\033[0m");
         YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
         _ptr_->set_output_cls_order(model_output_clss);
@@ -128,7 +129,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         break;        
     case AlgoAPIName::FIRE_DETECTOR_X://火焰检测加强版
     {
-        printf("AlgoAPIName::FIRE_DETECTOR_X\n");
+        printf("\033[32m AlgoAPIName::FIRE_DETECTOR_X\n\033[0m");
         FireDetector* _ptr_ = new FireDetector();
         // vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
         // _ptr_->set_output_cls_order(model_output_clss);
@@ -139,7 +140,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     * 打电话
     */
     case AlgoAPIName::PHONING_DETECTOR:{
-        printf("AlgoAPIName::PHONING_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::PHONING_DETECTOR\n\033[0m");
         PhoneDetector* _ptr_ = new PhoneDetector();
         //LS_TYPE::OTHERS,CLS_TYPE::PHONING,CLS_TYPE::PHONE_PLAY
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::OTHERS, CLS_TYPE::PHONING, CLS_TYPE::OTHERS};
@@ -151,8 +152,35 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     * 抽烟
     */
     case AlgoAPIName::SMOKING_DETECTOR:{
-        printf("AlgoAPIName::SMOKING_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::SMOKING_DETECTOR\n\033[0m");
         SMOKE_CIG_DETECTION* _ptr_ = new SMOKE_CIG_DETECTION();
+        apiHandle.reset(_ptr_); 
+    }
+    break;
+    /*
+    * 行人摔倒
+    */        
+    case AlgoAPIName::PED_FALL_DETECTOR:{
+        printf("\033[32m AlgoAPIName::PED_FALL_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN_FALL};
+        _ptr_->set_output_cls_order(model_output_clss);
+        _ptr_->set_anchor(default_anchors);        
+        apiHandle.reset(_ptr_); 
+    }
+    break;
+    case AlgoAPIName::PED_FALL_DETECTOR_X:{
+        printf("\033[32m AlgoAPIName::PED_FALL_DETECTOR_X\n\033[0m");
+        IMP_PED_FALLING_DETECTION* _ptr_ = new IMP_PED_FALLING_DETECTION();
+        apiHandle.reset(_ptr_); 
+    }
+    break;    
+    /*
+    * 行人弯腰  
+    */        
+    case AlgoAPIName::PED_BEND_DETECTOR:{
+        printf("\033[32m AlgoAPIName::PED_BEND_DETECTOR\n\033[0m");
+        IMP_PED_BENDING_DETECTION* _ptr_ = new IMP_PED_BENDING_DETECTION();
         apiHandle.reset(_ptr_); 
     }
     break;    
@@ -164,7 +192,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     * 香烟检测
     */
     case AlgoAPIName::CIG_DETECTOR_NO_TRACK:{
-        printf("AlgoAPIName::CIG_DETECTOR_NO_TRACK\n");
+        printf("\033[32m AlgoAPIName::CIG_DETECTOR_NO_TRACK\n\033[0m");
         YOLO_DETECTION_NAIVE* _ptr_ = new YOLO_DETECTION_NAIVE();
         vector<CLS_TYPE> cls_types = {CLS_TYPE::SMOKING};
         _ptr_->set_output_cls_order(cls_types);
@@ -176,7 +204,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     * 特征提取
     */
     case AlgoAPIName::FEATURE_EXTRACTOR:{
-        printf("AlgoAPIName::FEATURE_EXTRACTOR\n");
+        printf("\033[32m AlgoAPIName::FEATURE_EXTRACTOR\n\033[0m");
         FeatureExtractor* _ptr_ = new FeatureExtractor();
         apiHandle.reset(_ptr_); 
     }
@@ -185,7 +213,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     * 骨架定位
     */
     case AlgoAPIName::SKELETON_DETECTOR: {
-        printf("AlgoAPIName::SKELETON_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::SKELETON_DETECTOR\n\033[0m");
         PoseNet* _ptr_ = new PoseNet();
         apiHandle.reset(_ptr_);
     }
@@ -193,7 +221,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
 
 
     default:
-        std::cout << "ERROR: Current API is not ready yet!" << std::endl;
+        std::cout << "\033[33m ERROR: Current API is not ready yet!\033[0m" << std::endl;
         break;
     }
     return apiHandle;

@@ -43,22 +43,25 @@ typedef enum _AlgoAPIName{
     FIRE_DETECTOR_X     = 7,//火焰检测加强版, 带火焰分类器
     WATER_DETECTOR      = 8,//积水检测 x
     PED_FALL_DETECTOR   = 9,//行人摔倒检测, 只检测摔倒的行人
-    SKELETON_DETECTOR   = 10,//人体骨架/关键点检测器--后续对接可用于摔倒检测等业务 x
-    SAFETY_HAT_DETECTOR = 11,//安全帽检测 return PED_SAFETY_HAT, PED_HEAD
-    TRASH_BAG_DETECTOR  = 12,//垃圾袋检测 x
-    BANNER_DETECTOR     = 13,//横幅检测 x
-    NONCAR_DETECTOR     = 14,//非机动车检测加强版, 针对非机动车进电梯开发 
-    SMOKING_DETECTOR    = 15,//抽烟行为检测 x
-    PHONING_DETECTOR    = 16,//打电话/玩手机行为检测 return PHONING
-    HEAD_DETECTOR       = 17,//人头检测, 检测画面中人头数量, 用于密集场景人数统计
+    PED_FALL_DETECTOR_X = 10,//行人摔倒检测加强版
+    SKELETON_DETECTOR   = 11,//人体骨架/关键点检测器--后续对接可用于摔倒检测等业务 x
+    SAFETY_HAT_DETECTOR = 12,//安全帽检测 return PED_SAFETY_HAT, PED_HEAD
+    TRASH_BAG_DETECTOR  = 13,//垃圾袋检测 x
+    BANNER_DETECTOR     = 14,//横幅检测 x
+    NONCAR_DETECTOR     = 15,//非机动车检测加强版, 针对非机动车进电梯开发 
+    SMOKING_DETECTOR    = 16,//抽烟行为检测 x
+    PHONING_DETECTOR    = 17,//打电话/玩手机行为检测 return PHONING
+    HEAD_DETECTOR       = 18,//人头检测, 检测画面中人头数量, 用于密集场景人数统计
 // #ifndef MLU220 //新增内容2022-03-03
-    SOS_DETECTOR        = 18,//SOS举手求救
-    PED_SK_DETECTOR     = 19,//行人弯腰检测，测试环节[本质是行人检测+骨架检测]
-    FACE_DETECTOR_ATTR  = 20,//人脸检测
-    GENERAL_DETECTORV2  = 21,//跟踪器替代
-    LICPLATE_DETECTOR   = 22, //车牌检测
-    LICPLATE_RECOGNIZER = 23, //车牌识别
-    GENERAL_DETECTOR_FAST_LOAD = 24,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR, precompiled快速加载
+    SOS_DETECTOR        = 19,//SOS举手求救
+    PED_SK_DETECTOR     = 20,//行人弯腰检测，测试环节[本质是行人检测+骨架检测]
+    FACE_DETECTOR_ATTR  = 21,//人脸检测
+    GENERAL_DETECTORV2  = 22,//跟踪器替代
+    LICPLATE_DETECTOR   = 23, //车牌检测
+    LICPLATE_RECOGNIZER = 24, //车牌识别
+    GENERAL_DETECTOR_FAST_LOAD = 25,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR, precompiled快速加载
+
+    PED_BEND_DETECTOR = 26,//行人弯腰检测
 
     
 // #endif
@@ -139,7 +142,8 @@ typedef enum _CLS_TYPE{
     PEDESTRIAN                  = 0     ,   //行人
     FACE                        = 1     ,   //人脸
     PEDESTRIAN_FALL             = 2     ,   //摔倒的行人
-    HAND                        = 3     ,   //人手检测
+    PEDESTRIAN_BEND             = 3     ,   //摔倒弯腰
+    HAND                        = 4     ,   //人手检测
 
     CAR                         = 10    ,   //车辆
     NONCAR                      = 100   ,   //非机动车

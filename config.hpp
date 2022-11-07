@@ -32,13 +32,14 @@ enum class TASKNAME{
     PHONING         = 18,//打电话玩手机检测
     HEAD            = 19,//人头检测
     SOS             = 20,//SOS求救
-    PED_SK          = 21,//行人弯腰骨架检测
+    PED_SK          = 21,//骨架检测
     FACE_ATTR       = 22,//人脸检测+属性
     PED_CAR_NONCARV2  = 23,//人车非检测
     LICPLATE        = 24,//车牌检测+车牌识别
     RESERVED2       = 25,//yolov5 mode3
     PED_CAR_NONCAR_FAST_LOAD  = 26,//人车非检测快速加载
     FACE_EXT        = 27,//单纯人脸特征提取
+    PED_BEND        = 28,//行人弯腰检测
 
     TASK_END,
 
@@ -108,7 +109,7 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::GENERAL_DET_MODE3,  rknn_model_path + "yolov5s-conv-9-20211104_736x416_mode3_precompiled.rknn"},
     {MODELFILENAME::GENERAL_DET_MODE4,  rknn_model_path + "yolov5s-conv-9-20211104_736x416_mode4_precompiled.rknn"},
     {MODELFILENAME::PED_DET,            "yolov5s-conv-people-aug-fall_736x416_mlu220_bs1c1_fp16.cambricon"},
-    {MODELFILENAME::PED_FALL_DET,       "yolov5s-conv-fall-ped-20220301_736x416_mlu220_bs1c1_fp16.cambricon"},//20220222
+    {MODELFILENAME::PED_FALL_DET,       rknn_model_path + "yolov5s-conv-fall-ped-20220301_736x416_mode4_precompiled.rknn"},//20220222
     {MODELFILENAME::SAFETY_HAT_DET,     rknn_model_path + "yolov5s-conv-safety-hat-20220217_736x416_mode4_precompiled.rknn"},//20220222
     {MODELFILENAME::TJ_HELMET_DET,      "yolov5s-conv-safety-hat-tongji-20220915_416x416_mlu220_bs1c1_fp16.cambricon"},//20220915
     {MODELFILENAME::TRASH_BAG_DET,      "yolov5s-conv-trashbag-20211214_736x416_mlu220_bs1c1_fp16.cambricon"},
@@ -202,7 +203,7 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         break;
     case TASKNAME::PED_FALL:
         threshold = 0.3;
-        apiName = AlgoAPIName::PED_FALL_DETECTOR;
+        apiName = AlgoAPIName::PED_FALL_DETECTOR_X;
         nms_threshold = 0.6;
         init_param = {
             {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::PED_FALL_DET]},
@@ -210,6 +211,16 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         };
         taskDesc = "ped falling";
         break;
+    case TASKNAME::PED_BEND:
+        threshold = 0.3;
+        apiName = AlgoAPIName::PED_BEND_DETECTOR;
+        nms_threshold = 0.6;
+        init_param = {
+            {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::GENERAL_DET]},
+            {InitParam::SUB_MODEL,  cambricon_model_file[MODELFILENAME::SKELETON_DET_R18]},
+        };
+        taskDesc = "ped bending";
+        break;        
     case TASKNAME::PED_SK:
         threshold = 0.5;
         apiName = AlgoAPIName::PED_SK_DETECTOR;
@@ -218,7 +229,7 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
             {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::PED_DET]},
             {InitParam::SUB_MODEL,  cambricon_model_file[MODELFILENAME::SKELETON_DET_R18]},
         };
-        taskDesc = "ped wanyao skeleton";
+        taskDesc = "ped (wh)192x256 skeleton";
         break;        
     case TASKNAME::PED:
         threshold = 0.5;
