@@ -1,7 +1,6 @@
 #ifndef _IMP_PED_SKELETON_HPP_
 #define _IMP_PED_SKELETON_HPP_
 
-#include "module_base.hpp"
 #include "basic.hpp"
 #include "module_track.hpp"
 #include "module_yolo.hpp"

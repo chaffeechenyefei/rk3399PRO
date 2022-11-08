@@ -1,17 +1,23 @@
 #include "libai_core.hpp"
 #include <opencv2/opencv.hpp>
 #include "utils/basic.hpp"
+/*******************************************************************************
+ * 基础组建
+*******************************************************************************/
 #include "utils/module_siso.hpp"
 #include "utils/module_yolo.hpp"
 #include "utils/module_classify.hpp"
-#include "utils/module_phone.hpp"
 #include "utils/module_retinaface.hpp"
-#include "utils/imp_smoke_cig_detection.hpp"
-#include "utils/module_fire_detection.hpp"
 #include "utils/module_yolo_u.hpp"
 #include "utils/module_feature_extraction.hpp"
 #include "utils/module_posenet.hpp"
+/*******************************************************************************
+ * IMP_XXX: 表示所有模块都通过ucloud::AICoreFactory::getAlgoAPI来实现, run时仅进行模块之间的衔接处理.
+*******************************************************************************/
 #include "utils/imp_ped_skeleton.hpp"
+#include "utils/imp_phone.hpp"
+#include "utils/imp_smoke_cig_detection.hpp"
+#include "utils/imp_fire_detection.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -33,6 +39,8 @@ std::vector<float> default_anchors = {10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59
 /*--------------AICoreFactory API------------------*/
 AICoreFactory::AICoreFactory(){LOGI << "AICoreFactory Constructor";}
 AICoreFactory::~AICoreFactory(){}
+
+
 
 AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
 #ifdef BUILD_VERSION
@@ -130,7 +138,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     case AlgoAPIName::FIRE_DETECTOR_X://火焰检测加强版
     {
         printf("\033[32m AlgoAPIName::FIRE_DETECTOR_X\n\033[0m");
-        FireDetector* _ptr_ = new FireDetector();
+        IMP_FIRE_DETECTOR* _ptr_ = new IMP_FIRE_DETECTOR();
         // vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
         // _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_);
@@ -141,7 +149,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     */
     case AlgoAPIName::PHONING_DETECTOR:{
         printf("\033[32m AlgoAPIName::PHONING_DETECTOR\n\033[0m");
-        PhoneDetector* _ptr_ = new PhoneDetector();
+        IMP_PHONE_DETECTOR* _ptr_ = new IMP_PHONE_DETECTOR();
         //LS_TYPE::OTHERS,CLS_TYPE::PHONING,CLS_TYPE::PHONE_PLAY
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::OTHERS, CLS_TYPE::PHONING, CLS_TYPE::OTHERS};
         _ptr_->set_output_cls_order(model_output_clss);
