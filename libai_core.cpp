@@ -121,7 +121,87 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_);
     }
+        break;
+    /**
+     * 行人检测
+     */
+    case AlgoAPIName::PED_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::PED_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN};
+        _ptr_->set_anchor(default_anchors);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }    
+        break;
+    /**
+     * 非机动车检测(电梯)
+     */
+    case AlgoAPIName::NONCAR_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::NONCAR_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::EBYCYCLE, CLS_TYPE::BYCYCLE };
+        vector<float> _anchors_ = {5.39844,   5.07812,  14.60156,   8.90625,  25.00000,  24.92188,  89.43750, 102.37500, 184.87500, 215.62500, 337.25000, 174.00000, 410.75000, 546.00000, 516.50000, 538.00000, 635.50000, 500.25000};
+        _ptr_->set_anchor(_anchors_);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }    
+        break;
+    /**
+     * 横幅检测
+     */
+    case AlgoAPIName::BANNER_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::BANNER_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::BANNER};
+        vector<float> _anchors_ = {9.70312, 264.75000, 458.50000,  28.14062, 386.50000,  56.84375, 378.00000,  82.87500, 364.50000, 114.87500, 194.37500, 248.62500, 527.50000, 101.81250, 389.50000, 166.62500, 624.50000, 253.25000};
+        _ptr_->set_anchor(_anchors_);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }     
+        break;
+    /**
+     * 人头检测
+     */
+    case AlgoAPIName::HEAD_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::HEAD_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PED_HEAD};
+        _ptr_->set_anchor(default_anchors);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }      
         break;        
+    /**
+     * 手的检测
+     */
+    case AlgoAPIName::HAND_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::HAND_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::HAND};
+        _ptr_->set_anchor(default_anchors);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }      
+        break;               
+    /**
+     * 垃圾检测
+     */
+    case AlgoAPIName::TRASH_BAG_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::TRASH_BAG_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::TRASH_BAG, CLS_TYPE::OTHERS, CLS_TYPE::OTHERS, CLS_TYPE::TRASH_BAG};
+        _ptr_->set_anchor(default_anchors);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }      
+        break;                     
     /**
      * 火焰检测
      */

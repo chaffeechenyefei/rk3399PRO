@@ -40,6 +40,7 @@ enum class TASKNAME{
     PED_CAR_NONCAR_FAST_LOAD  = 26,//人车非检测快速加载
     FACE_EXT        = 27,//单纯人脸特征提取
     PED_BEND        = 28,//行人弯腰检测
+    HAND            = 29,//手的检测
 
     TASK_END,
 
@@ -108,22 +109,22 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::GENERAL_DET,        rknn_model_path + "yolov5s-conv-9-20211104_736x416.rknn"},
     {MODELFILENAME::GENERAL_DET_MODE3,  rknn_model_path + "yolov5s-conv-9-20211104_736x416_mode3_precompiled.rknn"},
     {MODELFILENAME::GENERAL_DET_MODE4,  rknn_model_path + "yolov5s-conv-9-20211104_736x416_mode4_precompiled.rknn"},
-    {MODELFILENAME::PED_DET,            "yolov5s-conv-people-aug-fall_736x416_mlu220_bs1c1_fp16.cambricon"},
+    {MODELFILENAME::PED_DET,            rknn_model_path + "yolov5s-conv-people-aug-fall_736x416_mode4_precompiled.rknn"},
     {MODELFILENAME::PED_FALL_DET,       rknn_model_path + "yolov5s-conv-fall-ped-20220301_736x416_mode4_precompiled.rknn"},//20220222
     {MODELFILENAME::SAFETY_HAT_DET,     rknn_model_path + "yolov5s-conv-safety-hat-20220217_736x416_mode4_precompiled.rknn"},//20220222
     {MODELFILENAME::TJ_HELMET_DET,      "yolov5s-conv-safety-hat-tongji-20220915_416x416_mlu220_bs1c1_fp16.cambricon"},//20220915
-    {MODELFILENAME::TRASH_BAG_DET,      "yolov5s-conv-trashbag-20211214_736x416_mlu220_bs1c1_fp16.cambricon"},
+    {MODELFILENAME::TRASH_BAG_DET,      rknn_model_path + "yolov5s-conv-trashbag-20211214_736x416_mode4_precompiled.rknn"},
     {MODELFILENAME::FIRE_DET,           "yolov5s-conv-fire-21102010_736x416_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::FIRE_DET_220407,    rknn_model_path + "yolov5s-conv-fire-220407_736x416_mode4_precompiled.rknn"},
-    {MODELFILENAME::BANNER_DET,         "yolov5s-conv-banner-20211130_736x416_mlu220_bs1c1_fp16.cambricon"},
-    {MODELFILENAME::MOTOR_DET,          "yolov5s-conv-motor-20211217_736x416_mlu220_bs1c1_fp16.cambricon"},
+    {MODELFILENAME::BANNER_DET,         rknn_model_path + "yolov5s-conv-banner-20211130_736x416_mode4_precompiled.rknn"},
+    {MODELFILENAME::MOTOR_DET,          rknn_model_path + "yolov5s-conv-motor-20211217_736x416_mode4_precompiled.rknn"},
     {MODELFILENAME::HAND_DET_224x320,   "yolov5s-conv-hand-20220117_224x320_mlu220_bs1c1_fp16.cambricon"},
-    {MODELFILENAME::HAND_DET_736x416,   "yolov5s-conv-hand-20220118_736x416_mlu220_bs1c1_fp16.cambricon"},
+    {MODELFILENAME::HAND_DET_736x416,   rknn_model_path + "yolov5s-conv-hand-20220118_736x416_mode4_precompiled.rknn"},
     {MODELFILENAME::CIG_DET,            rknn_model_path + "yolov5s-conv-cig-20220311_256x256_mode4_precompiled.rknn"},
     {MODELFILENAME::PHONE_CLS_220215,   "phoning-r34_20220215_256x256_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::PHONE_CLS_220302,   rknn_model_path + "phone_resnet34_20220302_256x256_mode0_precompiled.rknn"},
     {MODELFILENAME::PHONE_CLS_220302_INNER_NORM,   rknn_model_path + "phone_resnet34_20220302_256x256_mode0_normal_rgb_precompiled.rknn"},
-    {MODELFILENAME::HEAD_DET,           "yolov5s-conv-head-20220121_736x416_mlu220_bs1c1_fp16.cambricon"},//20220222
+    {MODELFILENAME::HEAD_DET,           rknn_model_path + "yolov5s-conv-head-20220121_736x416_mode4_precompiled.rknn"},//20220222
     //BATCH IN============================================================================================================================
     {MODELFILENAME::ACTION_CLS,         "tsn_53_224x224_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::MOD_DET_UNET,       "unetResNet18_bn_110_224x224_mlu220_t2bs1c1_int8.cambricon"},
@@ -240,6 +241,15 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         };
         taskDesc = "ped";
         break;        
+    case TASKNAME::HAND:
+        threshold = 0.5;
+        apiName = AlgoAPIName::HAND_DETECTOR;
+        nms_threshold = 0.6;
+        init_param = {
+            {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::HAND_DET_736x416]},
+        };
+        taskDesc = "hand detection";
+        break;            
 
 
     case TASKNAME::FIRE: //建议阈值0.7
