@@ -1,4 +1,4 @@
-#include "module_smoke_cig_detection.hpp"
+#include "imp_smoke_cig_detection.hpp"
 
 using namespace ucloud;
 
@@ -7,11 +7,11 @@ static bool box_sort_confidence_max(const BBox& a, const BBox& b){
 }
 
 /*******************************************************************************
- * SMOKE_CIG_DETECTION
+ * IMP_SMOKE_CIG_DETECTION
  * chaffee.chen@ucloud.cn 2022-10-12
 *******************************************************************************/
-RET_CODE SMOKE_CIG_DETECTION::init(std::map<InitParam, ucloud::WeightData> &weightConfig){
-    LOGI << "-> SMOKE_CIG_DETECTION::init";
+RET_CODE IMP_SMOKE_CIG_DETECTION::init(std::map<InitParam, ucloud::WeightData> &weightConfig){
+    LOGI << "-> IMP_SMOKE_CIG_DETECTION::init";
     WeightData face_detect_modelpath ,cig_detect_modelpath;
     if(weightConfig.find(InitParam::BASE_MODEL)==weightConfig.end() || \
         weightConfig.find(InitParam::SUB_MODEL)==weightConfig.end()) {
@@ -39,8 +39,8 @@ RET_CODE SMOKE_CIG_DETECTION::init(std::map<InitParam, ucloud::WeightData> &weig
     return RET_CODE::SUCCESS;
 }
 
-RET_CODE SMOKE_CIG_DETECTION::init(std::map<InitParam, std::string> &modelpath){
-    LOGI << "-> SMOKE_CIG_DETECTION::init";
+RET_CODE IMP_SMOKE_CIG_DETECTION::init(std::map<InitParam, std::string> &modelpath){
+    LOGI << "-> IMP_SMOKE_CIG_DETECTION::init";
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
     std::map<InitParam, WeightData> weightConfig;
     for(auto &&modelp: modelpath){
@@ -56,8 +56,8 @@ RET_CODE SMOKE_CIG_DETECTION::init(std::map<InitParam, std::string> &modelpath){
     return RET_CODE::SUCCESS;
 }
 
-RET_CODE SMOKE_CIG_DETECTION::run(TvaiImage &tvimage, VecObjBBox &bboxes, float threshold, float nms_threshold){
-    LOGI << "-> SMOKE_CIG_DETECTION::run";
+RET_CODE IMP_SMOKE_CIG_DETECTION::run(TvaiImage &tvimage, VecObjBBox &bboxes, float threshold, float nms_threshold){
+    LOGI << "-> IMP_SMOKE_CIG_DETECTION::run";
     if(tvimage.format!=TVAI_IMAGE_FORMAT_NV21 && tvimage.format!=TVAI_IMAGE_FORMAT_NV12 ) return RET_CODE::ERR_UNSUPPORTED_IMG_FORMAT;
     RET_CODE ret = RET_CODE::FAILED;
     float expand_scale = 1.5;
@@ -87,7 +87,7 @@ RET_CODE SMOKE_CIG_DETECTION::run(TvaiImage &tvimage, VecObjBBox &bboxes, float 
     return RET_CODE::SUCCESS;
 }
 
-RET_CODE SMOKE_CIG_DETECTION::get_class_type(std::vector<CLS_TYPE> &valid_clss){
+RET_CODE IMP_SMOKE_CIG_DETECTION::get_class_type(std::vector<CLS_TYPE> &valid_clss){
     valid_clss.push_back(m_cls);
     return RET_CODE::SUCCESS;
 }

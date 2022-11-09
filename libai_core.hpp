@@ -34,31 +34,34 @@ typedef struct tagWeightData WeightData;//模型结构体
 //算法功能的枚举
 typedef enum _AlgoAPIName{
     FACE_DETECTOR       = 0,//人脸检测 return FACE
-    FACE_EXTRACTOR      = 1,//人脸特征提取
+    FACE_EXTRACTOR      = 1,//人脸特征提取 return FACE, (ATT:需要配合FACE_DETECTOR使用)
     GENERAL_DETECTOR    = 2,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR
     ACTION_CLASSIFIER   = 3,//行为识别, 目前支持打斗 [需要数据更新模型] x
     MOD_DETECTOR        = 4,//高空抛物, Moving Object Detection(MOD)[需要改善后处理, 开放做多帧接口测试]
     PED_DETECTOR        = 5,//行人检测加强版, 针对摔倒进行数据增强, mAP高于人车非中的人 
     FIRE_DETECTOR       = 6,//火焰检测 return FIRE
-    FIRE_DETECTOR_X     = 7,//火焰检测加强版, 带火焰分类器
+    FIRE_DETECTOR_X     = 7,//火焰检测加强版, 带火焰分类器 return FIRE
     WATER_DETECTOR      = 8,//积水检测 x
-    PED_FALL_DETECTOR   = 9,//行人摔倒检测, 只检测摔倒的行人
-    SKELETON_DETECTOR   = 10,//人体骨架/关键点检测器--后续对接可用于摔倒检测等业务 x
-    SAFETY_HAT_DETECTOR = 11,//安全帽检测 return PED_SAFETY_HAT, PED_HEAD
-    TRASH_BAG_DETECTOR  = 12,//垃圾袋检测 x
-    BANNER_DETECTOR     = 13,//横幅检测 x
-    NONCAR_DETECTOR     = 14,//非机动车检测加强版, 针对非机动车进电梯开发 
-    SMOKING_DETECTOR    = 15,//抽烟行为检测 x
-    PHONING_DETECTOR    = 16,//打电话/玩手机行为检测 return PHONING
-    HEAD_DETECTOR       = 17,//人头检测, 检测画面中人头数量, 用于密集场景人数统计
+    PED_FALL_DETECTOR   = 9,//行人摔倒检测, 只检测摔倒的行人 return PEDESTRIAN_FALL
+    PED_FALL_DETECTOR_X = 10,//行人摔倒检测加强版, 配合骨架计算上半身倾斜角度 return PEDESTRIAN_FALL
+    SKELETON_DETECTOR   = 11,//人体骨架/关键点检测器--后续对接可用于摔倒检测等业务
+    SAFETY_HAT_DETECTOR = 12,//安全帽检测 return PED_SAFETY_HAT, PED_HEAD
+    TRASH_BAG_DETECTOR  = 13,//垃圾袋检测 x
+    BANNER_DETECTOR     = 14,//横幅检测 x
+    NONCAR_DETECTOR     = 15,//非机动车检测加强版, 针对非机动车进电梯开发 
+    SMOKING_DETECTOR    = 16,//抽烟行为检测 x
+    PHONING_DETECTOR    = 17,//打电话/玩手机行为检测 return PHONING
+    HEAD_DETECTOR       = 18,//人头检测, 检测画面中人头数量, 用于密集场景人数统计
 // #ifndef MLU220 //新增内容2022-03-03
-    SOS_DETECTOR        = 18,//SOS举手求救
-    PED_SK_DETECTOR     = 19,//行人弯腰检测，测试环节[本质是行人检测+骨架检测]
-    FACE_DETECTOR_ATTR  = 20,//人脸检测
-    GENERAL_DETECTORV2  = 21,//跟踪器替代
-    LICPLATE_DETECTOR   = 22, //车牌检测
-    LICPLATE_RECOGNIZER = 23, //车牌识别
-    GENERAL_DETECTOR_FAST_LOAD = 24,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR, precompiled快速加载
+    SOS_DETECTOR        = 19,//SOS举手求救
+    PED_SK_DETECTOR     = 20,//行人弯腰检测[本质是行人检测+骨架检测] return PEDESTRIAN_BEND
+    FACE_DETECTOR_ATTR  = 21,//人脸检测+属性分类
+    GENERAL_DETECTORV2  = 22,//跟踪器替代
+    LICPLATE_DETECTOR   = 23, //车牌检测
+    LICPLATE_RECOGNIZER = 24, //车牌识别
+    GENERAL_DETECTOR_FAST_LOAD = 25,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR, precompiled快速加载
+
+    PED_BEND_DETECTOR = 26,//行人弯腰检测
 
     
 // #endif
@@ -68,8 +71,8 @@ typedef enum _AlgoAPIName{
     RESERVED3           = 43,
     GENERAL_TRACKOR     = 50,//通用跟踪模块, 不能实例化, 但可以在内部使用
     MOD_MOG2_DETECTOR   = 51,//高空抛物, Moving Object Detection(MOD)[MoG2版本]
-    HAND_DETECTOR       = 52,//人手检测 224x320, 一般用于内部, 不单独使用
-    HAND_L_DETECTOR     = 53,//人手检测 736x416, 一般用于内部, 不单独使用
+    // HAND_DETECTOR       = 52,//人手检测 224x320, 一般用于内部, 不单独使用
+    HAND_DETECTOR     = 53,//人手检测 736x416, 一般用于内部, 不单独使用
     SMOKING_CLASSIFIER  = 54,//抽烟行为分类
     BATCH_GENERAL_DETECTOR    = 100,//测试用
     FIRE_CLASSIFIER                ,//火焰分类, 内部测试用
@@ -139,7 +142,8 @@ typedef enum _CLS_TYPE{
     PEDESTRIAN                  = 0     ,   //行人
     FACE                        = 1     ,   //人脸
     PEDESTRIAN_FALL             = 2     ,   //摔倒的行人
-    HAND                        = 3     ,   //人手检测
+    PEDESTRIAN_BEND             = 3     ,   //摔倒弯腰
+    HAND                        = 4     ,   //人手检测
 
     CAR                         = 10    ,   //车辆
     NONCAR                      = 100   ,   //非机动车
@@ -380,6 +384,10 @@ UCLOUD_API_PUBLIC unsigned char* readImg_to_RGB(std::string filepath, int w, int
 UCLOUD_API_PUBLIC unsigned char* readImg_to_BGR(std::string filepath, int w, int h, int &width, int &height);
 UCLOUD_API_PUBLIC unsigned char* readImg_to_NV21(std::string filepath, int w, int h,int &width, int &height, int &stride);
 UCLOUD_API_PUBLIC unsigned char* readImg_to_NV12(std::string filepath, int w, int h,int &width, int &height, int &stride);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_RGB_no_aspect(std::string filepath, int w, int h, int &width, int &height);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_BGR_no_aspect(std::string filepath, int w, int h, int &width, int &height);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_NV21_no_aspect(std::string filepath, int w, int h,int &width, int &height, int &stride);
+UCLOUD_API_PUBLIC unsigned char* readImg_to_NV12_no_aspect(std::string filepath, int w, int h,int &width, int &height, int &stride);
 //写图像, 是否采用覆盖式写入
 UCLOUD_API_PUBLIC void writeImg(std::string filepath , unsigned char* imgPtr, int width, int height, bool overwrite=true);
 UCLOUD_API_PUBLIC void freeImg(unsigned char** imgPtr);

@@ -6,9 +6,9 @@
 #include <string>
 
 /*******************************************************************************
- * Classification
- * 通用分类器
- * lihui.liu@2022-10-13
+ * FeatureExtractor
+ * 通用特征提取器, 注意VecObjBBox中含有指针, 需要通过AICoreFactory::releaseVecObjBBox进行释放
+ * chaffee.chen@2022-11-03
 *******************************************************************************/
 class FeatureExtractor: public ucloud::AlgoAPI{
 public:

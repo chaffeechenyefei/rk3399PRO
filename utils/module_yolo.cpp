@@ -426,7 +426,7 @@ RET_CODE YOLO_DETECTION_NAIVE::run(TvaiImage& tvimage, TvaiRect roi , VecObjBBox
 #ifdef TIMING    
     m_Tk.start();
 #endif
-    ret = postprocess(output_datas, threshold, nms_threshold, bboxes, aX, aY, m_decode_mode);
+    ret = postprocess(output_datas, roi ,threshold, nms_threshold, bboxes, aX, aY, m_decode_mode);
 #ifdef TIMING    
     m_Tk.end("postprocess");
 #endif    

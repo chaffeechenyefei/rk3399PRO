@@ -1,15 +1,23 @@
 #include "libai_core.hpp"
 #include <opencv2/opencv.hpp>
 #include "utils/basic.hpp"
+/*******************************************************************************
+ * 基础组建
+*******************************************************************************/
 #include "utils/module_siso.hpp"
 #include "utils/module_yolo.hpp"
 #include "utils/module_classify.hpp"
-#include "utils/module_phone.hpp"
 #include "utils/module_retinaface.hpp"
-#include "utils/module_smoke_cig_detection.hpp"
-#include "utils/module_fire_detection.hpp"
 #include "utils/module_yolo_u.hpp"
 #include "utils/module_feature_extraction.hpp"
+#include "utils/module_posenet.hpp"
+/*******************************************************************************
+ * IMP_XXX: 表示所有模块都通过ucloud::AICoreFactory::getAlgoAPI来实现, run时仅进行模块之间的衔接处理.
+*******************************************************************************/
+#include "utils/imp_ped_skeleton.hpp"
+#include "utils/imp_phone.hpp"
+#include "utils/imp_smoke_cig_detection.hpp"
+#include "utils/imp_fire_detection.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -31,6 +39,8 @@ std::vector<float> default_anchors = {10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59
 /*--------------AICoreFactory API------------------*/
 AICoreFactory::AICoreFactory(){LOGI << "AICoreFactory Constructor";}
 AICoreFactory::~AICoreFactory(){}
+
+
 
 AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
 #ifdef BUILD_VERSION
@@ -80,7 +90,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
      */
     case AlgoAPIName::FACE_DETECTOR:
     {
-        printf("AlgoAPIName::FACE_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::FACE_DETECTOR\n\033[0m");
         RETINAFACE_DETECTION_BYTETRACK* _ptr_ = new RETINAFACE_DETECTION_BYTETRACK();
         apiHandle.reset(_ptr_);
     }
@@ -90,7 +100,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
      */
     case AlgoAPIName::GENERAL_DETECTOR:
     {
-        printf("AlgoAPIName::GENERAL_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::GENERAL_DETECTOR\n\033[0m");
         YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR, CLS_TYPE::NONCAR, CLS_TYPE::CAR, CLS_TYPE::NONCAR};
         _ptr_->set_output_cls_order(model_output_clss);
@@ -104,20 +114,100 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
      */
     case AlgoAPIName::SAFETY_HAT_DETECTOR:
     {
-        printf("AlgoAPIName::SAFETY_HAT_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::SAFETY_HAT_DETECTOR\n\033[0m");
         YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PED_SAFETY_HAT, CLS_TYPE::PED_HEAD};
         _ptr_->set_anchor(default_anchors);
         _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_);
     }
+        break;
+    /**
+     * 行人检测
+     */
+    case AlgoAPIName::PED_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::PED_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN};
+        _ptr_->set_anchor(default_anchors);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }    
+        break;
+    /**
+     * 非机动车检测(电梯)
+     */
+    case AlgoAPIName::NONCAR_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::NONCAR_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::EBYCYCLE, CLS_TYPE::BYCYCLE };
+        vector<float> _anchors_ = {5.39844,   5.07812,  14.60156,   8.90625,  25.00000,  24.92188,  89.43750, 102.37500, 184.87500, 215.62500, 337.25000, 174.00000, 410.75000, 546.00000, 516.50000, 538.00000, 635.50000, 500.25000};
+        _ptr_->set_anchor(_anchors_);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }    
+        break;
+    /**
+     * 横幅检测
+     */
+    case AlgoAPIName::BANNER_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::BANNER_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::BANNER};
+        vector<float> _anchors_ = {9.70312, 264.75000, 458.50000,  28.14062, 386.50000,  56.84375, 378.00000,  82.87500, 364.50000, 114.87500, 194.37500, 248.62500, 527.50000, 101.81250, 389.50000, 166.62500, 624.50000, 253.25000};
+        _ptr_->set_anchor(_anchors_);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }     
+        break;
+    /**
+     * 人头检测
+     */
+    case AlgoAPIName::HEAD_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::HEAD_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PED_HEAD};
+        _ptr_->set_anchor(default_anchors);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }      
         break;        
+    /**
+     * 手的检测
+     */
+    case AlgoAPIName::HAND_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::HAND_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::HAND};
+        _ptr_->set_anchor(default_anchors);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }      
+        break;               
+    /**
+     * 垃圾检测
+     */
+    case AlgoAPIName::TRASH_BAG_DETECTOR:
+    {
+        printf("\033[32m AlgoAPIName::TRASH_BAG_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::TRASH_BAG, CLS_TYPE::OTHERS, CLS_TYPE::OTHERS, CLS_TYPE::TRASH_BAG};
+        _ptr_->set_anchor(default_anchors);
+        _ptr_->set_output_cls_order(model_output_clss);
+        apiHandle.reset(_ptr_);
+    }      
+        break;                     
     /**
      * 火焰检测
      */
     case AlgoAPIName::FIRE_DETECTOR:
     {
-        printf("AlgoAPIName::FIRE_DETECTOR\n");
+        printf("\033[32m AlgoAPIName::FIRE_DETECTOR\n\033[0m");
         YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
         _ptr_->set_output_cls_order(model_output_clss);
@@ -127,8 +217,8 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         break;        
     case AlgoAPIName::FIRE_DETECTOR_X://火焰检测加强版
     {
-        printf("AlgoAPIName::FIRE_DETECTOR_X\n");
-        FireDetector* _ptr_ = new FireDetector();
+        printf("\033[32m AlgoAPIName::FIRE_DETECTOR_X\n\033[0m");
+        IMP_FIRE_DETECTOR* _ptr_ = new IMP_FIRE_DETECTOR();
         // vector<CLS_TYPE> model_output_clss = {CLS_TYPE::FIRE};
         // _ptr_->set_output_cls_order(model_output_clss);
         apiHandle.reset(_ptr_);
@@ -138,8 +228,8 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     * 打电话
     */
     case AlgoAPIName::PHONING_DETECTOR:{
-        printf("AlgoAPIName::PHONING_DETECTOR\n");
-        PhoneDetector* _ptr_ = new PhoneDetector();
+        printf("\033[32m AlgoAPIName::PHONING_DETECTOR\n\033[0m");
+        IMP_PHONE_DETECTOR* _ptr_ = new IMP_PHONE_DETECTOR();
         //LS_TYPE::OTHERS,CLS_TYPE::PHONING,CLS_TYPE::PHONE_PLAY
         vector<CLS_TYPE> model_output_clss = {CLS_TYPE::OTHERS, CLS_TYPE::PHONING, CLS_TYPE::OTHERS};
         _ptr_->set_output_cls_order(model_output_clss);
@@ -150,8 +240,35 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     * 抽烟
     */
     case AlgoAPIName::SMOKING_DETECTOR:{
-        printf("AlgoAPIName::SMOKING_DETECTOR\n");
-        SMOKE_CIG_DETECTION* _ptr_ = new SMOKE_CIG_DETECTION();
+        printf("\033[32m AlgoAPIName::SMOKING_DETECTOR\n\033[0m");
+        IMP_SMOKE_CIG_DETECTION* _ptr_ = new IMP_SMOKE_CIG_DETECTION();
+        apiHandle.reset(_ptr_); 
+    }
+    break;
+    /*
+    * 行人摔倒
+    */        
+    case AlgoAPIName::PED_FALL_DETECTOR:{
+        printf("\033[32m AlgoAPIName::PED_FALL_DETECTOR\n\033[0m");
+        YOLO_DETECTION_BYTETRACK* _ptr_ = new YOLO_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::PEDESTRIAN_FALL};
+        _ptr_->set_output_cls_order(model_output_clss);
+        _ptr_->set_anchor(default_anchors);        
+        apiHandle.reset(_ptr_); 
+    }
+    break;
+    case AlgoAPIName::PED_FALL_DETECTOR_X:{
+        printf("\033[32m AlgoAPIName::PED_FALL_DETECTOR_X\n\033[0m");
+        IMP_PED_FALLING_DETECTION* _ptr_ = new IMP_PED_FALLING_DETECTION();
+        apiHandle.reset(_ptr_); 
+    }
+    break;    
+    /*
+    * 行人弯腰  
+    */        
+    case AlgoAPIName::PED_BEND_DETECTOR:{
+        printf("\033[32m AlgoAPIName::PED_BEND_DETECTOR\n\033[0m");
+        IMP_PED_BENDING_DETECTION* _ptr_ = new IMP_PED_BENDING_DETECTION();
         apiHandle.reset(_ptr_); 
     }
     break;    
@@ -163,7 +280,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     * 香烟检测
     */
     case AlgoAPIName::CIG_DETECTOR_NO_TRACK:{
-        printf("AlgoAPIName::CIG_DETECTOR_NO_TRACK\n");
+        printf("\033[32m AlgoAPIName::CIG_DETECTOR_NO_TRACK\n\033[0m");
         YOLO_DETECTION_NAIVE* _ptr_ = new YOLO_DETECTION_NAIVE();
         vector<CLS_TYPE> cls_types = {CLS_TYPE::SMOKING};
         _ptr_->set_output_cls_order(cls_types);
@@ -175,15 +292,24 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
     * 特征提取
     */
     case AlgoAPIName::FEATURE_EXTRACTOR:{
-        printf("AlgoAPIName::FEATURE_EXTRACTOR\n");
+        printf("\033[32m AlgoAPIName::FEATURE_EXTRACTOR\n\033[0m");
         FeatureExtractor* _ptr_ = new FeatureExtractor();
         apiHandle.reset(_ptr_); 
     }
     break;   
+    /*
+    * 骨架定位
+    */
+    case AlgoAPIName::SKELETON_DETECTOR: {
+        printf("\033[32m AlgoAPIName::SKELETON_DETECTOR\n\033[0m");
+        PoseNet* _ptr_ = new PoseNet();
+        apiHandle.reset(_ptr_);
+    }
+    break;
 
 
     default:
-        std::cout << "ERROR: Current API is not ready yet!" << std::endl;
+        std::cout << "\033[33m ERROR: Current API is not ready yet!\033[0m" << std::endl;
         break;
     }
     return apiHandle;
@@ -240,6 +366,21 @@ unsigned char* ucloud::readImg_to_RGB(std::string filepath, int w, int h,int &wi
     return dst_ptr;
 }
 
+unsigned char* ucloud::readImg_to_RGB_no_aspect(std::string filepath, int w, int h,int &width, int &height){
+    Mat im = imread(filepath);
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    cv::cvtColor(im, im, cv::COLOR_BGR2RGB);
+    float ax, ay;
+    im = resize_no_aspect(im,Size(w,h), ax , ay);         
+    dst_ptr = (unsigned char*)malloc(im.total()*3);
+    memcpy(dst_ptr, im.data, im.total()*3);
+    width = im.cols;
+    height = im.rows;
+    return dst_ptr;
+}
+
 unsigned char* ucloud::readImg_to_BGR(std::string filepath, int w, int h, int &width, int &height){
     Mat im = imread(filepath);
     unsigned char* dst_ptr = nullptr;
@@ -247,6 +388,20 @@ unsigned char* ucloud::readImg_to_BGR(std::string filepath, int w, int h, int &w
         return dst_ptr;
     float ar = 1.0;
     im = resize(im,Size(w,h), false, ar );        
+    dst_ptr = (unsigned char*)malloc(im.total()*3);
+    memcpy(dst_ptr, im.data, im.total()*3);
+    width = im.cols;
+    height = im.rows;
+    return dst_ptr;
+}
+
+unsigned char* ucloud::readImg_to_BGR_no_aspect(std::string filepath, int w, int h, int &width, int &height){
+    Mat im = imread(filepath);
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    float ax, ay;
+    im = resize_no_aspect(im,Size(w,h), ax, ay);        
     dst_ptr = (unsigned char*)malloc(im.total()*3);
     memcpy(dst_ptr, im.data, im.total()*3);
     width = im.cols;
@@ -287,10 +442,36 @@ unsigned char* ucloud::readImg_to_NV21(std::string filepath, int w, int h,int &w
     return dst_ptr;    
 }
 
+unsigned char* ucloud::readImg_to_NV21_no_aspect(std::string filepath, int w, int h,int &width, int &height, int &stride){
+    Mat im = imread(filepath);
+    if(im.empty()){
+        printf("%s not found\n", filepath.c_str());
+        return nullptr;
+    }
+    float ax,ay;
+    im = resize_no_aspect(im, Size(w,h),ax, ay);
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    dst_ptr = BGR2YUV_nv21_with_stride(im, width, height, stride, 2);
+    return dst_ptr;    
+}
+
 unsigned char* ucloud::readImg_to_NV12(std::string filepath, int w, int h,int &width, int &height, int &stride){
     Mat im = imread(filepath);
     float ar = 1.0;
     im = resize(im,Size(w,h), false, ar );
+    unsigned char* dst_ptr = nullptr;
+    if (im.empty())
+        return dst_ptr;
+    dst_ptr = BGR2YUV_nv12_with_stride(im, width, height, stride, 2);
+    return dst_ptr;    
+}
+
+unsigned char* ucloud::readImg_to_NV12_no_aspect(std::string filepath, int w, int h,int &width, int &height, int &stride){
+    Mat im = imread(filepath);
+    float ax,ay;
+    im = resize_no_aspect(im,Size(w,h), ax, ay );
     unsigned char* dst_ptr = nullptr;
     if (im.empty())
         return dst_ptr;

@@ -1,10 +1,10 @@
-#include "module_phone.hpp"
+#include "imp_phone.hpp"
 
 using namespace ucloud;
 using namespace std;
 
 
-void PhoneDetector::transform_box_to_ped_box(VecObjBBox &in_boxes){
+void IMP_PHONE_DETECTOR::transform_box_to_ped_box(VecObjBBox &in_boxes){
     for( auto &&in_box: in_boxes){
         TvaiRect body_rect = in_box.rect;
         float hw_ratio = ((float)(1.0*body_rect.height))/ body_rect.width;
@@ -19,13 +19,13 @@ void PhoneDetector::transform_box_to_ped_box(VecObjBBox &in_boxes){
 }
 
 
-ucloud::RET_CODE PhoneDetector::init(std::map<InitParam, ucloud::WeightData> &weightConfig){
-    LOGI<<"->PhoneDetector init";
+ucloud::RET_CODE IMP_PHONE_DETECTOR::init(std::map<InitParam, ucloud::WeightData> &weightConfig){
+    LOGI<<"->IMP_PHONE_DETECTOR init";
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
     WeightData dnetPath,cnetPath;
     if (weightConfig.find(ucloud::InitParam::BASE_MODEL)==weightConfig.end()||
     weightConfig.find(ucloud::InitParam::SUB_MODEL)==weightConfig.end()){
-        LOGI<<"PhoneDetector fail to search detector and classify model";
+        LOGI<<"IMP_PHONE_DETECTOR fail to search detector and classify model";
         ret = ucloud::RET_CODE::ERR_INIT_PARAM_FAILED;
         return ret;
     }
@@ -40,21 +40,21 @@ ucloud::RET_CODE PhoneDetector::init(std::map<InitParam, ucloud::WeightData> &we
 
     ret = m_clsHandle->init(cnetPath);
     if (ret!=ucloud::RET_CODE::SUCCESS){
-        printf("** PhoneDetector phone classfication init failed\n");
+        printf("** IMP_PHONE_DETECTOR phone classfication init failed\n");
         return ret;
     }
     // vector<CLS_TYPE> output_dim_cls_order = {CLS_TYPE::OTHERS, m_cls, CLS_TYPE::OTHERS};
     // m_clsHandle->set_output_cls_order(output_dim_cls_order);
     if (ret!=ucloud::RET_CODE::SUCCESS){
-        printf("** PhoneDetector person detector failed\n");
+        printf("** IMP_PHONE_DETECTOR person detector failed\n");
         return ret;
     }
     
     return ret;
 }
 
-ucloud::RET_CODE PhoneDetector::init(std::map<ucloud::InitParam,std::string> &modelpath){
-    LOGI<<"->PhoneDetector::init";
+ucloud::RET_CODE IMP_PHONE_DETECTOR::init(std::map<ucloud::InitParam,std::string> &modelpath){
+    LOGI<<"->IMP_PHONE_DETECTOR::init";
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
     std::map<InitParam, WeightData> weightConfig;
     for(auto &&modelp: modelpath){
@@ -67,18 +67,18 @@ ucloud::RET_CODE PhoneDetector::init(std::map<ucloud::InitParam,std::string> &mo
         free(wC.second.pData);
     }
     if(ret!=RET_CODE::SUCCESS) return ret;
-    LOGI << "<- PhoneDetector::init";
+    LOGI << "<- IMP_PHONE_DETECTOR::init";
     return ret;
 }
 
 
-ucloud::RET_CODE PhoneDetector::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBBox &bboxes,float threshold, float nms_threshold){
-    LOGI << "-> PhoneDetector::run";
+ucloud::RET_CODE IMP_PHONE_DETECTOR::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBBox &bboxes,float threshold, float nms_threshold){
+    LOGI << "-> IMP_PHONE_DETECTOR::run";
     ucloud::VecObjBBox detBboxes;
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
     ret = m_ped_detectHandle->run(tvimage,detBboxes,m_ped_threshold);
     if(ret!=RET_CODE::SUCCESS){
-        printf("**[%s][%d] PhoneDetector detect person failed!\n", __FILE__, __LINE__);
+        printf("**[%s][%d] IMP_PHONE_DETECTOR detect person failed!\n", __FILE__, __LINE__);
         return ret;
     }
     for(auto &&box: detBboxes){
@@ -93,20 +93,20 @@ ucloud::RET_CODE PhoneDetector::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBBo
 
     ret = m_clsHandle->run(tvimage,bboxes,threshold);
     if(ret!=RET_CODE::SUCCESS){
-        printf("**[%s][%d] PhoneDetector phone classify images failed!\n", __FILE__, __LINE__);
+        printf("**[%s][%d] IMP_PHONE_DETECTOR phone classify images failed!\n", __FILE__, __LINE__);
         return ret;
     } 
-    LOGI << "<- PhoneDetector::run";
+    LOGI << "<- IMP_PHONE_DETECTOR::run";
     return ret;
 }
 
 
-ucloud::RET_CODE PhoneDetector::set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss){
+ucloud::RET_CODE IMP_PHONE_DETECTOR::set_output_cls_order(std::vector<ucloud::CLS_TYPE> &output_clss){
     // vector<CLS_TYPE> output_dim_cls_order = {CLS_TYPE::OTHERS, m_cls, CLS_TYPE::OTHERS};
     return m_clsHandle->set_output_cls_order(output_clss);
 }
 
-ucloud::RET_CODE PhoneDetector::get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss){
+ucloud::RET_CODE IMP_PHONE_DETECTOR::get_class_type(std::vector<ucloud::CLS_TYPE> &valid_clss){
     return m_clsHandle->get_class_type(valid_clss);
 }
 

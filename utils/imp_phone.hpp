@@ -1,24 +1,23 @@
-#ifndef _MODULE_PHONE_HPP_
-#define _MODULE_PHONE_HPP_
-#include "module_base.hpp"
+#ifndef _IMP_PHONE_HPP_
+#define _IMP_PHONE_HPP_
 #include "module_classify.hpp"
 #include "module_yolo.hpp"
 
 /*******************************************************************************
- * PhoneDetector
+ * IMP_PHONE_DETECTOR
  * YOLO_DETECTION_BYTETRACK + Classification
  * YOLO_DETECTION_BYTETRACK: 使用人车非通用检测
  * Classification: 打电话检测
 *******************************************************************************/
-class PhoneDetector:public ucloud::AlgoAPI{
+class IMP_PHONE_DETECTOR:public ucloud::AlgoAPI{
  public:
-    PhoneDetector(){//直观看到用了哪些类实现的
-        LOGI<<"-> PhoneDetector";
+    IMP_PHONE_DETECTOR(){//直观看到用了哪些类实现的
+        LOGI<<"-> IMP_PHONE_DETECTOR";
         // m_ped_detectHandle = std::make_shared<YOLO_DETECTION_BYTETRACK>();
         m_ped_detectHandle = ucloud::AICoreFactory::getAlgoAPI(ucloud::AlgoAPIName::GENERAL_DETECTOR);
         m_clsHandle = std::make_shared<Classification>();
     }
-    virtual ~PhoneDetector(){};
+    virtual ~IMP_PHONE_DETECTOR(){};
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam,std::string> &modelpath);
     virtual ucloud::RET_CODE init(std::map<ucloud::InitParam, ucloud::WeightData> &weightConfig);
     virtual ucloud::RET_CODE run(ucloud::TvaiImage& tvimage,ucloud::VecObjBBox &bboxes,float threshold=0.5, float nms_threshold=0.5);
