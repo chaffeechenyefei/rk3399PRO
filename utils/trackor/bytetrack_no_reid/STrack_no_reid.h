@@ -17,7 +17,7 @@ class STrack
 public:
 /////20220331 add by lihui,tell the detect match which track
 //// 20220719 changed by lihui,add reid and new logic
-	STrack(vector<float> tlwh_, float score, int detect_idx,vector<float> fea);
+	STrack(vector<float> tlwh_, float score, int detect_idx);
 	~STrack();
 
 	vector<float> static tlbr_to_tlwh(vector<float> &tlbr);
@@ -43,7 +43,6 @@ public:
 	vector<float> _tlwh;
 	vector<float> tlwh;
 	vector<float> tlbr;
-	vector<float> _fea;
 	int frame_id;
 	int tracklet_len;
 	int start_frame;

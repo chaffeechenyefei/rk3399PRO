@@ -3,7 +3,7 @@
 
 
 namespace bytetrack_no_reid{
-STrack::STrack(vector<float> tlwh_, float score, int detect_idx, vector<float> fea)
+STrack::STrack(vector<float> tlwh_, float score, int detect_idx)
 {
 	_tlwh.resize(4);
 	_tlwh.assign(tlwh_.begin(), tlwh_.end());
@@ -23,7 +23,6 @@ STrack::STrack(vector<float> tlwh_, float score, int detect_idx, vector<float> f
 	///20220331 add by lihui,tell the detect match which track
 	this->detect_idx = detect_idx;
 	start_frame = 0;
-	_fea=fea;
 	diou=0.0f;
 }
 

@@ -7,7 +7,7 @@
 namespace bytetrack_no_reid {
 struct Object
 {
-	vector<float> fea;
+	// vector<float> fea;
     cv::Rect_<float> rect;
     int label;
     float prob;

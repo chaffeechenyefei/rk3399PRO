@@ -120,7 +120,7 @@ int main(int argc, char **argv)
 {  
 
     ArgParser myParser;
-    myParser.add_argument("-t", 1, "task1");
+    myParser.add_argument("-t", 2, "task1");
     myParser.add_argument("-data","data/image/","image path");
     myParser.add_argument("-loop",1, "loop times");
     myParser.add_argument("-list",0, "list all the task");

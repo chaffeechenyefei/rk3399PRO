@@ -82,17 +82,16 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 		for (int i = 0; i < objects.size(); i++)
 		{
 			vector<float> tlbr_;
-			vector<float> fea_;
 			tlbr_.resize(4);
 			tlbr_[0] = objects[i].rect.x;
 			tlbr_[1] = objects[i].rect.y;
 			tlbr_[2] = objects[i].rect.x + objects[i].rect.width;
 			tlbr_[3] = objects[i].rect.y + objects[i].rect.height;
-			fea_ = objects[i].fea;/// reshape(cn,rows) cn=1,rows=1
+			// fea_ = objects[i].fea;/// reshape(cn,rows) cn=1,rows=1
 			float score = objects[i].prob;
 
 
-			STrack strack(STrack::tlbr_to_tlwh(tlbr_), score, i, fea_);
+			STrack strack(STrack::tlbr_to_tlwh(tlbr_), score, i);
 			if (score >= track_thresh)
 			{
 				detections.push_back(strack);

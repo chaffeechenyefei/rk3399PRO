@@ -236,6 +236,7 @@ vector<vector<float> > BYTETracker::iou_distance(vector<STrack*> &atracks, vecto
 		for (int j = 0; j < _ious[i].size(); j++)
 		{
 			_iou.push_back(1 - _ious[i][j]);
+			cout<< "_iou is "<<1-_ious[i][j]<<endl;
 		}
 		cost_matrix.push_back(_iou);
 	}
@@ -347,58 +348,58 @@ vector<vector<float> > BYTETracker::cosine_similarity(vector<vector<float> > &af
 }
 
 
-vector<vector<float> > BYTETracker::embed_distance(vector<STrack*> &atracks, vector<STrack> &btracks, int &dist_size, int &dist_size_size){
-	vector<vector<float> > mat_dst;
-	if (atracks.size()*btracks.size()==0){
-		dist_size = atracks.size();
-		dist_size_size = btracks.size();
-		return mat_dst;
-	}
-	vector<vector<float> > afeas,bfeas;
-	for (int i=0;i<atracks.size();i++){
-		afeas.push_back(atracks[i]->_fea);
-	}
-	for (int j=0;j<btracks.size();j++){
-		bfeas.push_back(btracks[j]._fea);
-	}
-	mat_dst = cosine_similarity(afeas,bfeas);
-	return mat_dst;
-}
+// vector<vector<float> > BYTETracker::embed_distance(vector<STrack*> &atracks, vector<STrack> &btracks, int &dist_size, int &dist_size_size){
+// 	vector<vector<float> > mat_dst;
+// 	if (atracks.size()*btracks.size()==0){
+// 		dist_size = atracks.size();
+// 		dist_size_size = btracks.size();
+// 		return mat_dst;
+// 	}
+// 	vector<vector<float> > afeas,bfeas;
+// 	for (int i=0;i<atracks.size();i++){
+// 		afeas.push_back(atracks[i]->_fea);
+// 	}
+// 	for (int j=0;j<btracks.size();j++){
+// 		bfeas.push_back(btracks[j]._fea);
+// 	}
+// 	mat_dst = cosine_similarity(afeas,bfeas);
+// 	return mat_dst;
+// }
 
 
-vector<vector<float> > BYTETracker::embed_distance(vector<STrack> &atracks, vector<STrack> &btracks){
-	vector<vector<float> > mat_dst;
-	if (atracks.size()*btracks.size()==0){
-		return mat_dst;
-	}
-	vector<vector<float> > afeas,bfeas;
-	for (int i=0;i<atracks.size();i++){
-		afeas.push_back(atracks[i]._fea);
-	}
-	for (int j=0;j<btracks.size();j++){
-		bfeas.push_back(btracks[j]._fea);
-	}
-	mat_dst = cosine_similarity(afeas,bfeas);
-	return mat_dst;
-}
+// vector<vector<float> > BYTETracker::embed_distance(vector<STrack> &atracks, vector<STrack> &btracks){
+// 	vector<vector<float> > mat_dst;
+// 	if (atracks.size()*btracks.size()==0){
+// 		return mat_dst;
+// 	}
+// 	vector<vector<float> > afeas,bfeas;
+// 	for (int i=0;i<atracks.size();i++){
+// 		afeas.push_back(atracks[i]._fea);
+// 	}
+// 	for (int j=0;j<btracks.size();j++){
+// 		bfeas.push_back(btracks[j]._fea);
+// 	}
+// 	mat_dst = cosine_similarity(afeas,bfeas);
+// 	return mat_dst;
+// }
 
-vector<vector<float> > BYTETracker::embed_distance(vector<STrack*> &atracks, vector<STrack*> &btracks,int &dist_size, int &dist_size_size){
-	vector<vector<float> > mat_dst;
-	if (atracks.size()*btracks.size()==0){
-		dist_size = atracks.size();
-		dist_size_size = btracks.size();
-		return mat_dst;
-	}
-	vector<vector<float> > afeas,bfeas;
-	for (int i=0;i<atracks.size();i++){
-		afeas.push_back(atracks[i]->_fea);
-	}
-	for (int j=0;j<btracks.size();j++){
-		bfeas.push_back(btracks[j]->_fea);
-	}
-	mat_dst = cosine_similarity(afeas,bfeas);
-	return mat_dst;
-}
+// vector<vector<float> > BYTETracker::embed_distance(vector<STrack*> &atracks, vector<STrack*> &btracks,int &dist_size, int &dist_size_size){
+// 	vector<vector<float> > mat_dst;
+// 	if (atracks.size()*btracks.size()==0){
+// 		dist_size = atracks.size();
+// 		dist_size_size = btracks.size();
+// 		return mat_dst;
+// 	}
+// 	vector<vector<float> > afeas,bfeas;
+// 	for (int i=0;i<atracks.size();i++){
+// 		afeas.push_back(atracks[i]->_fea);
+// 	}
+// 	for (int j=0;j<btracks.size();j++){
+// 		bfeas.push_back(btracks[j]->_fea);
+// 	}
+// 	mat_dst = cosine_similarity(afeas,bfeas);
+// 	return mat_dst;
+// }
 
 
 
