@@ -10,6 +10,14 @@
 #include "drm/drm_func.h"
 #include "drm/rga_func.h"
 
+#if CV_VERSION_EPOCH == 2 //mlu270: opencv2.4.9-dev
+#define OPENCV2
+#elif CV_VERSION_MAJOR == 3 //mlu220: opencv3.4.6
+#define  OPENCV3
+#else
+#error Not support this OpenCV version  
+#endif
+
 
 #ifdef VERBOSE
 #define LOGI LOG(INFO)
