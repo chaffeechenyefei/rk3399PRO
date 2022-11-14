@@ -10,7 +10,6 @@ void BYTETracker::clear(){
 		int sz = removed_stracks.size() - 50;
 		removed_stracks.erase(removed_stracks.begin(), removed_stracks.begin()+sz);
 	}
-	// vector<STrack>().swap(removed_stracks);
 }
 
 BYTETracker::BYTETracker(float track_threshold, float high_detect_threshold, int frame_rate, int track_buffer){
@@ -80,7 +79,7 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 			tlbr_[3] = objects[i].rect.y + objects[i].rect.height;
 
 			float score = objects[i].prob;
-
+			cout<<tlbr_[0]<<" "<<tlbr_[1]<<" "<<tlbr_[2]<<" "<<tlbr_[3]<<" "<<objects[i].label<<endl;
 			STrack strack(STrack::tlbr_to_tlwh(tlbr_), score, i);
 			if (score >= track_thresh)
 			{

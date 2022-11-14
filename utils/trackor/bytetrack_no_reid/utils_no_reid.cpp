@@ -190,6 +190,7 @@ vector<vector<float> > BYTETracker::ious(vector<vector<float> > &atlbrs, vector<
 					float theta = diou_theta(atlbrs[n],btlbrs[k], false);
 					float ua = (atlbrs[n][2] - atlbrs[n][0] + 1)*(atlbrs[n][3] - atlbrs[n][1] + 1) + box_area - iw * ih;
 					ious[n][k] = iw * ih / ua - theta;
+					// ious[n][k] = iw * ih / ua ;
 				}
 				else
 				{
@@ -236,7 +237,7 @@ vector<vector<float> > BYTETracker::iou_distance(vector<STrack*> &atracks, vecto
 		for (int j = 0; j < _ious[i].size(); j++)
 		{
 			_iou.push_back(1 - _ious[i][j]);
-			cout<< "_iou is "<<1-_ious[i][j]<<endl;
+			// cout<< "_iou is "<<1-_ious[i][j]<<endl;
 		}
 		cost_matrix.push_back(_iou);
 	}

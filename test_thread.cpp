@@ -57,16 +57,17 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         printf("total [%d] images listed...\n", vec_imgnames.size());
 
         for(int i = 0; i < num_loops_each_thread; i++){
-            if(i%200 == 1 ){
-                std::lock_guard<std::mutex> lk(cmutex);
-                printf("#[%02d]-[%05d][%.2f%%]: per cost = %f, for %d targets with max_track_id %d\n", \
-                thread_id, i, ((float)i)/num_loops_each_thread*100 , (float)(tm_cost/i), num_result, max_track_id);
-                fflush(stdout);
-            }
+            // if(i%200 == 1 ){
+            //     std::lock_guard<std::mutex> lk(cmutex);
+            //     printf("#[%02d]-[%05d][%.2f%%]: per cost = %f, for %d targets with max_track_id %d\n", \
+            //     thread_id, i, ((float)i)/num_loops_each_thread*100 , (float)(tm_cost/i), num_result, max_track_id);
+            //     fflush(stdout);
+            // }
             VecObjBBox bboxes; 
             int width, height, stride;
 
             imgname = vec_imgnames[i%vec_imgnames.size()];
+            cout<<"iter "<<i<< "imgname"<< imgname<<endl;
             //将图像resize到1280x720, 模拟摄像头输入
             unsigned char* imgBuf = readImg_to_NV21(imgname, 1280, 720, width, height, stride);
             int inputdata_sz = 3*width*height/2*sizeof(unsigned char);

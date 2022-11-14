@@ -5,13 +5,7 @@
 
 namespace bytetrack_no_reid{
 void BYTETracker::clear(){
-	// vector<STrack> tracked_stracks;
-	// vector<STrack> lost_stracks;
-	// vector<STrack> removed_stracks;
-	// byte_kalman::KalmanFilter kalman_filter;
-	// vector<STrack>().swap(tracked_stracks);
-	// vector<STrack>().swap(lost_stracks);
-	// vector<STrack>().swap(removed_stracks);
+
 	if(removed_stracks.size() > 50){
 		int sz = removed_stracks.size() - 50;
 		removed_stracks.erase(removed_stracks.begin(), removed_stracks.begin()+sz);
@@ -34,9 +28,7 @@ void BYTETracker::reset(float track_threshold, float high_detect_threshold, int 
 	max_time_lost = int(frame_rate/30.0*track_buffer);
 }
 
-// void BYTETracker::clear(){
 
-// }
 
 
 BYTETracker::BYTETracker(int frame_rate, int track_buffer)
@@ -87,8 +79,8 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 			tlbr_[1] = objects[i].rect.y;
 			tlbr_[2] = objects[i].rect.x + objects[i].rect.width;
 			tlbr_[3] = objects[i].rect.y + objects[i].rect.height;
-			// fea_ = objects[i].fea;/// reshape(cn,rows) cn=1,rows=1
 			float score = objects[i].prob;
+			cout<<tlbr_[0]<<" "<<tlbr_[1]<<" "<<tlbr_[2]<<" "<<tlbr_[3]<<" "<<objects[i].label<<endl;
 
 
 			STrack strack(STrack::tlbr_to_tlwh(tlbr_), score, i);
@@ -194,12 +186,12 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 		STrack *track = r_tracked_stracks[u_track[i]];
 		if (track->state != TrackState::Lost)
 		{	
-			// if (track->diou<0.05){
-			// 	refind_stracks.push_back(*track);
-			// }else{
+			if (track->diou<0.05){
+				refind_stracks.push_back(*track);
+			}else{
 			track->mark_lost();
 			lost_stracks.push_back(*track);
-			// }
+			}
 		}
 	}
 
@@ -308,6 +300,5 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	}
 	return output_stracks;
 }
-
 }
 

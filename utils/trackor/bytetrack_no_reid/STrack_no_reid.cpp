@@ -67,8 +67,8 @@ void STrack::activate(byte_kalman::KalmanFilter &kalman_filter, int frame_id)
 
 void STrack::re_activate(STrack &new_track, int frame_id, float diou, bool new_id)
 {
-	vector<float> old_tlbm  = this->tlbr;
-	vector<float> n_tlbm = new_track.tlwh;
+	// vector<float> old_tlbm  = this->tlbr;
+	// vector<float> n_tlbm = new_track.tlwh;
 	vector<float> xyah = tlwh_to_xyah(new_track.tlwh);
 	DETECTBOX xyah_box;
 	xyah_box[0] = xyah[0];

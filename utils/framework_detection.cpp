@@ -10,8 +10,8 @@ chaffee.chen@2022-09-30
 *******************************************************************************/
 AnyDetectionV4ByteTrack::AnyDetectionV4ByteTrack(){
     // m_detector = std::make_shared<YoloDetectionV4>();
-    // m_trackor = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
-    m_trackor = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
+    m_trackor = std::make_shared<ByteTrackOriginPool>(m_fps,m_nn_buf);
+    // m_trackor = std::make_shared<ByteTrackNoReIDPool>(m_fps,m_nn_buf);
 }
 
 RET_CODE AnyDetectionV4ByteTrack::run(TvaiImage &tvimage, VecObjBBox &bboxes, float threshold, float nms_threshold){
