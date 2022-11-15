@@ -61,7 +61,8 @@ typedef enum _AlgoAPIName{
     LICPLATE_RECOGNIZER = 24, //车牌识别
     GENERAL_DETECTOR_FAST_LOAD = 25,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR, precompiled快速加载
 
-    PED_BEND_DETECTOR = 26,//行人弯腰检测
+    PED_BEND_DETECTOR       = 26,//行人弯腰检测
+    SMOKE_CLOUD_DETECTOR    = 27,//烟雾团检测
 
     
 // #endif
@@ -158,6 +159,7 @@ typedef enum _CLS_TYPE{
     TRASH_BAG                           ,   //垃圾袋
     BANNER                              ,   //横幅标语
     FIRE                                ,   //火焰
+    SMOKE_CLOUD                         ,   //烟雾团
     //行为识别
     FIGHT                       = 400   ,   //打架行为
     SMOKING                     = 410   ,   //抽烟
@@ -180,6 +182,8 @@ typedef enum _CLS_TYPE{
     OTHERS_B                    = 902   ,
     OTHERS_C                    = 903   ,
     OTHERS_D                    = 904   ,
+
+    TARGET                      = 999   ,   //目标, 无论什么类型
 
     UNKNOWN                     = 1000  ,   //未定义
 }CLS_TYPE;

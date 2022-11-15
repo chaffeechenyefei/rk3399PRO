@@ -11,6 +11,7 @@
 #include "utils/module_yolo_u.hpp"
 #include "utils/module_feature_extraction.hpp"
 #include "utils/module_posenet.hpp"
+#include "utils/module_smoke_cloud.hpp"
 /*******************************************************************************
  * IMP_XXX: 表示所有模块都通过ucloud::AICoreFactory::getAlgoAPI来实现, run时仅进行模块之间的衔接处理.
 *******************************************************************************/
@@ -306,6 +307,15 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_);
     }
     break;
+    /*
+    * 烟雾团检测
+    */
+    case AlgoAPIName::SMOKE_CLOUD_DETECTOR: {
+        printf("\033[32m AlgoAPIName::SMOKE_CLOUD_DETECTOR\n\033[0m");
+        SMOKE_CLOUD_DETECTION* _ptr_ = new SMOKE_CLOUD_DETECTION();
+        apiHandle.reset(_ptr_);
+    }
+    break;    
 
 
     default:
