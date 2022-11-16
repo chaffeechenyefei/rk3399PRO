@@ -41,7 +41,8 @@ enum class TASKNAME{
     FACE_EXT        = 27,//单纯人脸特征提取
     PED_BEND        = 28,//行人弯腰检测
     HAND            = 29,//手的检测
-    SMOKE_CLOUD     = 30, //烟雾团检测
+    SMOKE_CLOUD     = 30, //烟雾团检测  
+    SMOKE_CLOUD_UNET= 31, //烟雾团检测  unet测试
 
     TASK_END,
 
@@ -65,6 +66,7 @@ enum class MODELFILENAME{
     WATER_DET_UNET,//UNet积水分割
     WATER_DET_PSP,//PSPNet积水分割
     SMOKE_CLOUD_DET_R34,//烟雾团分割
+    SMOKE_CLOUD_DET_UNET,//烟雾团分割
     GENERAL_DET,//人车非检测
     GENERAL_DET_MODE3,//人车非检测
     GENERAL_DET_MODE4,//人车非检测
@@ -107,6 +109,7 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::WATER_DET_UNET,     "unetwater_393_224x224_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::WATER_DET_PSP,      "pspwater_20211119_736x416_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::SMOKE_CLOUD_DET_R34, rknn_model_path + "rknn_int8_smokecloud-r34_20221115_224x224_fast.rknn"},
+    {MODELFILENAME::SMOKE_CLOUD_DET_UNET,rknn_model_path + "rknn_int8_smokecloud-unet_20221116_224x224_fast.rknn"},
     {MODELFILENAME::GENERAL_TRK_MLU,    "feature_extract_4c4b_argb_270_v1.5.0.cambricon"},
     {MODELFILENAME::GENERAL_TRK_R18,    "track-r18_20220113_64x128_mlu220_bs1c1_fp16.cambricon"},
     {MODELFILENAME::GENERAL_DET,        rknn_model_path + "yolov5s-conv-9-20211104_736x416.rknn"},
@@ -347,7 +350,15 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
             {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::SMOKE_CLOUD_DET_R34] },
         };
         taskDesc = "SMOKE_CLOUD SEG";
-        break;            
+        break;      
+    case TASKNAME::SMOKE_CLOUD_UNET: //建议阈值0.5
+        threshold = 0.5;
+        apiName = AlgoAPIName::SMOKE_CLOUD_DETECTOR;
+        init_param = { 
+            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::SMOKE_CLOUD_DET_UNET] },
+        };
+        taskDesc = "SMOKE_CLOUD SEG";
+        break;                
     case TASKNAME::BANNER: //建议阈值0.5
         threshold = 0.5;
         apiName = AlgoAPIName::BANNER_DETECTOR;

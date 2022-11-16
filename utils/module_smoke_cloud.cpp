@@ -30,10 +30,10 @@ ucloud::RET_CODE SMOKE_CLOUD_DETECTION::postprocess(std::vector<float*> &output_
     //n c h w
     int w = m_OutEleDims[0][0];
     int h = m_OutEleDims[0][1];
-    if(w!=14||h!=14){
-        printf("**[%s][%d] w(%d),h(%d) != 14\n", __FILE__, __LINE__, w, h);
-        return RET_CODE::FAILED;
-    }
+    // if(w!=14||h!=14){
+    //     printf("**[%s][%d] w(%d),h(%d) != 14\n", __FILE__, __LINE__, w, h);
+    //     return RET_CODE::FAILED;
+    // }
     // float *ptrTmp = output_datas[0];
     // for(int i=0; i < w*h; i++){
     //     *ptrTmp = sigmoid(*ptrTmp);
@@ -57,6 +57,7 @@ ucloud::RET_CODE SMOKE_CLOUD_DETECTION::postprocess(std::vector<float*> &output_
     // printf("vec_cv_contours %d\n", vec_cv_contours.size());
     for(auto iter=vec_cv_contours.begin(); iter!=vec_cv_contours.end(); iter++){
         Rect rect = boundingRect(*iter);
+        if(rect.width < 10 || rect.height < 10) continue;//in 224x224 scale
         BBox bbox;
         bbox.objtype = CLS_TYPE::SMOKE_CLOUD;
         bbox.confidence = 1.0;
