@@ -1,9 +1,13 @@
 #include "BYTETracker_no_reid.h"
 #include <fstream>
+#include <iostream>
 
-
+using namespace std;
 
 namespace bytetrack_no_reid{
+constexpr  const float gating_theshold = 9.4877;
+
+
 void BYTETracker::clear(){
 	// vector<STrack> tracked_stracks;
 	// vector<STrack> lost_stracks;
@@ -18,7 +22,6 @@ void BYTETracker::clear(){
 	}
 }
 
-constexpr  const float gating_theshold = 9.4877;
 BYTETracker::BYTETracker(float track_threshold, float high_detect_threshold,int frame_rate,int track_buffer){
 	track_thresh = track_threshold;
 	high_thresh = high_detect_threshold;
@@ -34,9 +37,6 @@ void BYTETracker::reset(float track_threshold, float high_detect_threshold, int 
 	max_time_lost = int(frame_rate/30.0*track_buffer);
 }
 
-// void BYTETracker::clear(){
-
-// }
 
 
 BYTETracker::BYTETracker(int frame_rate, int track_buffer)
@@ -82,17 +82,15 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 		for (int i = 0; i < objects.size(); i++)
 		{
 			vector<float> tlbr_;
-			vector<float> fea_;
 			tlbr_.resize(4);
 			tlbr_[0] = objects[i].rect.x;
 			tlbr_[1] = objects[i].rect.y;
 			tlbr_[2] = objects[i].rect.x + objects[i].rect.width;
 			tlbr_[3] = objects[i].rect.y + objects[i].rect.height;
-			fea_ = objects[i].fea;/// reshape(cn,rows) cn=1,rows=1
+
 			float score = objects[i].prob;
 
-
-			STrack strack(STrack::tlbr_to_tlwh(tlbr_), score, i, fea_);
+			STrack strack(STrack::tlbr_to_tlwh(tlbr_), score, i);
 			if (score >= track_thresh)
 			{
 				detections.push_back(strack);
@@ -118,13 +116,18 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	strack_pool = joint_stracks(tracked_stracks, this->lost_stracks);
 	STrack::multi_predict(strack_pool, this->kalman_filter);
 	/***********************************************************************/
-	////////////////// remove feature embedding part keep diou part  change by lihui 0909-2022//////////////////
+    ///////////////// step2-1: fea embedding match add by lihui 2020719//////
 	vector<vector<float> > dists;
 	int dist_size = 0, dist_size_size = 0;
 	dists = iou_distance(strack_pool,detections,dist_size,dist_size_size);
 	vector<vector<int> > matches;
 	vector<int> u_track, u_detection;
 	linear_assignment(dists, dist_size, dist_size_size, match_thresh, matches, u_track, u_detection);
+
+	// if(objects.empty()){
+	// 	printf("step2-1 matches = %d\n", matches.size());
+	// 	printf("u_track(%d), u_detection(%d)\n",u_track.size(), u_detection.size());
+	// }
 
 	for (int i = 0; i < matches.size(); i++)
 	{
@@ -152,6 +155,10 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	detections.clear();
 	detections.assign(detections_low.begin(), detections_low.end());
 
+	// if(objects.empty()){
+	// 	printf("detections(%d)\n", detections.size());
+	// }
+
 	for (int i = 0; i < u_track.size(); i++)
 	{
 		if (strack_pool[u_track[i]]->state == TrackState::Tracked)
@@ -163,6 +170,10 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 		}
 	}
 
+	// if(objects.empty()){
+	// 	printf("l_tracked_stracks(%d)\n", l_tracked_stracks.size());
+	// }	
+
 	dists.clear();
 	dists = iou_distance(r_tracked_stracks, detections, dist_size, dist_size_size);
 
@@ -170,6 +181,10 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	u_track.clear();
 	u_detection.clear();
 	linear_assignment(dists, dist_size, dist_size_size, 0.5, matches, u_track, u_detection);
+
+	// if(objects.empty()){
+	// 	printf("step3 matches = %d\n", matches.size());
+	// }
 
 	for (int i = 0; i < matches.size(); i++)
 	{
@@ -187,6 +202,10 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 			refind_stracks.push_back(*track);
 		}
 	}
+
+	// if(objects.empty()){
+	// 	printf("refind_stracks = %d\n", refind_stracks.size());
+	// }	
 	//////////////////  change by lihui 0909-2022 //////////////////////
 	//// all r_tracked_stracks  state should be tracked ,so if each track///////
 	////if  diou score small than tresh,use kalman predict result instead of update////////
@@ -195,14 +214,18 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 		STrack *track = r_tracked_stracks[u_track[i]];
 		if (track->state != TrackState::Lost)
 		{	
-			// if (track->diou<0.05){
-			// 	refind_stracks.push_back(*track);
-			// }else{
-			track->mark_lost();
-			lost_stracks.push_back(*track);
-			// }
+			if (track->diou<0.05){
+				refind_stracks.push_back(*track);
+			}else{
+				track->mark_lost();
+				lost_stracks.push_back(*track);
+			}
 		}
 	}
+
+	// if(objects.empty()){
+	// 	printf("line:%d, refind_stracks = %d\n", __LINE__ ,refind_stracks.size());
+	// }		
 
 	// Deal with unconfirmed tracks, usually tracks with only one beginning frame
 	detections.clear();
@@ -223,6 +246,9 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 			}
 		}
 	}
+	// if(objects.empty()){
+	// 	printf("line:%d, refind_stracks = %d, l_tracked_stracks = %d\n", __LINE__ ,refind_stracks.size(), l_tracked_stracks.size());
+	// }			
 	/**************** refine tracks add end by lihui 0720 2022 *******************/
 
 	dists = iou_distance(unconfirmed, detections, dist_size, dist_size_size);
@@ -231,6 +257,10 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	vector<int> u_unconfirmed;
 	u_detection.clear();
 	linear_assignment(dists, dist_size, dist_size_size, 0.7, matches, u_unconfirmed, u_detection);
+
+	// if(objects.empty()){
+	// 	printf("step refine matches = %d\n", matches.size());
+	// }	
 
 	for (int i = 0; i < matches.size(); i++)
 	{
@@ -247,6 +277,9 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	}
 
 	////////////////// Step 4: Init new stracks //////////////////
+	// if(objects.empty()){
+	// 	printf("u_detection = %d\n", u_detection.size());
+	// }	
 	for (int i = 0; i < u_detection.size(); i++)
 	{
 		STrack *track = &detections[u_detection[i]];
@@ -276,8 +309,14 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 	this->tracked_stracks.clear();
 	this->tracked_stracks.assign(tracked_stracks_swap.begin(), tracked_stracks_swap.end());
 
+	// if(objects.empty()){
+	// 	printf("final this->tracked_stracks(%d), activated_stracks(%d), refind_stracks(%d)\n", 
+	// 	this->tracked_stracks.size(), activated_stracks.size(), refind_stracks.size());
+	// }
+
 	this->tracked_stracks = joint_stracks(this->tracked_stracks, activated_stracks);
 	this->tracked_stracks = joint_stracks(this->tracked_stracks, refind_stracks);
+
 
 	//std::cout << activated_stracks.size() << std::endl;
 

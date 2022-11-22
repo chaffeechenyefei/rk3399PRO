@@ -74,6 +74,7 @@ void ByteTrackNoReIDPool::update(TvaiImage &tvimage, VecObjBBox &bboxIN, BYTETRA
             // std::lock_guard<std::mutex> lk(m_mutex);
             vector<bytetrack_no_reid::STrack> vecTrackOUT = m_trackors[uuid]->update(vecObjIN);
             for(auto &&trackOUT: vecTrackOUT){
+                if(trackOUT.detect_idx >= clsboxes.second.size()) continue;//bytetrack可能返回预测的结果, 即使本次结果为空
                 clsboxes.second[trackOUT.detect_idx].track_id = trackOUT.track_id;
             }
         }

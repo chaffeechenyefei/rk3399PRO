@@ -1,15 +1,16 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
+// #include <opencv2/opencv.hpp>
+// #include <opencv2/core.hpp>
+// #include <opencv2/imgcodecs.hpp>
 #include "kalmanFilter_no_reid.h"
 
-using namespace cv;
+// using namespace cv;
 using namespace std;
 
 
 namespace bytetrack_no_reid{
+	
 enum TrackState { New = 0, Tracked, Lost, Removed };
 
 class STrack
@@ -17,7 +18,7 @@ class STrack
 public:
 /////20220331 add by lihui,tell the detect match which track
 //// 20220719 changed by lihui,add reid and new logic
-	STrack(vector<float> tlwh_, float score, int detect_idx,vector<float> fea);
+	STrack(vector<float> tlwh_, float score, int detect_idx);
 	~STrack();
 
 	vector<float> static tlbr_to_tlwh(vector<float> &tlbr);
@@ -43,7 +44,7 @@ public:
 	vector<float> _tlwh;
 	vector<float> tlwh;
 	vector<float> tlbr;
-	vector<float> _fea;
+	// vector<float> _fea;
 	int frame_id;
 	int tracklet_len;
 	int start_frame;

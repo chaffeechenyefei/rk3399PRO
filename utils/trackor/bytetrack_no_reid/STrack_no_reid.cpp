@@ -3,7 +3,8 @@
 
 
 namespace bytetrack_no_reid{
-STrack::STrack(vector<float> tlwh_, float score, int detect_idx, vector<float> fea)
+	
+STrack::STrack(vector<float> tlwh_, float score, int detect_idx)
 {
 	_tlwh.resize(4);
 	_tlwh.assign(tlwh_.begin(), tlwh_.end());
@@ -23,12 +24,12 @@ STrack::STrack(vector<float> tlwh_, float score, int detect_idx, vector<float> f
 	///20220331 add by lihui,tell the detect match which track
 	this->detect_idx = detect_idx;
 	start_frame = 0;
-	_fea=fea;
 	diou=0.0f;
 }
 
 STrack::~STrack()
 {
+	
 }
 
 void STrack::activate(byte_kalman::KalmanFilter &kalman_filter, int frame_id)
@@ -192,7 +193,6 @@ void STrack::mark_removed()
 int STrack::next_id()
 {
 	static int _count = 0;
-	if(_count >= INT_MAX) _count = 0;
 	_count++;
 	return _count;
 }
@@ -213,4 +213,6 @@ void STrack::multi_predict(vector<STrack*> &stracks, byte_kalman::KalmanFilter &
 		kalman_filter.predict(stracks[i]->mean, stracks[i]->covariance);
 	}
 }
+
+
 }
