@@ -1,9 +1,15 @@
 #include "BYTETracker_no_reid.h"
 #include "lapjv_no_reid.h"
 
+#include <map>
+#include <iostream>
+using namespace std;
+
 #define CENTER(x,y) x/2+y/2
 
 namespace bytetrack_no_reid{
+
+#define CENTER(x,y) x/2+y/2
 
 vector<STrack*> BYTETracker::joint_stracks(vector<STrack*> &tlista, vector<STrack> &tlistb)
 {

@@ -5,10 +5,18 @@
 #include <Eigen/Core>
 
 namespace bytetrack_no_reid {
+
+typedef struct tagRect{
+	float x;
+	float y;
+	float width;
+	float height;
+}Rect;
+
 struct Object
 {
-	// vector<float> fea;
-    cv::Rect_<float> rect;
+	vector<float> fea;
+    Rect rect;
     int label;
     float prob;
 };
