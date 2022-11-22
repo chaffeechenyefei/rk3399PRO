@@ -163,8 +163,8 @@ float BoxTrace::calc_cost(BoxPoint &boxPt, float w_iou, float w_dist){
     float vec_x = boxPt.cx - boxPtTr.cx;
     float vec_y = boxPt.cy - boxPtTr.cy;
     float cos_val = vec_x*m_vec_x +vec_y*m_vec_y;
-    float cos_norm1 = std::sqrt(vec_x*vec_x+vec_y*vec_y);
-    float cos_norm2 = std::sqrt(m_vec_x*m_vec_x+m_vec_y*m_vec_y);
+    float cos_norm1 = 1e-8+std::sqrt(vec_x*vec_x+vec_y*vec_y);//防止cos_norm1*cos_norm2出现0
+    float cos_norm2 = 1e-8+std::sqrt(m_vec_x*m_vec_x+m_vec_y*m_vec_y);
     cos_val /= (cos_norm1*cos_norm2);
     if(cos_val < max_angle) return OMAX;
     if(cos_norm1 > max_distance) return OMAX;
@@ -272,12 +272,12 @@ void BoxTraceSet::push_back(BoxPoint &boxPt){
         // mboxPts[ind].m_trace_id = nboxTr.m_trace_id;
         // boxPt.m_trace_id = nboxTr.m_trace_id;
         /*-----------------------------------------------------*/
-        nboxTr.push_back(mboxPts[ind]);
+        nboxTr.push_back(mboxPts[ind]);//创建一个轨迹，
         nboxTr.push_back(boxPt);
-        mboxTrs.push_back(nboxTr);
+        mboxTrs.push_back(nboxTr);//将创建的轨迹更新至traceset
         //remove point from mboxPts
         auto r_iter = mboxPts.begin();
-        std::advance(r_iter, ind); 
+        std::advance(r_iter, ind); //将指针移位至ind位置，并且进行删除
         mboxPts.erase(r_iter);
         m_time = boxPt.t;
         return;
@@ -353,6 +353,31 @@ void BoxTraceSet::output_trace(std::vector<BoxPoint> &vecPts, std::vector<BoxPoi
         }
     }
 }
+
+
+void BoxTraceSet::output_trace(std::vector<BoxPoint> &vecPts_S, std::vector<BoxPoint> &vecPts_M, std::vector<BoxPoint> &vecPts_uncertain, int min_box_num){
+    vecPts_M.clear();
+    vecPts_S.clear();
+    vecPts_uncertain.clear();
+    for (auto &&boxTr:mboxTrs){
+        if (boxTr.m_trace.size()>=min_box_num && boxTr.get_last_time() <= m_time){
+            if (boxTr.m_velocity<5)//速度小于10，默认为没有移动像素
+            {
+                vecPts_S.insert(vecPts_S.end(),boxTr.m_trace.begin(),boxTr.m_trace.end());
+            }else{
+                vecPts_M.insert(vecPts_M.end(),boxTr.m_trace.begin(),boxTr.m_trace.end());
+            }
+        }else if (boxTr.m_trace.size()>0 && boxTr.get_last_time()<=m_time){
+            vecPts_uncertain.push_back(boxTr.get_last_trace());
+        }
+    }
+    for (auto &&boxPt:mboxPts){
+        if (boxPt.t<=m_time){
+            vecPts_uncertain.push_back(boxPt);
+        }
+    }
+}
+
 
 void BoxTraceSet::output_last_point_of_trace(std::vector<BoxPoint> &vecPts, std::vector<BoxPoint> &vecPts_uncertain, int min_box_num){
     vecPts.clear();

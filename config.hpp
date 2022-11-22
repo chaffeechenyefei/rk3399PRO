@@ -43,7 +43,7 @@ enum class TASKNAME{
     HAND            = 29,//手的检测
     SMOKE_CLOUD     = 30, //烟雾团检测  
     SMOKE_CLOUD_UNET= 31, //烟雾团检测  unet测试
-
+    ABANDON_OBJECT  = 32,
     TASK_END,
 
     HAND_DET        = 50,//手的检测 224x320
@@ -94,6 +94,8 @@ enum class MODELFILENAME{
     MOD_DET_UNET,//UNet移动物体分割
     ACTION_CLS,//行为识别
     FACEATTR_CLS,//人脸属性分类器112x112
+    
+    ABANDON_OBJECT_DET,
 };
 
 /**
@@ -138,7 +140,7 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::FACEATTR_CLS,       "faceattr-effnet_20220628_112x112_mlu220_bs1c1_fp16.cambricon"},//20220628
     {MODELFILENAME::LICPLATE_DET,       "yolov5s-face-licplate-20220815_736x416_mlu220_bs1c1_fp16.cambricon"},//20220815
     {MODELFILENAME::LICPLATE_RECOG,     "licplate-recog_20220822_94x24_mlu220_bs1c1_fp16.cambricon"}, //20220822
-
+    {MODELFILENAME::ABANDON_OBJECT_DET,  rknn_model_path+"yolov5s-conv-head-20220121_736x416_mode4_precompiled.rknn"},
 };
 
 bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAPIName &apiName, std::map<InitParam, std::string> &init_param, int &use_batch, bool displayTask=false){
@@ -415,6 +417,16 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
             {InitParam::SUB_MODEL,  cambricon_model_file[MODELFILENAME::HAND_DET_736x416]},
         };
         taskDesc = "SOS DETECTION";
+        break;
+
+    case TASKNAME::ABANDON_OBJECT:
+        threshold = 0.5;
+        apiName = AlgoAPIName::ABANDON_OBJECT_DETECTOR;
+        nms_threshold = 0.6;
+        init_param = {
+            {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::ABANDON_OBJECT_DET]},
+        };
+        taskDesc = "ABANDON OBJECT ";
         break;
     case TASKNAME::JSON:
         taskDesc = "USER_DEFINED_JSON";

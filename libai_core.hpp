@@ -63,7 +63,7 @@ typedef enum _AlgoAPIName{
 
     PED_BEND_DETECTOR       = 26,//行人弯腰检测
     SMOKE_CLOUD_DETECTOR    = 27,//烟雾团检测
-
+    ABANDON_OBJECT_DETECTOR = 28, // 遗留物
     
 // #endif
     //=========内部使用======================================================================
@@ -176,6 +176,11 @@ typedef enum _CLS_TYPE{
     LICPLATE_SGREEN                     ,   //小型新能源车（纯绿）
     LICPLATE_BGREEN                     ,   //大型新能源车（黄加绿）
     LICPLATE_YELLOW                     ,   //黄牌
+
+    //遗留物
+    ABADNON_STATIC              = 800   ,
+    ABADNON_MOVE                = 801   ,
+
 
     OTHERS                      = 900   ,   //其它类别, 相当于占位符
     OTHERS_A                    = 901   ,   //自定义占位符

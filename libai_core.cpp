@@ -12,6 +12,7 @@
 #include "utils/module_feature_extraction.hpp"
 #include "utils/module_posenet.hpp"
 #include "utils/module_smoke_cloud.hpp"
+#include "utils/module_abandon_object.hpp"
 /*******************************************************************************
  * IMP_XXX: 表示所有模块都通过ucloud::AICoreFactory::getAlgoAPI来实现, run时仅进行模块之间的衔接处理.
 *******************************************************************************/
@@ -316,6 +317,14 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_);
     }
     break;    
+
+    case AlgoAPIName::ABANDON_OBJECT_DETECTOR:{
+        printf("\033[32m AlgoAPIName::ABANDON_OBJECT_DETECTOR\n\033[0m");
+        ABANDON_OBJECT_DETECTION* _ptr_ = new ABANDON_OBJECT_DETECTION();
+        apiHandle.reset(_ptr_);
+    }
+    break;
+
 
 
     default:

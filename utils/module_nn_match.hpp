@@ -54,6 +54,9 @@ public:
         t = T%max_t;
         FLG_empty = false;
     }
+    void updateT(int T){
+        t=T%max_t;
+    }
     float calc_cost(BoxPoint &boxPt, float w_iou=1, float w_dist=1);
     void print();
     bool empty(){return FLG_empty;}
@@ -78,6 +81,10 @@ public:
     ~BoxTrace(){std::vector<BoxPoint>().swap(m_trace);}
     bool empty(){return m_trace.empty();}
     void push_back(BoxPoint &box);
+    BoxPoint get_last_trace(){      
+        if (m_trace.empty()) return BoxPoint() ;
+        else return m_trace[m_trace.size()-1];
+    }
     int get_last_time(){
         if(m_trace.empty()) return -1;
         else return m_trace[m_trace.size()-1].t;
@@ -112,7 +119,7 @@ public:
     void output_last_point_of_trace(std::vector<BoxPoint> &vecPts, std::vector<BoxPoint> &vecPts_uncertain,int min_box_num=3);
     void output_trace(std::vector<BoxTrace> &vecTrs, std::vector<BoxPoint> &vecPts_uncertain,int min_box_num=3);
     void output_trace(std::vector<BoxPoint> &vecPts, std::vector<BoxPoint> &vecPts_uncertain,int min_box_num=3);
-
+    void output_trace(std::vector<BoxPoint> &vecPts_S, std::vector<BoxPoint> &vecPts_M, std::vector<BoxPoint> &vecPts_uncertain, int min_box_num=3);
     std::vector<BoxPoint> mboxPts;
     std::vector<BoxTrace> mboxTrs;
 
