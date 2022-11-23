@@ -140,7 +140,7 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::FACEATTR_CLS,       "faceattr-effnet_20220628_112x112_mlu220_bs1c1_fp16.cambricon"},//20220628
     {MODELFILENAME::LICPLATE_DET,       "yolov5s-face-licplate-20220815_736x416_mlu220_bs1c1_fp16.cambricon"},//20220815
     {MODELFILENAME::LICPLATE_RECOG,     "licplate-recog_20220822_94x24_mlu220_bs1c1_fp16.cambricon"}, //20220822
-    {MODELFILENAME::ABANDON_OBJECT_DET,  rknn_model_path+"rknn_int8_abandon-unet_20220825_736x416_fast_v1.rknn"},
+    {MODELFILENAME::ABANDON_OBJECT_DET,  rknn_model_path+"rknn_int8_abandon-unet_20220825_736x416_fast.rknn"},
 };
 
 bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAPIName &apiName, std::map<InitParam, std::string> &init_param, int &use_batch, bool displayTask=false){
@@ -420,9 +420,9 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         break;
 
     case TASKNAME::ABANDON_OBJECT:
-        threshold = 0.5;
+        threshold = 0.2;
         apiName = AlgoAPIName::ABANDON_OBJECT_DETECTOR;
-        nms_threshold = 0.6;
+        nms_threshold = 0.2;
         init_param = {
             {InitParam::BASE_MODEL,  cambricon_model_file[MODELFILENAME::ABANDON_OBJECT_DET]},
         };

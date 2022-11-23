@@ -1,5 +1,7 @@
 #include "module_abandon_object.hpp"
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 using namespace ucloud;
 using namespace cv;
 
@@ -41,6 +43,7 @@ RET_CODE ABANDON_OBJECT_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, f
     RET_CODE ret = RET_CODE::SUCCESS;
     threshold = clip_threshold(threshold);
     nms_threshold = clip_threshold(nms_threshold);
+    cout<<"theshold is "<< threshold<<" nms_threshold"<< nms_threshold<<endl;
 
     switch (tvimage.format)
     {
@@ -71,6 +74,7 @@ RET_CODE ABANDON_OBJECT_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, f
     std::vector<BoxTrace> his = m_Trackors[tvimage.uuid_cam]->mboxTrs;
     //当图像与模板不同时，进行分割推理
     //与pre frame一致并且 his中存在数据，
+
     if (!same){
         #ifdef TIMING    
             m_Tk.start();
@@ -133,6 +137,7 @@ RET_CODE ABANDON_OBJECT_DETECTION::run(TvaiImage& tvimage, TvaiRect roi , VecObj
     LOGI << "-> AnyModelWithTvaiImage::run with roi";
     RET_CODE ret = RET_CODE::SUCCESS;
     threshold = clip_threshold(threshold);
+
     nms_threshold = clip_threshold(nms_threshold);
     roi = get_valid_rect(roi, tvimage.width, tvimage.height);
 
@@ -214,8 +219,23 @@ RET_CODE ABANDON_OBJECT_DETECTION::run(TvaiImage& tvimage, TvaiRect roi , VecObj
 ucloud::RET_CODE ABANDON_OBJECT_DETECTION::postprocess(std::vector<float*> &output_datas, ucloud::TvaiRect roi, float threshold, float nms_threshold ,ucloud::VecObjBBox &bboxes,float aX, float aY){
     int output_w = m_OutEleDims[0][0];
     int output_h = m_OutEleDims[0][1];
-    Mat result(output_h,output_w,CV_8UC1,output_datas[0]);
+    // for (int i=0;i<output_h;i++){
+    //     for (int j=0;j<output_w;j++){
+    //         float value = *(output_datas[0]+i*output_w+j);
+    //         if (value>=0.2){
+    //             cout<<value<<" ";
+    //         }
+    //     }
+    //     cout<<endl;
+    // }
+    Mat result(output_h,output_w,CV_32FC1,output_datas[0]);
+    // Mat result(output_h,output_w,CV_8UC1,output_datas[0]);
+    // imwrite("./data/abandon01_result/result.jpg",result);
+    cout<< "Mat result value"<<format(result,Formatter::FMT_NUMPY)<<endl;
+    // float u_threshold = unsigmoid(threshold);
+    // cout<<"u_thresh "<< u_threshold<<endl;
     Mat mask = result>threshold;
+    cout<< "Mat result value"<<format(mask,Formatter::FMT_NUMPY)<<endl;
     Mat dilate_mask;
     std::vector<std::vector<Point> > vec_cv_contours;
     // Mat kernel = getStructuringElement(0,Size(5,5),Point(1,1));
@@ -223,7 +243,7 @@ ucloud::RET_CODE ABANDON_OBJECT_DETECTION::postprocess(std::vector<float*> &outp
     findContours(dilate_mask,vec_cv_contours,RETR_EXTERNAL,CHAIN_APPROX_NONE);
     for(auto iter=vec_cv_contours.begin(); iter!=vec_cv_contours.end(); iter++){
         Rect rect = boundingRect(*iter);
-        if(rect.width < 10 || rect.height < 10) continue;//in 224x224 scale
+        if(rect.width < 2 || rect.height < 2) continue;//in 224x224 scale
         BBox bbox;
         bbox.objtype = CLS_TYPE::TARGET;
         bbox.confidence = 1.0;
