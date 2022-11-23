@@ -31,10 +31,6 @@ void BYTETracker::reset(float track_threshold, float high_detect_threshold, int 
 	max_time_lost = int(frame_rate/30.0*track_buffer);
 }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 13b3aa251f133f7517e79a14814e347db33af2c1
 
 
 BYTETracker::BYTETracker(int frame_rate, int track_buffer)
@@ -85,11 +81,6 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 			tlbr_[1] = objects[i].rect.y;
 			tlbr_[2] = objects[i].rect.x + objects[i].rect.width;
 			tlbr_[3] = objects[i].rect.y + objects[i].rect.height;
-<<<<<<< HEAD
-			float score = objects[i].prob;
-			cout<<tlbr_[0]<<" "<<tlbr_[1]<<" "<<tlbr_[2]<<" "<<tlbr_[3]<<" "<<objects[i].label<<endl;
-=======
->>>>>>> 13b3aa251f133f7517e79a14814e347db33af2c1
 
 			float score = objects[i].prob;
 
@@ -220,13 +211,8 @@ vector<STrack> BYTETracker::update(const vector<Object>& objects)
 			if (track->diou<0.05){
 				refind_stracks.push_back(*track);
 			}else{
-<<<<<<< HEAD
-			track->mark_lost();
-			lost_stracks.push_back(*track);
-=======
 				track->mark_lost();
 				lost_stracks.push_back(*track);
->>>>>>> 13b3aa251f133f7517e79a14814e347db33af2c1
 			}
 		}
 	}

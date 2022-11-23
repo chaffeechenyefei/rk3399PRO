@@ -24,26 +24,27 @@ bool simulate_mlu220=false, bool dont_infer=false){
 
     unsigned char* imgBuf=nullptr;
     
-    int fmt_w,fmt_h,width,height,stride;;
+    int fmt_w,fmt_h,width,height,stride,datasize;
 
     cv::Mat bgMat = cv::imread(datapath[0]);
     cv::Mat foreMat = cv::imread(datapath[1]);
-    Mat matDiff;
-    absdiff(curMat,m_bg,matDiff);
+    cv::Mat matDiff;
+    cv::absdiff(foreMat,bgMat,matDiff);
     imgBuf = (unsigned char*)malloc(matDiff.total()*3);
     memcpy(imgBuf,matDiff.data,matDiff.total()*3);
+    width = bgMat.cols;
+    height = bgMat.rows;
+    stride = width;
+    datasize = width*height*3;
 
     VecObjBBox bboxes; 
-    TvaiImage tvimage{TVAI_IMAGE_FORMAT_BGR,width,height,stride,frameBuf[0]->yuvbuf, inputdata_sz};
+    TvaiImage tvimage{TVAI_IMAGE_FORMAT_BGR,width,height,stride,imgBuf, datasize};
     RET_CODE retcode = RET_CODE::FAILED;
     float threshold, nms_threshold;
     AlgoAPIName apiName, apiSubName;
     std::map<InitParam, std::string> init_param;
-    int use_batch = 0;  RET_CODE retcode = RET_CODE::FAILED;
-    float threshold, nms_threshold;
-    AlgoAPIName apiName, apiSubName;
-    std::map<InitParam, std::string> init_param;
     int use_batch = 0;
+
     bool flag_parser = task_parser(taskid, threshold, nms_threshold, apiName, init_param, use_batch);
     AlgoAPISPtr ptrMainHandle = ucloud::AICoreFactory::getAlgoAPI(apiName);
     retcode = ptrMainHandle->init(init_param);
@@ -233,7 +234,7 @@ int main(int argc, char **argv)
     bool use_track = false;
     bool simulate_mlu220 = false;
     bool dont_infer = false;
-    string datapath;
+    std::vector<std::string> datapath = {"",""};
     TASKNAME taskid = TASKNAME::ABANDON_OBJECT;
     std::cout << "==========FPS===========" << std::endl;
     string _tmp(argv[1]);
@@ -246,7 +247,7 @@ int main(int argc, char **argv)
 
     if(argc>=3){
         string _tmp(argv[2]);
-        datapath = _tmp;
+        datapath.push_back(_tmp);
     }
     if(argc >= 4){
         int _taskid = atoi(argv[3]);

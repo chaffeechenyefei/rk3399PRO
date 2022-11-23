@@ -3,10 +3,7 @@
 
 
 namespace bytetrack_no_reid{
-<<<<<<< HEAD
-=======
 	
->>>>>>> 13b3aa251f133f7517e79a14814e347db33af2c1
 STrack::STrack(vector<float> tlwh_, float score, int detect_idx)
 {
 	_tlwh.resize(4);
