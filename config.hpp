@@ -420,6 +420,7 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         break;
 
     case TASKNAME::ABANDON_OBJECT:
+        // cout<<"step into taskname ::abandon obejct"<<endl;
         threshold = 0.2;
         apiName = AlgoAPIName::ABANDON_OBJECT_DETECTOR;
         nms_threshold = 0.2;

@@ -1,4 +1,5 @@
 #include "module_nn_match.hpp"
+#include<algorithm>
 using std::vector;
 using namespace cv;
 
@@ -141,7 +142,7 @@ float calc_iou_cost(BoxPoint &b1, BoxPoint &b2){
     if(roiW<=0 || roiH <=0 ) return 1;
     float area1 = (b1.y1 - b1.y0 + 1)*(b1.x1-b1.x0+1);
     float area2 = (b2.y1 - b2.y0 + 1)*(b2.x1-b2.x0+1);
-    return 1 - roiW*roiH/(area1+area2-roiW*roiH);
+    return 1 - roiW*roiH/(area1+area2-roiW*roiH+1e-8);
 }
 //计算两个boxpoint之间的距离, 用长宽进行归一化. 越小越接近
 float calc_distance_cost(BoxPoint &b1, BoxPoint &b2){
@@ -159,20 +160,24 @@ float calc_space_cost(BoxPoint &b1, BoxPoint &b2, float w_iou, float w_dist){
 float BoxTrace::calc_cost(BoxPoint &boxPt, float w_iou, float w_dist){
     int last_index = m_trace.size()-1;
     BoxPoint boxPtTr = m_trace[last_index];//last boxPt from Trace
-    
+    std::cout<<"boxPt.cx " << boxPt.cx<<" boxPt.cy "<<boxPt.cy<<" boxPtTr.cx"<<boxPtTr.cx<< " boxPtTr.cy "<<boxPtTr.cy;
     float vec_x = boxPt.cx - boxPtTr.cx;
     float vec_y = boxPt.cy - boxPtTr.cy;
     float cos_val = vec_x*m_vec_x +vec_y*m_vec_y;
     float cos_norm1 = 1e-8+std::sqrt(vec_x*vec_x+vec_y*vec_y);//防止cos_norm1*cos_norm2出现0
     float cos_norm2 = 1e-8+std::sqrt(m_vec_x*m_vec_x+m_vec_y*m_vec_y);
     cos_val /= (cos_norm1*cos_norm2);
+    // std::cout<<"cos_val "<<cos_val<<"cos_norm1 "<<cos_norm1<<std::endl;
     if(cos_val < max_angle) return OMAX;
     if(cos_norm1 > max_distance) return OMAX;
+   
     int t_eclipse = boxPt.t - boxPtTr.t;
     float velocity = cos_norm1;
     if(t_eclipse!=0) velocity /= t_eclipse;
     float diff_velocity = std::abs((velocity - m_velocity) / m_velocity);
+    // std::cout<<"diff_velocity "<<diff_velocity <<std::endl;
     if(diff_velocity>0.3) return OMAX;
+    std::cout<<"cos_val "<<cos_val<<"cos_norm1 "<<cos_norm1<<"diff_velocity "<<diff_velocity <<std::endl;
     return calc_space_cost(boxPt, boxPtTr, w_iou, w_dist);
 }
 
@@ -232,17 +237,31 @@ void BoxTraceSet::push_back(std::vector<BoxPoint> &boxPts){
 void BoxTraceSet::push_back(BoxPoint &boxPt){
     // std::cout << "-> BoxTraceSet::push_back(BoxPoint &boxPt)" << std::endl;
     int ind = -1;
-    //1 是否和已有轨迹匹配
+    //1 是否和已有轨迹匹配 
     std::vector<float> traceScores;
+    float min_iou;
     for(auto &&mboxTr: mboxTrs){
         if(mboxTr.get_last_time() >= boxPt.t) continue;
-        traceScores.push_back(mboxTr.calc_cost(boxPt, m_w_iou, m_w_dist));
+        if ((boxPt.t - mboxTr.get_last_time())>5) continue; 
+        // traceScores.push_back(mboxTr.calc_cost(boxPt, m_w_iou, m_w_dist));
+        BoxPoint boxPtTr = mboxTr.get_last_trace();
+        float iou_score = calc_iou_cost(boxPtTr,boxPt);
+        std::cout<<"boxPt.t "<<boxPt.t<<"mboxTr.get_last_time "<<mboxTr.get_last_time()<<" mboxTr size"<<mboxTr.m_trace.size()<<" iou score "<<iou_score<<std::endl;
+
+        traceScores.push_back(iou_score);
     }
     //TODO
     float min_score = OMAX;
-    for(int i = 0; i < traceScores.size(); i++){
-        if(traceScores[i] < min_score ) ind = i;
+    if (!traceScores.empty()){
+        min_iou = *min_element(traceScores.begin(),traceScores.end());
+        if (min_iou<0.5){
+        ind  = min_element(traceScores.begin(),traceScores.end()) - traceScores.begin(); 
+        }
     }
+    // for(int i = 0; i < traceScores.size(); i++){
+    //     std::cout<<"i "<<i<<" traceScore is "<<traceScores[i]<<std::endl;
+    //     if(traceScores[i] < min_score ) ind = i;
+    // }
     if(ind >= 0){
         // boxPt.m_trace_id = mboxTrs[ind].m_trace_id;
         mboxTrs[ind].push_back(boxPt);
@@ -256,11 +275,20 @@ void BoxTraceSet::push_back(BoxPoint &boxPt){
     std::vector<float> pointScores;
     for(auto &&mboxPt: mboxPts){
         if(mboxPt.t >= boxPt.t) continue;
-        pointScores.push_back( mboxPt.calc_cost(boxPt, m_w_iou, m_w_dist));
+        if ((boxPt.t - mboxPt.t)>5) continue;
+        float iou_score = calc_iou_cost(mboxPt,boxPt);
+        pointScores.push_back(iou_score);
+        // pointScores.push_back( mboxPt.calc_cost(boxPt, m_w_iou, m_w_dist));
     }
-    for(int i = 0; i < pointScores.size(); i++){
-        if(pointScores[i] < min_score) ind = i;
+    if (!pointScores.empty()){
+        float min_iou = *min_element(pointScores.begin(),pointScores.end());
+        if (min_iou<0.5){
+            ind  = min_element(pointScores.begin(),pointScores.end()) - pointScores.begin();
+        }
     }
+    // for(int i = 0; i < pointScores.size(); i++){
+    //     if(pointScores[i] < min_score) ind = i;
+    // }
     if(ind >=0) {//匹配成功, 新建一个trace
         BoxTrace nboxTr;
         /*-----------------------------------------------------*/
@@ -294,6 +322,7 @@ void BoxTraceSet::update(int cur_time){
     auto iterPt = mboxPts.begin();
     while(iterPt!=mboxPts.end()){
         if( std::abs(cur_time - iterPt->t) >= nn_max_age ){
+            std::cout<<"erase mboxPts"<< iterPt->t<<std::endl;
             iterPt = mboxPts.erase(iterPt);
         }else{
             iterPt++;
@@ -302,6 +331,7 @@ void BoxTraceSet::update(int cur_time){
     auto iterTr = mboxTrs.begin();
     while(iterTr!=mboxTrs.end()){
         if(std::abs(cur_time - iterTr->get_last_time()) >= nn_max_age ){
+            std::cout<<"erase mboxTrs"<< iterTr->get_last_time()<<std::endl;
             iterTr = mboxTrs.erase(iterTr);
         }else{
             iterTr++;
@@ -325,7 +355,7 @@ void BoxTraceSet::output_trace(std::vector<BoxTrace> &vecTrs, std::vector<BoxPoi
         if(boxTr.m_trace.size() >= min_box_num && boxTr.get_last_time() <= m_time ){
             //展示全部轨迹
             vecTrs.push_back(boxTr);
-        } else if(boxTr.m_trace.size()>0 && boxTr.get_last_time() <= m_time) {
+        } else if(boxTr.m_trace.size()<min_box_num && boxTr.get_last_time() <= m_time) {
             vecPts_uncertain.push_back(boxTr.m_trace[boxTr.m_trace.size()-1]);
         }
     }
@@ -339,11 +369,12 @@ void BoxTraceSet::output_trace(std::vector<BoxTrace> &vecTrs, std::vector<BoxPoi
 void BoxTraceSet::output_trace(std::vector<BoxPoint> &vecPts, std::vector<BoxPoint> &vecPts_uncertain,int min_box_num){
     vecPts.clear();
     vecPts_uncertain.clear();
+  
     for(auto &&boxTr:mboxTrs){
         if(boxTr.m_trace.size() >= min_box_num && boxTr.get_last_time() <= m_time ){
             //展示全部轨迹
             vecPts.insert(vecPts.end(), boxTr.m_trace.begin(), boxTr.m_trace.end());
-        } else if(boxTr.m_trace.size()>0 && boxTr.get_last_time() <= m_time) {
+        } else if(0<boxTr.m_trace.size()<min_box_num && boxTr.get_last_time() <= m_time) {
             vecPts_uncertain.push_back(boxTr.m_trace[boxTr.m_trace.size()-1]);
         }
     }
@@ -359,16 +390,21 @@ void BoxTraceSet::output_trace(std::vector<BoxPoint> &vecPts_S, std::vector<BoxP
     vecPts_M.clear();
     vecPts_S.clear();
     vecPts_uncertain.clear();
+    std::cout<<"m_track mBoxTrs size "<<mboxTrs.size()<<" mboxPts size "<<mboxPts.size()<< std::endl;
+    std::vector<int> track_ids;
     for (auto &&boxTr:mboxTrs){
-        if (boxTr.m_trace.size()>=min_box_num && boxTr.get_last_time() <= m_time){
-            if (boxTr.m_velocity<5)//速度小于10，默认为没有移动像素
-            {
-                vecPts_S.insert(vecPts_S.end(),boxTr.m_trace.begin(),boxTr.m_trace.end());
-            }else{
-                vecPts_M.insert(vecPts_M.end(),boxTr.m_trace.begin(),boxTr.m_trace.end());
+        if (find(track_ids.begin(),track_ids.end(),boxTr.m_trace_id)==track_ids.end()){
+            if (boxTr.m_trace.size()>=min_box_num && boxTr.get_last_time() <= m_time){
+                if (boxTr.m_velocity<5)//速度小于10，默认为没有移动像素
+                {   
+                    std::cout<<"boxTr "<<boxTr.get_last_trace().m_trace_id<<std::endl;
+                    vecPts_S.push_back(boxTr.get_last_trace());
+                }else{
+                    vecPts_M.push_back(boxTr.get_last_trace());
+                }
+            }else if (0<boxTr.m_trace.size()<min_box_num && boxTr.get_last_time()<=m_time){
+                vecPts_uncertain.push_back(boxTr.get_last_trace());
             }
-        }else if (boxTr.m_trace.size()>0 && boxTr.get_last_time()<=m_time){
-            vecPts_uncertain.push_back(boxTr.get_last_trace());
         }
     }
     for (auto &&boxPt:mboxPts){

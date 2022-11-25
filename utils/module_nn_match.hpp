@@ -135,7 +135,8 @@ public:
     int fps = 25;//25
 #endif
 #endif
-    int nn_max_age = 4*fps;
+    // int nn_max_age = 4*fps;
+    int nn_max_age = 2;
     int m_time = 0;
 
 private:

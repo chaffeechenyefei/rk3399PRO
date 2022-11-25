@@ -231,26 +231,31 @@ ucloud::RET_CODE ABANDON_OBJECT_DETECTION::postprocess(std::vector<float*> &outp
     Mat result(output_h,output_w,CV_32FC1,output_datas[0]);
     // Mat result(output_h,output_w,CV_8UC1,output_datas[0]);
     // imwrite("./data/abandon01_result/result.jpg",result);
-    cout<< "Mat result value"<<format(result,Formatter::FMT_NUMPY)<<endl;
+    // cout<< "Mat result value"<<format(result,Formatter::FMT_NUMPY)<<endl;
     // float u_threshold = unsigmoid(threshold);
-    // cout<<"u_thresh "<< u_threshold<<endl;
-    Mat mask = result>threshold;
-    cout<< "Mat result value"<<format(mask,Formatter::FMT_NUMPY)<<endl;
+    // cout<<"u_thresh "<< threshold<<endl;
+    Mat mask = result>threshold;  
+    // imwrite("./data/abandon01_result/result.jpg",result); 
+    // cout<< "Mat result value"<<format(mask,Formatter::FMT_NUMPY)<<endl;
     Mat dilate_mask;
     std::vector<std::vector<Point> > vec_cv_contours;
-    // Mat kernel = getStructuringElement(0,Size(5,5),Point(1,1));
-    dilate(mask,mask,Mat::ones(5,5,CV_8UC1),Point(1,1)); 
+    Mat kernel = getStructuringElement(MORPH_RECT,cv::Size(7,7));
+    morphologyEx(mask,dilate_mask,MORPH_CLOSE,kernel);
+    // dilate(mask,dilate_mask,Mat::ones(5,5,CV_8UC1),Point(1,1)); 
     findContours(dilate_mask,vec_cv_contours,RETR_EXTERNAL,CHAIN_APPROX_NONE);
     for(auto iter=vec_cv_contours.begin(); iter!=vec_cv_contours.end(); iter++){
         Rect rect = boundingRect(*iter);
-        if(rect.width < 2 || rect.height < 2) continue;//in 224x224 scale
+        if(rect.width < 10 || rect.height < 10) continue;//in 224x224 scale
         BBox bbox;
         bbox.objtype = CLS_TYPE::TARGET;
         bbox.confidence = 1.0;
         bbox.objectness = bbox.confidence;
-        bbox.rect.x = ((1.0*rect.x) / aX); bbox.rect.width = ((1.0*rect.width) / aX);
-        bbox.rect.y = ((1.0*rect.y) / aY); bbox.rect.height = ((1.0*rect.height) / aY);
+        bbox.rect.x = ((1.0*rect.x) / aX);
+        bbox.rect.width = ((1.0*rect.width) / aX);
+        bbox.rect.y = ((1.0*rect.y) / aY); 
+        bbox.rect.height = ((1.0*rect.height) / aY);
         bboxes.push_back(bbox);
+        cout<<"box x "<<bbox.rect.x<<" box y"<< bbox.rect.y<<" box width"<< bbox.rect.width<<" box height "<<bbox.rect.height<< endl;
     }
     LOGI << "<- Segment::postprocess";
     return RET_CODE::SUCCESS;
@@ -296,9 +301,14 @@ RET_CODE ABANDON_OBJECT_DETECTION::trackprocess(TvaiImage &tvimage, VecObjBBox &
     }
     m_Trackors[tvimage.uuid_cam]->push_back( bpts );
     std::vector<BoxPoint> marked_Spts,marked_Mpts, unmarked_pts;
+   
     // m_Trackors[tvimage.uuid_cam]->output_last_point_of_trace(marked_pts, unmarked_pts, min_box_num);
     m_Trackors[tvimage.uuid_cam]->output_trace(marked_Spts, marked_Mpts, unmarked_pts, min_box_num);
+    // int total = marked_Spts.size() + marked_Mpts.size();
+    
+   
     ins.clear();
+    cout<<"ins size "<<ins.size()<<endl;
     for(auto bxpt: marked_Spts){
         BBox pt;
         pt.confidence = 1.0;
@@ -326,7 +336,7 @@ RET_CODE ABANDON_OBJECT_DETECTION::trackprocess(TvaiImage &tvimage, VecObjBBox &
         pt.rect = TvaiRect{ int(bxpt.x),int(bxpt.y),int(bxpt.w),int(bxpt.h)};
         ins.push_back(pt);
     }
-    
+    // cout<<" bpts.size "<<bpts.size()<<" m track size "<< total<<"ins size"<<ins.size()<<endl;
     return RET_CODE::SUCCESS;
 }
 
