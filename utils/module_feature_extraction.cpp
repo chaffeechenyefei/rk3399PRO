@@ -97,6 +97,7 @@ void FeatureExtractor::unit_norm(float* ptr, int dims){
 *******************************************************************************/
 ucloud::RET_CODE FeatureExtractor::run(ucloud::TvaiImage& tvimage,ucloud::VecObjBBox &bboxes,float threshold, float nms_threshold){
     LOGI<<"-> FeatureExtractor::run";
+    static int image_cnt = 0;
     ucloud::RET_CODE ret = ucloud::RET_CODE::SUCCESS;
     switch (tvimage.format)
     {
@@ -120,13 +121,27 @@ ucloud::RET_CODE FeatureExtractor::run(ucloud::TvaiImage& tvimage,ucloud::VecObj
         std::vector<float*> output_datas;
         TvaiRect roi = box.rect;
         vector<float> aX,aY;
-        
-    #ifdef USEDRM  
+
         roi =  get_valid_rect(roi, tvimage.width, tvimage.height);
-        ret = m_cv_preprocess_net->preprocess_drm(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
-    #else
-        ret = preprocess_opencv(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
-    #endif
+
+        if(tvimage.width%8!=0 || tvimage.height%2!=0)
+            ret = m_cv_preprocess_net->preprocess_opencv(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
+        else
+            ret = m_cv_preprocess_net->preprocess_drm(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
+
+        
+    // #ifdef USEDRM  
+    //     roi =  get_valid_rect(roi, tvimage.width, tvimage.height);
+    //     ret = m_cv_preprocess_net->preprocess_drm(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
+    //     for(auto &&_d_ : input_datas){
+    //         cv::Mat cvimage_show( cv::Size(112, 112), CV_8UC3, _d_);
+    //         std::string savename = "preprocess_drm_" + std::to_string(image_cnt++) + ".jpg";
+    //         cv::imwrite(savename, cvimage_show);   
+    //     }
+    // #else
+    //     ret = preprocess_opencv(tvimage, roi, m_param_img2tensor, input_datas, aX, aY);
+    // #endif
+
         if(ret!=ucloud::RET_CODE::SUCCESS){
             printf("**[%s][%d] Classification preprocess return [%d]\n", __FILE__, __LINE__, ret);
             return ret;

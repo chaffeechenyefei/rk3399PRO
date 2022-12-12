@@ -5,6 +5,29 @@ using namespace ucloud;
 using namespace std;
 
 
+static void base_transform_xyxy_xyhw_face(std::vector<BBox> &vecbox, float expand_ratio ,float aX, float aY){
+    for (int i=0 ; i < vecbox.size(); i++ ){
+        float cx = (vecbox[i].x0 + vecbox[i].x1)/(2*aX);
+        float cy = (vecbox[i].y0 + vecbox[i].y1)/(2*aY);
+        float w = (vecbox[i].x1 - vecbox[i].x0)*expand_ratio/aX;
+        float h = (vecbox[i].y1 - vecbox[i].y0)*expand_ratio/aY;
+
+        float wh = MAX(w,h);
+
+        float _x0 = cx - wh/2;
+        float _y0 = cy - wh/2;
+
+        vecbox[i].rect.x = int(_x0);
+        vecbox[i].rect.y = int(_y0);
+        vecbox[i].rect.width = int(wh);
+        vecbox[i].rect.height = int(wh);
+        for(int j=0;j<vecbox[i].Pts.pts.size(); j++){
+            vecbox[i].Pts.pts[j].x /= aX;
+            vecbox[i].Pts.pts[j].y /= aY;
+        }
+    }
+};
+
 /**
  * RETINAFACE_DETECTION
  * chaffee.chen@ucloud.cn 2022-10-11
@@ -190,11 +213,13 @@ RET_CODE RETINAFACE_DETECTION::run(TvaiImage& tvimage, VecObjBBox &bboxes, float
 #ifdef TIMING    
     m_Tk.start();
 #endif
-#ifdef USEDRM
-    ret = m_cv_preprocess_net->preprocess_drm(tvimage, m_param_img2tensor, input_datas, aX, aY);
-#else
+
+if(tvimage.width%8!=0 || tvimage.height%2!=0)
     ret = m_cv_preprocess_net->preprocess_opencv(tvimage, m_param_img2tensor, input_datas, aX, aY);
-#endif
+else
+    ret = m_cv_preprocess_net->preprocess_drm(tvimage, m_param_img2tensor, input_datas, aX, aY);
+    
+
 #ifdef TIMING    
     m_Tk.end("preprocess");
 #endif
@@ -252,7 +277,7 @@ ucloud::RET_CODE RETINAFACE_DETECTION::postprocess(std::vector<float*> &output_d
     LOGI << "rknn_output_to_boxes " << n;
     base_nmsBBox(vecBox, nms_threshold , NMS_MIN ,vecBox_after_nms );
     LOGI << "after nms " << vecBox_after_nms.size() << std::endl;
-    base_transform_xyxy_xyhw(vecBox_after_nms, m_expand_ratio, aX[0], aY[0]);
+    base_transform_xyxy_xyhw_face(vecBox_after_nms, m_expand_ratio, aX[0], aY[0]);
     bboxes = vecBox_after_nms;
     // LOGI << "after filter " << bboxes.size() << std::endl;
     VecObjBBox().swap(vecBox);

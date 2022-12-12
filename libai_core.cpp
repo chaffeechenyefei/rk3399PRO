@@ -95,7 +95,14 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         RETINAFACE_DETECTION_BYTETRACK* _ptr_ = new RETINAFACE_DETECTION_BYTETRACK();
         apiHandle.reset(_ptr_);
     }
-        break;            
+        break;
+
+    case AlgoAPIName::FACE_EXTRACTOR:{
+        printf("\033[32m AlgoAPIName::FEATURE_EXTRACTOR\n\033[0m");
+        FeatureExtractor* _ptr_ = new FeatureExtractor();
+        apiHandle.reset(_ptr_); 
+    }
+        break;           
     /**
      * 人车非通用检测 
      */
