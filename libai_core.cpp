@@ -98,7 +98,7 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         break;
 
     case AlgoAPIName::FACE_EXTRACTOR:{
-        printf("\033[32m AlgoAPIName::FEATURE_EXTRACTOR\n\033[0m");
+        printf("\033[32m AlgoAPIName::FACE_EXTRACTOR\n\033[0m");
         FeatureExtractor* _ptr_ = new FeatureExtractor();
         apiHandle.reset(_ptr_); 
     }
