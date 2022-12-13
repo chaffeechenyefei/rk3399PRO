@@ -12,6 +12,7 @@
 #include "utils/module_feature_extraction.hpp"
 #include "utils/module_posenet.hpp"
 #include "utils/module_smoke_cloud.hpp"
+#include "utils/module_yolo_face.hpp"
 /*******************************************************************************
  * IMP_XXX: 表示所有模块都通过ucloud::AICoreFactory::getAlgoAPI来实现, run时仅进行模块之间的衔接处理.
 *******************************************************************************/
@@ -279,7 +280,20 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         IMP_PED_BENDING_DETECTION* _ptr_ = new IMP_PED_BENDING_DETECTION();
         apiHandle.reset(_ptr_); 
     }
-    break;    
+    break;
+    /*
+    * 车牌检测
+    */        
+    case AlgoAPIName::LICPLATE_DETECTOR:{
+        printf("\033[32m AlgoAPIName::LICPLATE_DETECTOR\n\033[0m");
+        YOLO_FACE_DETECTION_BYTETRACK* _ptr_ = new YOLO_FACE_DETECTION_BYTETRACK();
+        vector<CLS_TYPE> model_output_clss = {CLS_TYPE::LICPLATE_BLUE, CLS_TYPE::LICPLATE_SGREEN, CLS_TYPE::LICPLATE_BGREEN, CLS_TYPE::LICPLATE_YELLOW};
+        _ptr_->set_output_cls_order(model_output_clss);
+        std::vector<float> anchors = { 4.,   5.,   8.,  10.,  13.,  16.,  23.,  29.,  43.,  55.,  73., 105., 146., 217., 231., 300., 335., 433. };
+        _ptr_->set_anchor(anchors);
+        apiHandle.reset(_ptr_); 
+    }
+    break; 
   
 /*******************************************************************************
 小模块

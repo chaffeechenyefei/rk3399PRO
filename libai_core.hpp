@@ -214,6 +214,7 @@ typedef struct TvaiRect_S
 typedef enum _LandMarkType{
     FACE_5PTS            =   0, //人脸五点
     SKELETON             =   1, //人体骨架信息
+    LICPLATE             =   2, //车牌
     UNKNOW_LANDMARK      =   10,//未知预留
 }LandMarkType;
 

@@ -113,6 +113,12 @@ void create_thread_for_yolo_task(int thread_id, TASKNAME taskid ,string datapath
         int(box.x), int(box.y), int(box.w), int(box.h),
         box.confidence, box.objectness
         );
+        if(!box.Pts.pts.empty()){
+            int pt_num = 0;
+            for(auto pt: box.Pts.pts){
+                printf("pts[%d]: %.1f,%.1f\n", pt_num++ ,pt.x , pt.y);
+            }
+        }
         if(cnt++>=10) break;
     }
 
