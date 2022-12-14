@@ -1393,6 +1393,7 @@ RET_CODE PreProcess_CPU_DRM_Model::preprocess_opencv(ucloud::TvaiImage& tvimage,
         #ifdef VISUAL
         cv::imwrite("preprocess_opencv.jpg", ele);
         #endif
+        // cv::imwrite("preprocess_opencv.jpg", ele);
         unsigned char* data = (unsigned char*)std::malloc(ele.total()*3);
         memcpy(data, ele.data, ele.total()*3);
         input_datas.push_back(data);

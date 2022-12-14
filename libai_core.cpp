@@ -13,6 +13,7 @@
 #include "utils/module_posenet.hpp"
 #include "utils/module_smoke_cloud.hpp"
 #include "utils/module_yolo_face.hpp"
+#include "utils/module_lprnet.hpp"
 /*******************************************************************************
  * IMP_XXX: 表示所有模块都通过ucloud::AICoreFactory::getAlgoAPI来实现, run时仅进行模块之间的衔接处理.
 *******************************************************************************/
@@ -20,6 +21,7 @@
 #include "utils/imp_phone.hpp"
 #include "utils/imp_smoke_cig_detection.hpp"
 #include "utils/imp_fire_detection.hpp"
+#include "utils/imp_licplate_detection.hpp"
 #include <iostream>
 
 using namespace cv;
@@ -294,6 +296,24 @@ AlgoAPISPtr AICoreFactory::getAlgoAPI(AlgoAPIName apiName){
         apiHandle.reset(_ptr_); 
     }
     break; 
+    /*
+    * 车牌识别 不含检测
+    */        
+    case AlgoAPIName::LICPLATE_RECOGNIZER_ONLY:{
+        printf("\033[32m AlgoAPIName::LICPLATE_RECOGNIZER_ONLY\n\033[0m");
+        LPRNET* _ptr_ = new LPRNET();
+        apiHandle.reset(_ptr_); 
+    }
+    break;     
+    /*
+    * 车牌识别含检测
+    */        
+    case AlgoAPIName::LICPLATE_RECOGNIZER:{
+        printf("\033[32m AlgoAPIName::LICPLATE_RECOGNIZER\n\033[0m");
+        IMP_LICPLATE_DETECTOR* _ptr_ = new IMP_LICPLATE_DETECTOR();
+        apiHandle.reset(_ptr_); 
+    }
+    break;        
   
 /*******************************************************************************
 小模块

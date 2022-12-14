@@ -45,6 +45,8 @@ enum class TASKNAME{
     SMOKE_CLOUD_UNET= 31, //烟雾团检测  unet测试
 
     LICPLATE_DET        = 32,//车牌检测
+    LICPLATE_REC_ONLY   = 33,//车牌识别
+    LICPLATE_REC        = 34,//车牌识别带检测
 
     TASK_END,
 
@@ -139,7 +141,7 @@ std::map<MODELFILENAME,string> cambricon_model_file = {
     {MODELFILENAME::MOD_DET_DIF,        "diffunet_20220106_736x416_mlu220_t2bs1c1_fp16_int8.cambricon"},
     {MODELFILENAME::FACEATTR_CLS,       "faceattr-effnet_20220628_112x112_mlu220_bs1c1_fp16.cambricon"},//20220628
     {MODELFILENAME::LICPLATE_DET,       rknn_model_path + "yolov5s-face-licplate-20220815_736x416_mode4_precompiled.rknn" },//20220815
-    {MODELFILENAME::LICPLATE_RECOG,     "licplate-recog_20220822_94x24_mlu220_bs1c1_fp16.cambricon"}, //20220822
+    {MODELFILENAME::LICPLATE_RECOG,     rknn_model_path + "rknn_int8_licplate-lprnet_20220822_94x24_fast.rknn"}, //20220822
 
 };
 
@@ -313,6 +315,23 @@ bool task_parser(TASKNAME taskid, float &threshold, float &nms_threshold, AlgoAP
         };
         taskDesc = "LICPLATE detect only";
         break;   
+    case TASKNAME::LICPLATE_REC_ONLY: //建议阈值0.55
+        threshold = 0.5;
+        apiName = AlgoAPIName::LICPLATE_RECOGNIZER_ONLY;
+        init_param = { 
+            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::LICPLATE_RECOG] },
+        };
+        taskDesc = "LICPLATE recognition only";
+        break;   
+    case TASKNAME::LICPLATE_REC: //建议阈值0.55
+        threshold = 0.5;
+        apiName = AlgoAPIName::LICPLATE_RECOGNIZER;
+        init_param = { 
+            {InitParam::BASE_MODEL, cambricon_model_file[MODELFILENAME::LICPLATE_DET] },
+            {InitParam::SUB_MODEL,  cambricon_model_file[MODELFILENAME::LICPLATE_RECOG]},
+        };
+        taskDesc = "LICPLATE detect and recognition";
+        break;                  
     case TASKNAME::SAFETY_HAT: //建议阈值0.55
         threshold = 0.55;
         apiName = AlgoAPIName::SAFETY_HAT_DETECTOR;

@@ -19,7 +19,7 @@ endif()
 # add_definitions(-DVERBOSE=True) #设定时 LOGI<< 触发输出, 否则不输出
 # add_definitions(-DVISUAL=True)  #设定时会保存一些中间结果图, 仅在debug下使用, 不需要时请注释
 add_definitions(-DUSEDRM=True) #设定时则使用DRM进行前处理 否则使用opencv
-# add_definitions(-DPRINT_ATTR=True) #是否打印input/output的信息
+add_definitions(-DPRINT_ATTR=True) #是否打印input/output的信息
 # add_definitions(-DTIMING=True) #是否进行内部耗时显示
 
 EXECUTE_PROCESS(COMMAND git log -1 --pretty=format:%cD<hash>%h<note>%s
@@ -192,6 +192,11 @@ target_link_libraries(test_face_feature_extraction ai_core ${RK_LIBS} dl)
 #人脸检测+体征比对测试
 add_executable(test_face_feature_extraction_with_detection test_face_feature_extraction_with_detection.cpp)
 target_link_libraries(test_face_feature_extraction_with_detection ai_core ${RK_LIBS} dl)
+
+#单纯的车牌识别 不含检测
+add_executable(test_licplate_recognition test_licplate_recognition.cpp)
+target_link_libraries(test_licplate_recognition ai_core ${RK_LIBS} dl)
+
 # #phone双模型测试
 # add_executable(test_phone test_phone.cpp)
 # target_link_libraries(test_phone ai_core ${RK_LIBS} dl)

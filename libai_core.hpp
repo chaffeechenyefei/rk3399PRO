@@ -58,11 +58,12 @@ typedef enum _AlgoAPIName{
     FACE_DETECTOR_ATTR  = 21,//人脸检测+属性分类
     GENERAL_DETECTORV2  = 22,//跟踪器替代
     LICPLATE_DETECTOR   = 23, //车牌检测
-    LICPLATE_RECOGNIZER = 24, //车牌识别
+    LICPLATE_RECOGNIZER = 24, //车牌识别, 含检测
     GENERAL_DETECTOR_FAST_LOAD = 25,//通用物体检测器即yolodetector, 可用于人车非 return PEDESTRIAN, CAR, NONCAR, precompiled快速加载
 
     PED_BEND_DETECTOR       = 26,//行人弯腰检测
     SMOKE_CLOUD_DETECTOR    = 27,//烟雾团检测
+    LICPLATE_RECOGNIZER_ONLY = 28,//车牌识别, 仅识别, 不含检测
 
     
 // #endif
