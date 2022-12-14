@@ -107,13 +107,21 @@ list(APPEND COMMON_INCLUDE_FILES ${STB_INCLUDE_DIRS} ${DRM_INCLUDE_DIRS} ${RGA_I
 
 
 
+
 message("common link libs: ${COMMON_LIB_PATHS}")
 
 # ========WORKSPACE_FILES========
 set(UTIL_DIRS "${PROJECT_SOURCE_DIR}/utils")
 file(GLOB_RECURSE UTIL_CPP "${UTIL_DIRS}/*.cpp" 
   "${UTIL_DIRS}/drm/*.c" "${UTIL_DIRS}/trackor/bytetrack_no_reid/*.cpp" 
-  "${UTIL_DIRS}/trackor/bytetrack_origin/*.cpp" )
+  "${UTIL_DIRS}/trackor/bytetrack_origin/*.cpp"
+  "${PROJECT_SOURCE_DIR}/jsoncpp/*.cpp"
+  "${UTIL_DIRS}/json_encoder/*.cpp"
+   )
+
+#jsoncpp
+set(JSON_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/jsoncpp")
+set(UJSON_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/utils/json_encoder")
 
 
 # ========CMAKE_CXX_FLAGS========
@@ -145,8 +153,8 @@ message("@@ DLL MODE ACTIVATED")
 add_definitions(-DUCLOUD_EXPORT)
 message("visibility activated")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")#-fvisibility=hidden
-add_library(ai_core SHARED libai_core.cpp ${UTIL_CPP} )
-target_include_directories(ai_core PUBLIC ${RK_INCLUDE_DIRS} ${COMMON_INCLUDE_FILES} ${OPENCV_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/3rdparty/ )
+add_library(ai_core SHARED libai_core.cpp ${UTIL_CPP})
+target_include_directories(ai_core PUBLIC ${RK_INCLUDE_DIRS} ${COMMON_INCLUDE_FILES} ${OPENCV_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/3rdparty/ ${UJSON_INCLUDE_DIRS} ${JSON_INCLUDE_DIRS} )
 target_link_libraries(ai_core pthread ${COMMON_LIB_PATHS} ${OPENCV_LIBS} ${RK_LIBS} dl)
 set_target_properties(ai_core PROPERTIES PUBLIC_HEADER "libai_core.hpp" )
 

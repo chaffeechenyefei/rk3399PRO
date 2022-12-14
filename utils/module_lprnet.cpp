@@ -3,6 +3,8 @@
 #include <sstream>
 #include <fstream>
 
+#include "json_encoder/json_encoder.hpp"
+
 using namespace std;
 using namespace ucloud;
 
@@ -164,6 +166,17 @@ ucloud::RET_CODE LPRNET::postprocess(std::vector<float*> &output_datas, float th
     // std::string license_str = "testing";
     std::string license_str = decode_license(ptr);
     printf("[%s][%d] car license: %s\n", __FILE__, __LINE__, license_str.c_str());
+
+    UcloudJsonEncoder jsonWriter;
+    jsonWriter.initial_context_with_string(bbox.desc);
+    jsonWriter.add_context(tagJSON_ROOT::CAR_ATTRIBUTION, tagJSON_ATTR::LICPLATE , license_str );
+    std::string json_file = jsonWriter.output_to_string();
+    bbox.desc = json_file;
+
+    LOGI << "====JSON====";
+    // printf("%s\n", json_file.c_str() ) ;
+
+
     LOGI << "<- LPRNET::postprocess";
     return ret;
 }
